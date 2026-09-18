@@ -1,0 +1,181 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+
+.contactanosPage {
+  font-family: 'Montserrat', sans-serif;
+  background: #fdfdfd;
+}
+
+.contactSection {
+  width: 100%;
+  margin-top: 60px;
+}
+
+.contactInner {
+  display: flex;
+  min-height: 600px;
+
+  @media (max-width: 900px) {
+    flex-direction: column;
+    min-height: auto;
+  }
+}
+
+.contactFormWrapper {
+  flex: 1;
+  background: #4a4a4a;
+  color: white;
+  padding: 80px 60px 80px max(32px, calc(50vw - 620px));
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  @media (max-width: 900px) {
+    padding: 60px 32px;
+  }
+}
+
+.formTitle {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 40px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.contactForm {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-width: 500px;
+}
+
+.formGroup {
+  input,
+  textarea {
+    box-sizing: border-box;
+    width: 100%;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    padding: 12px 16px;
+    color: white;
+    font-family: 'Montserrat', sans-serif;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.2s;
+
+    &::placeholder {
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    &:focus {
+      border-color: white;
+    }
+  }
+
+  textarea {
+    resize: vertical;
+    min-height: 120px;
+  }
+}
+
+.btnEnviar {
+  background: black;
+  color: white;
+  border: none;
+  padding: 12px 0;
+  font-size: 14px;
+  font-weight: 500;
+  text-transform: uppercase;
+  cursor: pointer;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: background-color 0.2s;
+  width: 100%;
+
+  &:hover {
+    background: #333;
+  }
+}
+
+.arrow {
+  font-size: 18px;
+}
+
+.contactImage {
+  flex: 1;
+  background: #ccc;
+  position: relative;
+  overflow: hidden;
+}
+
+.imagePlaceholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #b0b0b0;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.8;
+  }
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.whatsappBtn {
+  position: fixed;
+  bottom: 40px;
+  right: 40px;
+  z-index: 1000;
+  background-color: #25D366;
+  color: white;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+
+  svg {
+    width: 36px;
+    height: 36px;
+  }
+
+  &:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+    background-color: #20BA5C;
+  }
+
+  @media (max-width: 600px) {
+    bottom: 20px;
+    right: 20px;
+    width: 50px;
+    height: 50px;
+
+    svg {
+      width: 30px;
+      height: 30px;
+    }
+  }
+}

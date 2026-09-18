@@ -1,0 +1,135 @@
+.registroWrapper {
+  display: flex;
+  height: 100vh;
+  font-family: 'Montserrat', sans-serif;
+  background-color: #f7f7f7;
+}
+
+.registroImage {
+  flex: 1;
+  background: #ccc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  @media (max-width: 900px) {
+    display: none;
+  }
+}
+
+.imagePlaceholder {
+  width: 100%;
+  height: 100%;
+  background: #999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.8;
+  }
+}
+
+.registroContent {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  background: #fff;
+  overflow-y: auto;
+}
+
+.registroTitle {
+  font-size: 32px;
+  font-weight: 700;
+  margin-bottom: 40px;
+  color: #333;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.registroForm {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  @media (max-width: 768px) {
+    gap: 6px;
+  }
+}
+
+.formControl {
+  width: 100%;
+  padding: 14px 16px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 16px;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+
+  &:focus {
+    border-color: #333;
+  }
+
+  @media (max-width: 768px) {
+    padding: 10px 12px;
+    font-size: 14px;
+  }
+}
+
+.isInvalid {
+  border-color: #dc3545;
+}
+
+.invalidFeedback {
+  color: #dc3545;
+  font-size: 13px;
+  margin-top: 4px;
+}
+
+.formActions {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.btn {
+  padding: 14px;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  transition: opacity 0.2s;
+
+  &:hover {
+    opacity: 0.9;
+  }
+}
+
+.btnBlack {
+  background: #000;
+  color: #fff;
+}
+
+.btnGray {
+  background: #ccc;
+  color: #333;
+}

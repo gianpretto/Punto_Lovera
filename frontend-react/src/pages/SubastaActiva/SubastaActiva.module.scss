@@ -1,0 +1,598 @@
+.activeAuctionContainer {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 20px 40px 100px;
+  font-family: 'Montserrat', sans-serif;
+
+  @media (max-width: 768px) {
+    padding: 20px;
+  }
+
+  @media (max-width: 425px) {
+    padding: 10px;
+    padding-bottom: 60px;
+  }
+}
+
+.auctionHeader {
+  margin-bottom: 20px;
+
+  h1 {
+    font-size: 20px;
+    font-weight: 600;
+    color: #333;
+  }
+
+  @media (max-width: 425px) {
+    margin-bottom: 10px;
+
+    h1 {
+      font-size: 16px;
+    }
+  }
+}
+
+.auctionGrid {
+  display: grid;
+  grid-template-columns: 1fr 340px;
+  gap: 30px;
+  align-items: stretch;
+
+  @media (max-width: 1100px) {
+    grid-template-columns: 1fr;
+  }
+
+  @media (max-width: 425px) {
+    gap: 10px;
+  }
+}
+
+.mainContent {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+
+  @media (max-width: 425px) {
+    gap: 10px;
+  }
+}
+
+.streamContainer {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  background: #bbb;
+  border-radius: 20px;
+  overflow: hidden;
+
+  @media (max-width: 425px) {
+    border-radius: 12px;
+  }
+}
+
+.videoPlaceholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.streamBanner {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  background: rgba(240, 240, 240, 0.9);
+  backdrop-filter: blur(5px);
+  color: #111;
+  padding: 12px 24px;
+  border-radius: 40px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  font-weight: 700;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+
+  svg {
+    stroke: #111;
+  }
+
+  @media (max-width: 425px) {
+    bottom: 10px;
+    left: 10px;
+    right: 10px;
+    justify-content: center;
+    padding: 8px 16px;
+  }
+}
+
+.bannerText {
+  font-size: 16px;
+
+  @media (max-width: 425px) {
+    font-size: 14px;
+  }
+}
+
+.biddingSection {
+  display: flex;
+  gap: 20px;
+  align-items: stretch;
+
+  @media (max-width: 600px) {
+    flex-direction: column;
+  }
+
+  @media (max-width: 425px) {
+    gap: 10px;
+  }
+}
+
+.bidSelector {
+  flex: 1;
+  background: #eee;
+  border-radius: 25px;
+  border: 1px solid #ddd;
+  display: flex;
+  align-items: center;
+  padding: 10px 20px;
+
+  @media (max-width: 425px) {
+    padding: 5px 10px;
+  }
+}
+
+.bidBtn {
+  width: 40px;
+  height: 100%;
+  border: none;
+  background: transparent;
+  font-size: 28px;
+  color: #999;
+  cursor: pointer;
+  transition: color 0.2s;
+
+  &:hover {
+    color: #000;
+  }
+}
+
+.bidDisplay {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.bidFieldWrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.currencySymbol {
+  font-size: 28px;
+  font-weight: 800;
+  color: #000;
+
+  @media (max-width: 425px) {
+    font-size: 24px;
+  }
+}
+
+.bidInput {
+  font-size: 32px;
+  font-weight: 800;
+  color: #000;
+  background: transparent;
+  border: none;
+  width: 100%;
+  text-align: center;
+  font-family: inherit;
+  outline: none;
+  margin-left: -20px;
+
+  @media (max-width: 425px) {
+    font-size: 24px;
+  }
+}
+
+.userCredits {
+  font-size: 9px;
+  font-weight: 700;
+  color: #333;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.offerBtn {
+  width: 300px;
+  background: #000;
+  color: #fff;
+  border: none;
+  border-radius: 25px;
+  font-size: 18px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s, background 0.2s;
+
+  &:hover {
+    background: #222;
+    transform: translateY(-2px);
+  }
+
+  @media (max-width: 600px) {
+    width: 100%;
+    padding: 25px;
+  }
+
+  @media (max-width: 425px) {
+    padding: 15px;
+    font-size: 16px;
+  }
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  max-height: 705px;
+}
+
+.sidebarCard {
+  background: #f2f2f2;
+  border-radius: 30px;
+  border: 1px solid #e0e0e0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  max-height: 100%;
+
+  @media (max-width: 425px) {
+    border-radius: 20px;
+  }
+}
+
+.martilleroVideoBlock {
+  width: 100%;
+  aspect-ratio: 21 / 9;
+  background: #999;
+  position: relative;
+  overflow: hidden;
+  flex-shrink: 0;
+
+  @media (max-width: 425px) {
+    display: none;
+  }
+}
+
+.cameraPlaceholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.martilleroBanner {
+  background: #4a4a4a;
+  color: #fff;
+  padding: 10px 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  flex-shrink: 0;
+}
+
+.label {
+  font-weight: 600;
+  opacity: 0.8;
+}
+
+.name {
+  font-weight: 800;
+  font-size: 14px;
+  text-transform: uppercase;
+}
+
+.toggleChatBtn {
+  display: none;
+  background: transparent;
+  border: none;
+  width: 100%;
+  padding: 10px;
+  font-size: 11px;
+  color: #555;
+  font-weight: 600;
+  cursor: pointer;
+  border-bottom: 1px solid #eee;
+  text-align: left;
+  padding-left: 20px;
+
+  @media (max-width: 425px) {
+    display: block;
+  }
+
+  &:hover {
+    background-color: #f9f9f9;
+    color: #000;
+  }
+}
+
+.sidebarBody {
+  padding: 8px 20px 15px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  transition: all 0.3s ease;
+
+  @media (max-width: 425px) {
+    height: 400px;
+  }
+}
+
+.collapsed {
+  @media (max-width: 425px) {
+    display: none;
+  }
+}
+
+.loteInfoCompact {
+  flex-shrink: 0;
+}
+
+.titleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+
+  h3 {
+    font-size: 15px;
+    font-weight: 800;
+    color: #333;
+    max-width: 70%;
+    line-height: 1.2;
+  }
+}
+
+.btnNegroExtraSmall {
+  background: #000;
+  color: #fff;
+  border: none;
+  padding: 5px 10px;
+  font-size: 9px;
+  font-weight: 700;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.location {
+  font-size: 10px;
+  font-weight: 600;
+  color: #777;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.descriptionShort {
+  font-size: 10px;
+  line-height: 1.4;
+  color: #666;
+  font-weight: 500;
+}
+
+.sidebarDivider {
+  border: none;
+  border-top: 1px solid #ddd;
+  margin: 10px 0;
+  flex-shrink: 0;
+}
+
+.chatContainerInner {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.chatHeaderMinimal {
+  font-size: 10px;
+  font-weight: 700;
+  color: #999;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+
+.chatMessagesScroll {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-right: 5px;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: #ddd;
+    border-radius: 10px;
+  }
+}
+
+.message {
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.messageUser {
+  font-weight: 800;
+  color: #333;
+  margin-right: 4px;
+}
+
+.messageText {
+  color: #555;
+  font-weight: 500;
+}
+
+.messageTime {
+  font-size: 8px;
+  color: #bbb;
+  margin-left: 6px;
+}
+
+.isOffer {
+  background: #eef7ee;
+  padding: 6px 10px;
+  border-radius: 8px;
+
+  .messageUser {
+    color: #2e7d32;
+  }
+
+  .messageText {
+    color: #2e7d32;
+    font-weight: 700;
+  }
+}
+
+.chatInputRow {
+  background: #e8e8e8;
+  border-radius: 25px;
+  padding: 5px 15px;
+  display: flex;
+  align-items: center;
+  border: 1px solid #ddd;
+  margin-top: auto;
+
+  input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    padding: 10px;
+    font-size: 12px;
+    font-weight: 500;
+
+    &:focus {
+      outline: none;
+    }
+  }
+}
+
+.sendBtn {
+  background: transparent;
+  border: none;
+  color: #888;
+  cursor: pointer;
+
+  &:hover {
+    color: #000;
+  }
+}
+
+.lightboxOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.95);
+  backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 3000;
+}
+
+.lightboxContainer {
+  position: relative;
+  width: 90%;
+  max-width: 1100px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.closeBtn {
+  position: absolute;
+  top: -60px;
+  right: 0;
+  background: none;
+  border: none;
+  color: #fff;
+  font-size: 40px;
+  cursor: pointer;
+}
+
+.mediaViewer {
+  width: 100%;
+  background: #000;
+  border-radius: 15px;
+  overflow: hidden;
+  display: flex;
+  justify-content: center;
+  box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
+
+  img {
+    max-width: 100%;
+    max-height: 80vh;
+    object-fit: contain;
+  }
+}
+
+.navBtn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: none;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  font-size: 30px;
+  cursor: pointer;
+  transition: 0.2s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 0.2);
+  }
+}
+
+.prev {
+  left: -75px;
+
+  @media (max-width: 1300px) {
+    left: 10px;
+  }
+}
+
+.next {
+  right: -75px;
+
+  @media (max-width: 1300px) {
+    right: 10px;
+  }
+}
+
+.lightboxFooter {
+  margin-top: 15px;
+  color: #fff;
+  font-size: 12px;
+  opacity: 0.7;
+}

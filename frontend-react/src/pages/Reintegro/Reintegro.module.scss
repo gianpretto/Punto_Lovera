@@ -1,0 +1,129 @@
+.reintegroWrapper {
+  max-width: 600px;
+  margin: 100px auto;
+  padding: 0 20px;
+  font-family: 'Montserrat', sans-serif;
+}
+
+.formContainer {
+  background: #fff;
+  padding: 40px;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+
+.title {
+  font-size: 32px;
+  font-weight: 700;
+  text-align: center;
+  margin-bottom: 10px;
+  color: #111;
+}
+
+.subtitle {
+  text-align: center;
+  color: #666;
+  margin-bottom: 40px;
+  font-size: 14px;
+}
+
+.reintegroForm {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  label {
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: #888;
+    letter-spacing: 0.5px;
+  }
+}
+
+.formControl {
+  padding: 14px 16px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: inherit;
+
+  &:focus {
+    outline: none;
+    border-color: #3e6d6d;
+  }
+}
+
+.isInvalid {
+  border-color: #dc3545;
+}
+
+.textarea {
+  min-height: 100px;
+  resize: none;
+}
+
+.btnBlack {
+  background: #000;
+  color: #fff;
+  border: none;
+  padding: 18px;
+  font-size: 16px;
+  font-weight: 600;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 10px;
+  transition: background 0.2s;
+
+  &:hover {
+    background: #333;
+  }
+}
+
+.btnBack {
+  text-align: center;
+  display: block;
+  color: #888;
+  font-size: 14px;
+  text-decoration: none;
+  margin-top: 10px;
+
+  &:hover {
+    color: #333;
+  }
+}
+
+.successMessage {
+  text-align: center;
+  padding: 60px 40px;
+  background: #f9f9f9;
+  border-radius: 10px;
+}
+
+.iconCircle {
+  width: 80px;
+  height: 80px;
+  background: #3e6d6d;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 30px;
+}
+
+.successTitle {
+  font-size: 24px;
+  margin-bottom: 15px;
+  font-weight: 700;
+}
+
+.successDesc {
+  color: #666;
+  line-height: 1.6;
+}

@@ -1,0 +1,155 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+.qsPage {
+  font-family: 'Inter', sans-serif;
+  color: #333;
+  overflow-x: hidden;
+}
+
+.qsSection {
+  padding: 100px 0;
+  background: #fff;
+}
+
+.bgLight {
+  background: #f7f7f7;
+}
+
+.qsInner {
+  width: min(1200px, calc(100% - 64px));
+  margin: 0 auto;
+}
+
+.split {
+  display: flex;
+  align-items: center;
+  gap: 80px;
+
+  @media (max-width: 900px) {
+    flex-direction: column;
+    gap: 40px;
+  }
+}
+
+.centered {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.qsContent {
+  flex: 1;
+}
+
+.qsTitle {
+  font-size: 32px;
+  font-weight: 600;
+  margin-bottom: 24px;
+  color: #222;
+  letter-spacing: -0.5px;
+}
+
+.qsDesc {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #555;
+  max-width: 600px;
+}
+
+.qsMedia {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  width: 100%;
+}
+
+.imagePlaceholder {
+  width: 100%;
+  max-width: 500px;
+  aspect-ratio: 4 / 3;
+  background: #ddd;
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0.8;
+    transition: transform 0.3s ease;
+  }
+
+  &:hover img {
+    transform: scale(1.05);
+  }
+}
+
+.textCenter {
+  text-align: center;
+  margin-bottom: 60px;
+}
+
+.processGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 40px;
+  width: 100%;
+
+  @media (max-width: 900px) {
+    grid-template-columns: 1fr;
+    max-width: 500px;
+  }
+}
+
+.processCard {
+  background: #f0f0f0;
+  padding: 40px 30px;
+  border-radius: 12px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+
+  &:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    background: #fff;
+  }
+}
+
+.processIcon {
+  width: 80px;
+  height: 80px;
+  background: #ccc;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+
+  img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+    opacity: 0.6;
+  }
+}
+
+.processTitle {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: #222;
+}
+
+.processDesc {
+  font-size: 14px;
+  line-height: 1.5;
+  color: #666;
+}

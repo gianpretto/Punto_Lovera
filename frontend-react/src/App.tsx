@@ -4,9 +4,25 @@ import Footer from './components/layout/Footer';
 import { AuthProvider } from './services/AuthContext';
 import Home from './pages/Home/Home';
 import EnConstruccion from './pages/EnConstruccion';
+import ProximasSubastas from './pages/ProximasSubastas/ProximasSubastas';
+import DetalleSubasta from './pages/DetalleSubasta/DetalleSubasta';
+import SubastaActiva from './pages/SubastaActiva/SubastaActiva';
+import Login from './pages/Login/Login';
+import ForgotPassword from './pages/ForgotPassword/ForgotPassword';
+import Registro from './pages/Registro/Registro';
+import ValidarMail from './pages/ValidarMail/ValidarMail';
+import DatosUsuario from './pages/DatosUsuario/DatosUsuario';
+import PanelUsuario from './pages/PanelUsuario/PanelUsuario';
+import Creditos from './pages/Creditos/Creditos';
+import ComprobanteExitoso from './pages/ComprobanteExitoso/ComprobanteExitoso';
+import Reintegro from './pages/Reintegro/Reintegro';
+import QuienesSomos from './pages/QuienesSomos/QuienesSomos';
+import QuieroComprar from './pages/QuieroComprar/QuieroComprar';
+import QuieroVender from './pages/QuieroVender/QuieroVender';
+import Contactanos from './pages/Contactanos/Contactanos';
 
-// Vistas que todavía no migramos de Angular — placeholder para que el
-// ruteo completo funcione mientras las vamos portando una por una.
+// Vistas que en el Angular original también son solo un stub sin
+// implementar ("works!") — no hay nada real que portar todavía.
 const stub = (nombre: string) => () => <EnConstruccion nombre={nombre} />;
 
 export default function App() {
@@ -20,26 +36,26 @@ export default function App() {
           <Route path="/" element={<Home />} />
 
           {/* Subastas */}
-          <Route path="/subastas" element={stub('Próximas subastas')()} />
-          <Route path="/subastas/:id" element={stub('Detalle de subasta')()} />
-          <Route path="/subastas/:id/activa" element={stub('Subasta en vivo')()} />
+          <Route path="/subastas" element={<ProximasSubastas />} />
+          <Route path="/subastas/:id" element={<DetalleSubasta />} />
+          <Route path="/subastas/:id/activa" element={<SubastaActiva />} />
 
           {/* Autenticación / usuario */}
-          <Route path="/login" element={stub('Iniciar sesión')()} />
-          <Route path="/forgot-password" element={stub('Recuperar contraseña')()} />
-          <Route path="/registro" element={stub('Registro')()} />
-          <Route path="/validar-mail" element={stub('Validar mail')()} />
-          <Route path="/datos" element={stub('Mis datos')()} />
-          <Route path="/perfil" element={stub('Mi panel')()} />
-          <Route path="/creditos" element={stub('Créditos')()} />
-          <Route path="/comprobante-exitoso" element={stub('Comprobante enviado')()} />
-          <Route path="/reintegro" element={stub('Reintegro')()} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/registro" element={<Registro />} />
+          <Route path="/validar-mail" element={<ValidarMail />} />
+          <Route path="/datos" element={<DatosUsuario />} />
+          <Route path="/perfil" element={<PanelUsuario />} />
+          <Route path="/creditos" element={<Creditos />} />
+          <Route path="/comprobante-exitoso" element={<ComprobanteExitoso />} />
+          <Route path="/reintegro" element={<Reintegro />} />
 
           {/* Institucional */}
-          <Route path="/quienes-somos" element={stub('Quiénes somos')()} />
-          <Route path="/quiero-comprar" element={stub('Quiero comprar')()} />
-          <Route path="/quiero-vender" element={stub('Quiero vender')()} />
-          <Route path="/contactanos" element={stub('Contactanos')()} />
+          <Route path="/quienes-somos" element={<QuienesSomos />} />
+          <Route path="/quiero-comprar" element={<QuieroComprar />} />
+          <Route path="/quiero-vender" element={<QuieroVender />} />
+          <Route path="/contactanos" element={<Contactanos />} />
           <Route path="/como-participar" element={stub('Cómo participar')()} />
           <Route path="/faq" element={stub('Preguntas frecuentes')()} />
 
