@@ -1,0 +1,215 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+.subasta-envivo-section {
+    width: 100%;
+    // Assuming container is centered but distinct from full width, usually constrained
+    // keeping it wide as requested for 1920 screens, but with some margin
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 60px 40px;
+    font-family: 'Inter', sans-serif;
+    box-sizing: border-box;
+
+    @media (max-width: 768px) {
+        padding: 40px 16px;
+        /* Reduced outer padding for mobile */
+    }
+
+    .header-section {
+        margin-bottom: 24px;
+        font-size: 16px;
+        letter-spacing: 0.5px;
+        color: #555; // Dark charcoal
+        font-weight: 600;
+        text-transform: uppercase;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+
+
+
+        .highlight {
+            color: #555;
+            font-weight: 800; // Bold "EN VIVO"
+        }
+    }
+
+    .content-wrapper {
+        display: flex;
+        border-radius: 24px; // Matches image rounded corners
+        overflow: hidden; // Ensures children don't bleed out corners
+        border: 1px solid rgba(0, 0, 0, 0.1); // Subtle border
+        min-height: 500px; // Generous height for desktop
+
+        // Ratio split: Image visual looks like ~60% Left, 40% Right
+
+        @media (max-width: 1024px) {
+            flex-direction: column;
+            min-height: auto;
+        }
+    }
+
+    .video-container {
+        flex: 1.6; // Matches the wider left proportion
+        background-color: #9CA3AF; // Specific medium gray from image (approx)
+        position: relative;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        @media (max-width: 1024px) {
+            min-height: 320px;
+            /* Ensure visible height on tablet/mobile */
+            flex: none;
+            /* Disable flex-grow/shrink logic causing collapse */
+            width: 100%;
+        }
+
+        // "ACTIVA" Badge
+        .status-badge {
+            position: absolute;
+            top: 24px;
+            left: 24px;
+            background-color: #333; // Dark grey/Black background
+            color: white;
+            padding: 6px 16px;
+            border-radius: 999px; // Pill shape
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        // "• EN VIVO" Indicator
+        .live-indicator {
+            position: absolute;
+            top: 24px;
+            right: 24px;
+            color: rgba(0, 0, 0, 0.5); // Semi-transparent dark
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        // Background Image Styling
+        .video-bg {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1; // Base layer
+        }
+
+        // Ensure badges are on top
+        .status-badge,
+        .live-indicator {
+            z-index: 2;
+        }
+    }
+
+    .info-container {
+        flex: 1;
+        padding: 50px 40px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-start; // Align top mostly
+        background-color: #EDEDED; // Light gray/Off-white from image
+        text-align: left;
+
+        @media (max-width: 768px) {
+            padding: 20px 16px;
+        }
+
+        .subasta-titulo {
+            font-size: 32px; // Larger title
+            line-height: 1.2;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin: 0 0 12px 0;
+
+            @media (max-width: 768px) {
+                font-size: 20px;
+                margin-bottom: 8px;
+            }
+        }
+
+        .ubicacion {
+            font-size: 15px;
+            color: #555;
+            font-weight: 500;
+            margin: 0 0 24px 0;
+
+            @media (max-width: 768px) {
+                font-size: 13px;
+                margin-bottom: 12px;
+            }
+        }
+
+        .divider {
+            height: 1px;
+            background-color: #bbb; // Visible divider line
+            width: 100%;
+            margin-bottom: 30px;
+
+            @media (max-width: 768px) {
+                margin-bottom: 16px;
+            }
+        }
+
+        .descripcion {
+            font-size: 16px;
+            color: #444;
+            line-height: 1.6;
+            margin-bottom: 40px;
+            max-width: 95%;
+
+            @media (max-width: 768px) {
+                font-size: 14px;
+                margin-bottom: 20px;
+                line-height: 1.4;
+            }
+        }
+
+        .btn-unirse {
+            background-color: #000; // Pure black
+            color: #fff;
+            border: none;
+            padding: 16px 32px;
+            font-size: 14px;
+
+            @media (max-width: 768px) {
+                padding: 12px 24px;
+                font-size: 13px;
+                width: 100%;
+                /* Optional: make it full width if desired for better touch target */
+                justify-content: center;
+            }
+
+            font-weight: 500;
+            border-radius: 4px; // Slightly rounded standard button
+            cursor: pointer;
+            align-self: flex-start;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); // Button shadow
+            transition: all 0.2s ease;
+
+            &:hover {
+                background-color: #222;
+                transform: translateY(-1px);
+                box-shadow: 0 6px 15px rgba(0, 0, 0, 0.25);
+            }
+
+            .arrow {
+                font-size: 16px;
+                line-height: 1;
+            }
+        }
+    }
+}
