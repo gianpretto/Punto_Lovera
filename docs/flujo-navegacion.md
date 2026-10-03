@@ -79,6 +79,10 @@ Implementado:
   comprobantes, ofertas en curso.
 - **Cómo participar** (`/como-participar`) y **Preguntas frecuentes** (`/faq`,
   el Home muestra las 3 primeras): textos en `frontend-react/src/content/participar.ts`.
+- **Reintegro** (`/reintegro`) conectado: el pedido reserva el crédito y el
+  admin lo paga desde `/admin/reintegros`.
+- **Administrar subastas** (`/admin/subastas`): alta y edición de subastas,
+  lotes y fotos (antes solo se podía por API).
 
 Pendiente / a validar con el cliente:
 
@@ -86,5 +90,3 @@ Pendiente / a validar con el cliente:
   partir de cómo funciona el sistema.
 - **Datos de facturación**: hoy DNI/CUIT y dirección; confirmar si falta
   razón social, condición frente al IVA, etc.
-- **Reintegro** (`/reintegro`): la pantalla existe pero no está conectada
-  (el backend no tiene pedido de reintegro).

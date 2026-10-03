@@ -114,6 +114,39 @@ valida vía `http://127.0.0.1:8080/auth/publish` (proxy_pass por variable +
 nueva) rompía las transmisiones. Último recurso si OBS falla:
 vivo de YouTube embebido (lo ve cualquiera con el link).
 
+## Administración, reintegros y seguridad (oct 2026)
+
+- **Admin de subastas** (MARTILLERO/ADMIN): `/admin/subastas` (lista),
+  `/admin/subastas/nueva` y `/admin/subastas/:id` (datos, portada con
+  `POST /api/subastas/:id/portada`, lotes y fotos; borrar foto
+  `DELETE /api/subastas/:auctionId/lotes/:lotId/imagenes/:imageId`).
+  Reglas: no se cambia el precio base ni se borra un lote con pujas o
+  vendido; no se borra una subasta con pujas/ventas (usar CANCELADA).
+- **Reintegros** (devolver crédito no usado): `credit_withdrawals`
+  (migración 0006). El pedido PENDIENTE reserva su monto (suma en
+  `getHeldCredit`); el admin lo aprueba en `/admin/reintegros` después de
+  transferir (descuenta del saldo) o lo rechaza (libera). Mails en ambos casos.
+- **Seguridad**:
+  - Rate limits (`middleware/rateLimit.middleware.ts`): login 10 fallidos
+    / 15 min por IP+email (y 50 por IP), registro/forgot/resend 5 por hora,
+    general 600/min (excluye el proxy HLS y el callback RTMP). Contadores en
+    memoria: con varias réplicas hay que pasar a Redis.
+  - `TRUST_PROXY` (default 1, el edge de Railway) para la IP real.
+  - Pujar exige mail verificado (el login no). Link de verificación vence
+    a las 48 h. Tokens de verificación/reset guardados como SHA-256.
+  - Sala: pujar/chatear exige `auction:join` de esa subasta; chat solo con
+    la subasta ACTIVA; límites por usuario (5 msjs y 10 pujas / 10 s);
+    `maxHttpBufferSize` 16 KB.
+  - Uploads: extensión según el mimetype (no el nombre del cliente);
+    errores de multer → 400/413.
+  - Pendiente: JWT revocable (cambiar la contraseña no cierra sesiones),
+    el registro revela si un mail existe (decisión de producto), y las
+    fechas `defaultNow()` dependen de la zona horaria de la conexión (Neon
+    usa UTC: no cambiarla).
+- **Tests**: `cd backend && npm test` (vitest + PGlite en memoria, no
+  necesita base ni servicios externos; ver `backend/test/`). CI en
+  `.github/workflows/backend-tests.yml` en cada push a `main`.
+
 ## Pendiente de seguridad antes de producción
 
 La contraseña de Neon (`neondb_owner`, ramas dev y production), el
