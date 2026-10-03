@@ -1,6 +1,6 @@
-import { desc, eq } from 'drizzle-orm';
+import { desc, eq, sql } from 'drizzle-orm';
 import { db } from '../config/db';
-import { bids, lots, purchases } from '../db/schema';
+import { bids, lots, purchases, users } from '../db/schema';
 import { Errors } from '../utils/AppError';
 
 function generateReference() {
@@ -25,6 +25,17 @@ export async function closeLotAndCreatePurchase(lotId: string) {
   if (!winningBid) throw Errors.badRequest('Este lote no tiene pujas, no se puede cerrar con comprador');
 
   return db.transaction(async (tx) => {
+    // El monto ya estaba reservado mientras iba ganando; ahora se descuenta
+    // del saldo de verdad (y al quedar sold=true la reserva desaparece).
+    const [winner] = await tx.select().from(users).where(eq(users.id, winningBid.userId)).for('update');
+    if (!winner || Number(winner.creditBalance) < Number(winningBid.amount)) {
+      throw Errors.badRequest('El ganador no tiene saldo suficiente para cubrir la compra');
+    }
+    await tx
+      .update(users)
+      .set({ creditBalance: sql`${users.creditBalance} - ${winningBid.amount}`, updatedAt: new Date() })
+      .where(eq(users.id, winner.id));
+
     await tx.update(lots).set({ sold: true, updatedAt: new Date() }).where(eq(lots.id, lotId));
     const [purchase] = await tx
       .insert(purchases)

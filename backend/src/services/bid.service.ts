@@ -3,6 +3,9 @@ import { db } from '../config/db';
 import { bids, lots, users } from '../db/schema';
 import { Errors } from '../utils/AppError';
 import { getCurrentLot } from './auction.service';
+import { getHeldCredit } from './credit.service';
+
+const pesos = (n: number) => `$${n.toLocaleString('es-AR')}`;
 
 /**
  * Registra una puja sobre un lote.
@@ -13,6 +16,13 @@ import { getCurrentLot } from './auction.service';
  * precio ya cambió) y ahí reintentamos. Esto evita el clásico bug de
  * "pujas fantasma" en subastas en vivo con alta concurrencia sin tener que
  * tomar un lock pesado de tabla.
+ *
+ * Crédito: la puja reserva su monto mientras el usuario va ganando. Se
+ * valida contra el saldo disponible (saldo - lo reservado en OTROS lotes
+ * que lidera; si ya lideraba este lote, su reserva anterior se reemplaza
+ * por la nueva). La fila del usuario se bloquea (FOR UPDATE) dentro de la
+ * transacción para que dos pujas simultáneas en lotes distintos no puedan
+ * usar la misma plata dos veces.
  */
 export async function placeBid(lotId: string, userId: string, amount: number) {
   const MAX_RETRIES = 3;
@@ -35,16 +45,23 @@ export async function placeBid(lotId: string, userId: string, amount: number) {
       throw Errors.badRequest(`La puja mínima es $${minNext}`);
     }
 
-    const [user] = await db.select().from(users).where(eq(users.id, userId));
-    if (!user) throw Errors.unauthorized();
-    if (Number(user.creditBalance) < amount) {
-      throw Errors.badRequest('No tenés crédito suficiente para esta puja. Cargá saldo en /creditos');
-    }
-
     const result = await db.transaction(async (tx) => {
+      const [user] = await tx.select().from(users).where(eq(users.id, userId)).for('update');
+      if (!user) throw Errors.unauthorized();
+
+      const heldElsewhere = await getHeldCredit(userId, tx, lotId);
+      const available = Number(user.creditBalance) - heldElsewhere;
+      if (amount > available) {
+        throw Errors.badRequest(
+          heldElsewhere > 0
+            ? `No tenés crédito disponible suficiente: te quedan ${pesos(available)} (tenés ${pesos(heldElsewhere)} reservados en lotes que vas ganando). Cargá saldo en /creditos`
+            : 'No tenés crédito suficiente para esta puja. Cargá saldo en /creditos'
+        );
+      }
+
       const updatedRows = await tx
         .update(lots)
-        .set({ currentPrice: String(amount), updatedAt: new Date() })
+        .set({ currentPrice: String(amount), leaderId: userId, updatedAt: new Date() })
         .where(and(eq(lots.id, lotId), eq(lots.currentPrice, lot.currentPrice)))
         .returning();
 

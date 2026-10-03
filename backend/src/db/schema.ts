@@ -101,6 +101,11 @@ export const lots = pgTable(
     bidIncrement: decimal('bid_increment', { precision: 12, scale: 2 }).notNull().default('1000'),
     sold: boolean('sold').notNull().default(false),
 
+    // Quién va ganando (la puja más alta). Sirve para reservar crédito: el
+    // precio actual de los lotes que un usuario lidera queda retenido de
+    // su saldo (ver credit.service.ts).
+    leaderId: uuid('leader_id').references(() => users.id),
+
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
   },

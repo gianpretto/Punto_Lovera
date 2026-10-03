@@ -1,8 +1,7 @@
 import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../services/AuthContext';
 import styles from './Creditos.module.scss';
-
-const creditoDisponible = 20000000;
 
 const instrucciones = [
   {
@@ -29,6 +28,9 @@ const CardIcon = () => (
 
 export default function Creditos() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  // Lo que puede usar para pujar (saldo - reservas de lotes que va ganando)
+  const creditoDisponible = user?.availableCredit ?? 0;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [voucherFile, setVoucherFile] = useState<File | null>(null);
   const [voucherPreview, setVoucherPreview] = useState<string | null>(null);

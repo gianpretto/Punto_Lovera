@@ -15,6 +15,8 @@ export interface RoomLot {
   currentPrice: number;
   bidIncrement: number;
   minNextBid: number;
+  /** Usuario que va ganando el lote (null = sin pujas) */
+  leaderId: string | null;
   images: string[];
 }
 
@@ -104,10 +106,13 @@ export function useAuctionRoom(auctionId: string | undefined, token: string | nu
     socket.on('chat:history', (history: ServerMessage[]) => setMessages(history.map(toChat)));
     socket.on('chat:message', (m: ServerMessage) => setMessages((prev) => [...prev, toChat(m)]));
 
-    socket.on('bid:new', (b: { lotId: string; currentPrice: number; minNextBid: number }) => {
+    socket.on('bid:new', (b: { lotId: string; currentPrice: number; minNextBid: number; leaderId: string }) => {
       setState((prev) =>
         prev?.lot && prev.lot.id === b.lotId
-          ? { ...prev, lot: { ...prev.lot, currentPrice: b.currentPrice, minNextBid: b.minNextBid } }
+          ? {
+              ...prev,
+              lot: { ...prev.lot, currentPrice: b.currentPrice, minNextBid: b.minNextBid, leaderId: b.leaderId },
+            }
           : prev
       );
     });

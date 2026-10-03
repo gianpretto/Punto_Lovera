@@ -167,6 +167,16 @@ link desde la sala). Abrir/finalizar subasta, poner un lote en remate,
 adjudicar al mejor postor y prender/apagar la cámara (nombre + URL rtsp).
 Es una pantalla interna nueva, sin diseño de la diseñadora.
 
+Créditos (opción elegida: reservar mientras va ganando): `lots.leader_id`
+guarda quién va ganando. Lo reservado de un usuario = suma del precio
+actual de los lotes sin vender que lidera en subastas PROXIMA/ACTIVA (se
+calcula en `credit.service.ts`, no hay tabla de reservas). Disponible =
+saldo - reservado. Al pujar se valida contra el disponible con la fila del
+usuario bloqueada (`FOR UPDATE`); si ya lideraba ese lote, su reserva ahí
+se reemplaza por la nueva puja. Ser superado libera la reserva; adjudicar
+descuenta el monto del saldo; finalizar/cancelar la subasta libera lo que
+quedó sin adjudicar. `/auth/me` devuelve `heldCredit` y `availableCredit`.
+
 Las pujas y mensajes propios **no** se agregan localmente: vuelven por el
 socket a toda la sala (si no, se duplican).
 
@@ -182,12 +192,8 @@ había Docker.
    ya están; faltan subastas/lotes — Home, ProximasSubastas,
    DetalleSubasta — y Creditos/comprobantes, que hoy usan datos
    hardcodeados).
-2. **Créditos (a definir con el colega):** la puja no descuenta ni
-   reserva crédito, solo valida que el saldo alcance; al adjudicar tampoco
-   se descuenta nada. Opciones: descontar al adjudicar, reservar al pujar
-   y liberar al ser superado, o seña/garantía fija por subasta.
-   Probar el video con el rtsp-manager real de Francis (solo se probó con
-   el falso) y la cámara chica del martillero en la sala (sigue siendo
+2. Probar el video con el rtsp-manager real de Francis (solo se probó con
+   uno falso) y la cámara chica del martillero en la sala (sigue siendo
    placeholder: hoy hay una sola cámara por subasta).
 3. Revisión y pulido visual conjunto (comparación final pixel a pixel).
 4. Decidir contenido real para `/como-participar` y `/faq` (hoy vacíos en

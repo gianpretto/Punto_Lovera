@@ -38,6 +38,7 @@ export async function placeBidAndBroadcast(lotId: string, userId: string, amount
       lotId: result.lot.id,
       currentPrice: Number(result.lot.currentPrice),
       minNextBid: Number(result.lot.currentPrice) + Number(result.lot.bidIncrement),
+      leaderId: result.lot.leaderId,
       bid: { ...result.bid, amount: Number(result.bid.amount) },
     });
     io.to(room).emit('chat:message', {
@@ -110,6 +111,7 @@ function lotPayload(lot: CurrentLot) {
     currentPrice,
     bidIncrement,
     minNextBid: currentPrice + bidIncrement,
+    leaderId: lot.leaderId,
     images: lot.images.map((i) => i.url),
   };
 }

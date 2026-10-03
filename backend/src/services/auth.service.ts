@@ -6,6 +6,7 @@ import { signToken } from '../utils/jwt';
 import { randomToken } from '../utils/tokens';
 import { Errors } from '../utils/AppError';
 import { sendPasswordResetEmail, sendVerificationEmail } from './mail.service';
+import { getHeldCredit } from './credit.service';
 
 const SALT_ROUNDS = 10;
 
@@ -20,7 +21,7 @@ export interface RegisterInput {
 
 type UserRow = typeof users.$inferSelect;
 
-function publicUser(user: UserRow) {
+function publicUser(user: UserRow, heldCredit = 0) {
   return {
     id: user.id,
     email: user.email,
@@ -36,7 +37,14 @@ function publicUser(user: UserRow) {
     role: user.role,
     emailVerified: user.emailVerified,
     creditBalance: Number(user.creditBalance),
+    // Reservado en lotes que va ganando y lo que le queda para pujar
+    heldCredit,
+    availableCredit: Number(user.creditBalance) - heldCredit,
   };
+}
+
+async function publicUserWithCredit(user: UserRow) {
+  return publicUser(user, await getHeldCredit(user.id));
 }
 
 export async function register(input: RegisterInput) {
@@ -73,7 +81,7 @@ export async function login(email: string, password: string) {
   if (!valid) throw Errors.badRequest('Email o contraseña incorrectos');
 
   const token = signToken({ userId: user.id, role: user.role });
-  return { token, user: publicUser(user) };
+  return { token, user: await publicUserWithCredit(user) };
 }
 
 export async function verifyEmail(token: string) {
@@ -129,7 +137,7 @@ export async function resetPassword(token: string, newPassword: string) {
 export async function getMe(userId: string) {
   const [user] = await db.select().from(users).where(eq(users.id, userId));
   if (!user) throw Errors.notFound('Usuario');
-  return publicUser(user);
+  return publicUserWithCredit(user);
 }
 
 export type UpdateProfileInput = Partial<{
@@ -158,5 +166,5 @@ export async function updateProfile(userId: string, input: UpdateProfileInput) {
     .where(eq(users.id, userId))
     .returning();
   if (!user) throw Errors.notFound('Usuario');
-  return publicUser(user);
+  return publicUserWithCredit(user);
 }

@@ -11,7 +11,7 @@ const IMAGEN_DEFAULT = '/assets/img/default.png';
 export default function SubastaActiva() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, refreshUser } = useAuth();
 
   // Con sesión se puja/chatea; sin sesión se mira como espectador
   const { state, messages, error, placeBid, sendMessage: emitMessage } = useAuctionRoom(
@@ -33,11 +33,23 @@ export default function SubastaActiva() {
   const increment = lot?.bidIncrement ?? 0;
 
   const [currentBid, setCurrentBid] = useState(0);
-  const userCredits = user?.creditBalance ?? 0;
+  // Crédito para pujar: lo disponible (saldo - reservas). Si ya va ganando
+  // este lote, su reserva en este lote se reemplaza con la nueva puja, así
+  // que también cuenta para la validación.
+  const userCredits = user?.availableCredit ?? 0;
+  const vaGanando = Boolean(user && lot?.leaderId === user.id);
+  const creditoParaEsteLote = userCredits + (vaGanando && lot ? lot.currentPrice : 0);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [isChatExpanded, setIsChatExpanded] = useState(false);
   const [newMessage, setNewMessage] = useState('');
+
+  // Cada puja o cambio de lote puede reservar/liberar crédito: refrescamos
+  // el saldo disponible del usuario
+  useEffect(() => {
+    if (user) refreshUser();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lot?.id, lot?.currentPrice]);
 
   // Cambió el lote en remate: volver a la primera foto
   useEffect(() => {
@@ -121,7 +133,7 @@ export default function SubastaActiva() {
       return;
     }
 
-    if (amount > userCredits) {
+    if (amount > creditoParaEsteLote) {
       alert('No tienes crédito suficiente para esta oferta.');
       return;
     }
@@ -203,7 +215,8 @@ export default function SubastaActiva() {
                     onKeyPress={onlyNumbers}
                   />
                 </div>
-                <span className={styles.userCredits}>TUS CRÉDITOS: ${userCredits.toLocaleString('es-AR')}</span>
+                <span className={styles.userCredits}>TUS CRÉDITOS: ${userCredits.toLocaleString('es-AR')}
+                  {vaGanando && ' · VAS GANANDO'}</span>
               </div>
               <button className={styles.bidBtn} onClick={increaseBid}>+</button>
             </div>

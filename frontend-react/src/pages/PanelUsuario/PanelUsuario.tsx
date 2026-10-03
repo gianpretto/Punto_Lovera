@@ -68,7 +68,8 @@ export default function PanelUsuario() {
   const userDni = user?.dni ?? '';
   const userAddress = user?.address ?? '';
   const userCity = user?.city ?? '';
-  const creditoDisponible = user?.creditBalance ?? 0;
+  const creditoDisponible = user?.availableCredit ?? 0;
+  const creditoReservado = user?.heldCredit ?? 0;
 
   return (
     <div className={styles.perfilWrapper}>
@@ -110,6 +111,9 @@ export default function PanelUsuario() {
       <div className={styles.creditBanner}>
         <h2 className={styles.creditTitle}>Crédito disponible</h2>
         <div className={styles.creditAmount}>$ {formatNumber(creditoDisponible)}</div>
+        {creditoReservado > 0 && (
+          <p className={styles.creditHeld}>$ {formatNumber(creditoReservado)} reservados en lotes que vas ganando</p>
+        )}
         <Link to="/creditos" className={styles.btnCargarCredito}>Cargar créditos</Link>
       </div>
 

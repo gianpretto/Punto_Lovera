@@ -20,7 +20,12 @@ export interface User {
   zipCode: string | null;
   role: UserRole;
   emailVerified: boolean;
+  /** Saldo total cargado (comprobantes aprobados - compras) */
   creditBalance: number;
+  /** Reservado en lotes que va ganando (se libera si lo superan) */
+  heldCredit: number;
+  /** Lo que puede usar para pujar: creditBalance - heldCredit */
+  availableCredit: number;
 }
 
 export interface UpdateUserData {
