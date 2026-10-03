@@ -3,7 +3,10 @@ import path from 'path';
 import type { RequestHandler } from 'express';
 import multer from 'multer';
 import { env } from '../config/env';
-import { Errors } from '../utils/AppError';
+import { AppError, Errors } from '../utils/AppError';
+
+// Tamaño máximo por archivo (lo usa también error.middleware.ts en el mensaje)
+export const MAX_UPLOAD_MB = 8;
 
 // NOTA: guardamos en disco local para arrancar rápido. Para producción
 // (Railway/Render no tienen disco persistente confiable) conviene migrar
@@ -13,6 +16,15 @@ import { Errors } from '../utils/AppError';
 
 const UPLOAD_ROOT = env.uploadDir ? path.resolve(env.uploadDir) : path.join(__dirname, '..', '..', 'uploads');
 
+const EXT_BY_MIME: Record<string, string> = {
+  'image/png': '.png',
+  'image/jpeg': '.jpg',
+  'image/jpg': '.jpg',
+  'image/webp': '.webp',
+  'image/gif': '.gif',
+  'application/pdf': '.pdf',
+};
+
 function makeStorage(subfolder: string) {
   const dir = path.join(UPLOAD_ROOT, subfolder);
   fs.mkdirSync(dir, { recursive: true });
@@ -20,7 +32,10 @@ function makeStorage(subfolder: string) {
   return multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, dir),
     filename: (_req, file, cb) => {
-      const ext = path.extname(file.originalname);
+      // La extensión sale del mimetype ya validado, NO del nombre que manda
+      // el cliente: si no, una "imagen" llamada x.html se serviría como HTML
+      // desde /uploads (XSS en el dominio de la API).
+      const ext = EXT_BY_MIME[file.mimetype] ?? '';
       const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
       cb(null, unique);
     },
@@ -29,26 +44,27 @@ function makeStorage(subfolder: string) {
 
 const imageFilter: multer.Options['fileFilter'] = (_req, file, cb) => {
   if (/^image\/(png|jpe?g|webp|gif)$/.test(file.mimetype)) return cb(null, true);
-  cb(new Error('Solo se permiten imágenes (png, jpg, webp, gif)'));
+  // AppError: el middleware de errores lo devuelve como 400 con este motivo
+  cb(Errors.badRequest('Solo se permiten imágenes (png, jpg, webp, gif)'));
 };
 
 const voucherFilter: multer.Options['fileFilter'] = (_req, file, cb) => {
   if (/^image\/(png|jpe?g|webp)$/.test(file.mimetype) || file.mimetype === 'application/pdf') {
     return cb(null, true);
   }
-  cb(new Error('El comprobante debe ser una imagen o un PDF'));
+  cb(Errors.badRequest('El comprobante debe ser una imagen o un PDF'));
 };
 
 export const uploadVoucher = multer({
   storage: makeStorage('vouchers'),
   fileFilter: voucherFilter,
-  limits: { fileSize: 8 * 1024 * 1024 }, // 8MB
+  limits: { fileSize: MAX_UPLOAD_MB * 1024 * 1024 },
 });
 
 export const uploadLotImages = multer({
   storage: makeStorage('lots'),
   fileFilter: imageFilter,
-  limits: { fileSize: 8 * 1024 * 1024 },
+  limits: { fileSize: MAX_UPLOAD_MB * 1024 * 1024 },
 });
 
 // La portada de una subasta usa el mismo storage que las fotos de lotes
@@ -57,21 +73,14 @@ export const uploadAuctionCover = uploadLotImages;
 
 /**
  * Envuelve un middleware de multer para que sus errores (archivo muy grande,
- * demasiados archivos, tipo no permitido) lleguen como 400 con un mensaje
- * en español, en vez de caer como 500 en el error handler.
+ * demasiados archivos, tipo no permitido) los responda error.middleware.ts
+ * (400/413 con mensaje en español) y no caigan como 500.
  */
 export function handleUpload(middleware: RequestHandler): RequestHandler {
   return (req, res, next) => {
     middleware(req, res, (err?: unknown) => {
       if (!err) return next();
-      if (err instanceof multer.MulterError) {
-        const mensajes: Partial<Record<multer.ErrorCode, string>> = {
-          LIMIT_FILE_SIZE: 'La imagen supera el máximo de 8 MB',
-          LIMIT_FILE_COUNT: 'Demasiados archivos en una sola subida',
-          LIMIT_UNEXPECTED_FILE: 'Demasiados archivos o campo de archivo inválido',
-        };
-        return next(Errors.badRequest(mensajes[err.code] ?? 'No se pudo subir el archivo'));
-      }
+      if (err instanceof multer.MulterError || err instanceof AppError) return next(err);
       next(Errors.badRequest(err instanceof Error ? err.message : 'No se pudo subir el archivo'));
     });
   };

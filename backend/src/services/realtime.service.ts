@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm';
 import { db } from '../config/db';
-import { auctions, chatMessages, users } from '../db/schema';
+import { auctions, chatMessages, lots, users } from '../db/schema';
 import { Errors } from '../utils/AppError';
 import * as auctionService from './auction.service';
 import * as bidService from './bid.service';
@@ -57,6 +57,11 @@ export async function sendChatMessage(auctionId: string, userId: string, text: s
   const trimmed = text.trim().slice(0, 500);
   if (!trimmed) return null;
 
+  // El chat es de la sala en vivo: fuera del remate no se escribe
+  const [auction] = await db.select({ status: auctions.status }).from(auctions).where(eq(auctions.id, auctionId));
+  if (!auction) throw Errors.notFound('Subasta');
+  if (auction.status !== 'ACTIVA') throw Errors.badRequest('El chat se habilita cuando el remate está en vivo');
+
   const [user] = await db
     .select({ firstName: users.firstName, lastName: users.lastName })
     .from(users)
@@ -77,6 +82,13 @@ export async function sendChatMessage(auctionId: string, userId: string, text: s
 
   getIo()?.to(`auction:${auctionId}`).emit('chat:message', payload);
   return payload;
+}
+
+/** Subasta a la que pertenece un lote (para validar la sala en las pujas). */
+export async function getLotAuctionId(lotId: string) {
+  const [lot] = await db.select({ auctionId: lots.auctionId }).from(lots).where(eq(lots.id, lotId));
+  if (!lot) throw Errors.notFound('Lote');
+  return lot.auctionId;
 }
 
 export async function getChatHistory(auctionId: string) {
