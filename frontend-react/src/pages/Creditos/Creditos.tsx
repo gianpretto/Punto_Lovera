@@ -43,6 +43,22 @@ const ESTADO: Record<VoucherStatus, string> = {
   RECHAZADO: 'Rechazado',
 };
 
+interface Withdrawal {
+  id: string;
+  amount: string;
+  cbu: string;
+  alias: string | null;
+  status: VoucherStatus;
+  rejectionReason: string | null;
+  createdAt: string;
+}
+
+const ESTADO_REINTEGRO: Record<VoucherStatus, string> = {
+  PENDIENTE: 'En trámite',
+  APROBADO: 'Transferido',
+  RECHAZADO: 'Rechazado',
+};
+
 const CardIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth={1}>
     <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
@@ -54,7 +70,8 @@ const CardIcon = () => (
 export default function Creditos() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
-  // Lo que puede usar para pujar (saldo - reservas de lotes que va ganando)
+  // Lo que puede usar para pujar (saldo - reservas de lotes que va ganando
+  // y de reintegros pendientes)
   const creditoDisponible = user?.availableCredit ?? 0;
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [voucherFile, setVoucherFile] = useState<File | null>(null);
@@ -62,6 +79,7 @@ export default function Creditos() {
   const [monto, setMonto] = useState('');
   const [transfer, setTransfer] = useState<TransferInfo | null>(null);
   const [vouchers, setVouchers] = useState<Voucher[]>([]);
+  const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
 
@@ -82,6 +100,10 @@ export default function Creditos() {
       .get<{ vouchers: Voucher[] }>('/creditos/mios')
       .then(({ vouchers }) => setVouchers(vouchers))
       .catch(() => setVouchers([]));
+    api
+      .get<{ withdrawals: Withdrawal[] }>('/creditos/reintegros/mios')
+      .then(({ withdrawals }) => setWithdrawals(withdrawals))
+      .catch(() => setWithdrawals([]));
   }, [user]);
 
   const formatNumber = (n: number) => n.toLocaleString('es-AR', { maximumFractionDigits: 0 });
@@ -221,6 +243,39 @@ export default function Creditos() {
                       <button className={styles.linkBtn} onClick={() => verComprobante(v.id)}>
                         Ver comprobante
                       </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {withdrawals.length > 0 && (
+        <div className={styles.depositsSection}>
+          <h2 className={styles.sectionTitle}>Reintegros solicitados</h2>
+          <div className={styles.tableResponsive}>
+            <table className={styles.depositsTable}>
+              <thead>
+                <tr>
+                  <th>Fecha</th>
+                  <th>Monto</th>
+                  <th>Cuenta</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {withdrawals.map((w) => (
+                  <tr key={w.id}>
+                    <td>{new Date(w.createdAt).toLocaleDateString('es-AR')}</td>
+                    <td>$ {formatNumber(Number(w.amount))}</td>
+                    <td>{w.alias || `CBU …${w.cbu.slice(-4)}`}</td>
+                    <td>
+                      <span className={styles[`estado${w.status}`]}>{ESTADO_REINTEGRO[w.status]}</span>
+                      {w.status === 'RECHAZADO' && w.rejectionReason && (
+                        <div className={styles.motivo}>{w.rejectionReason}</div>
+                      )}
                     </td>
                   </tr>
                 ))}

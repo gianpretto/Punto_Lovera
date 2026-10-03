@@ -22,7 +22,7 @@ export interface User {
   emailVerified: boolean;
   /** Saldo total cargado (comprobantes aprobados - compras) */
   creditBalance: number;
-  /** Reservado en lotes que va ganando (se libera si lo superan) */
+  /** Reservado: lotes que va ganando (se libera si lo superan) + reintegros pendientes */
   heldCredit: number;
   /** Lo que puede usar para pujar: creditBalance - heldCredit */
   availableCredit: number;

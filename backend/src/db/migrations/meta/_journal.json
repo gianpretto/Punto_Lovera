@@ -43,6 +43,13 @@
       "when": 1791064460280,
       "tag": "0005_auction_passes",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791069557331,
+      "tag": "0006_credit_withdrawals",
+      "breakpoints": true
     }
   ]
 }
