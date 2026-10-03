@@ -53,6 +53,16 @@ Si en algún momento Anthropic arregla el acceso de git desde el sandbox en
 la nube, este proceso se puede simplificar. Hasta entonces, este es el
 camino.
 
+## Flujo de navegación (referencia de producto)
+
+`docs/flujo-navegacion.md` (+ la imagen `docs/flujo-navegacion.webp`):
+diagrama de qué secciones existen y cómo se conectan — menú principal,
+panel de usuario (Perfil / Crédito disponible / Mis compras y ofertas /
+Log Out), Sign Up, y la regla de **Ingresar al remate**: si no está
+registrado → Sign Up; si no cargó sus datos → Perfil; si no tiene crédito
+→ Cargar crédito. Al final del doc está la lista de diferencias con lo
+implementado; usarla como backlog de producto.
+
 ## Estructura del repo
 
 ```
