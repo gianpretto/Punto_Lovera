@@ -21,8 +21,11 @@ rtmp {
 
             # OBS publica a rtmp://<host>:<puerto>/live con la clave
             # "camera_<id>" que muestra el panel del martillero. Antes de
-            # aceptar, nginx le pregunta al backend: 2xx = válida, otro = corta.
-            on_publish ${BACKEND_INTERNAL_URL}/api/live/rtmp/publish?secret=${RTMP_AUTH_SECRET};
+            # aceptar, nginx pregunta al backend (2xx = válida, otro = corta).
+            # Pasa por /auth/publish (abajo) y no directo al backend: nginx-rtmp
+            # resuelve el DNS una sola vez al arrancar, y en Railway la IP
+            # interna del backend cambia en cada deploy.
+            on_publish http://127.0.0.1:8080/auth/publish;
 
             # Nadie mira por RTMP: el video sale solo como HLS por el backend
             deny play all;
@@ -42,6 +45,9 @@ http {
     sendfile off;
     default_type application/octet-stream;
 
+    # DNS interno (de /etc/resolv.conf): el backend se resuelve en cada pedido
+    resolver ${DNS_RESOLVER} valid=10s;
+
     server {
         # Red privada de Railway (IPv6) y local (IPv4)
         listen 8080;
@@ -54,6 +60,18 @@ http {
             }
             alias /tmp/hls;
             add_header Cache-Control no-cache;
+        }
+
+        # Validación de la clave: la llama el módulo rtmp de este mismo nginx
+        # y se reenvía al backend (con proxy_pass por variable, así el nombre
+        # se resuelve en cada transmisión y no queda una IP vieja).
+        location = /auth/publish {
+            allow 127.0.0.1;
+            deny all;
+            set $backend "${BACKEND_INTERNAL_URL}";
+            proxy_pass $backend/api/live/rtmp/publish?secret=${RTMP_AUTH_SECRET};
+            proxy_connect_timeout 5s;
+            proxy_read_timeout 10s;
         }
 
         # El backend corta una transmisión al anular la clave

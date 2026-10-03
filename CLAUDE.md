@@ -108,8 +108,18 @@ Variables: backend `VIDEO_MODE=obs`, `MEDIA_SERVER_URL` (privada del
 media-server, :8080), `RTMP_PUBLIC_URL`, `RTMP_AUTH_SECRET`; media-server
 `BACKEND_INTERNAL_URL` (privada del backend, **http**, nginx-rtmp no habla
 https), `RTMP_AUTH_SECRET` (el mismo), `PORT=8080`. `VIDEO_MODE=rtsp`
-mantiene el modo anterior con rtsp-manager. Último recurso si OBS falla:
+mantiene el modo anterior con rtsp-manager. Ojo: nginx-rtmp resuelve el DNS de `on_publish` una sola vez; por eso
+valida vía `http://127.0.0.1:8080/auth/publish` (proxy_pass por variable +
+`resolver` del contenedor), si no cada deploy del backend (IP interna
+nueva) rompía las transmisiones. Último recurso si OBS falla:
 vivo de YouTube embebido (lo ve cualquiera con el link).
+
+## Pendiente de seguridad antes de producción
+
+La contraseña de Neon (`neondb_owner`, ramas dev y production), el
+`JWT_SECRET` y el `RTMP_AUTH_SECRET` de Railway quedaron pegados en un chat
+durante el setup: rotarlos antes de tener usuarios reales. Las cuentas del
+seed (`admin1234` / `user1234`) solo existen en la rama dev.
 
 ## Estructura del repo
 
