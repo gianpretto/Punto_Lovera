@@ -17,6 +17,9 @@ export default function Header() {
     { to: '/creditos', label: 'Crédito disponible' },
     { to: '/perfil#compras', label: 'Mis compras / ofertas' },
     ...(user?.role === 'ADMIN' ? [{ to: '/admin/comprobantes', label: 'Comprobantes a revisar' }] : []),
+    ...(user?.role === 'MARTILLERO' || user?.role === 'ADMIN'
+      ? [{ to: '/admin/subastas', label: 'Administrar subastas' }]
+      : []),
   ];
 
   // Se cierra al navegar o al hacer click afuera
