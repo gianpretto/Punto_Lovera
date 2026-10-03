@@ -31,6 +31,15 @@ interface AuctionApi {
   lots: LotApi[];
 }
 
+// GET /api/subastas/:id/camara
+interface StreamInfo {
+  mode: 'obs' | 'rtsp';
+  cameraId: string | null;
+  rtmpUrl: string | null;
+  streamKey: string | null;
+  receiving: boolean;
+}
+
 interface PassApi {
   id: string;
   label: string;
@@ -81,6 +90,9 @@ export default function PanelMartillero() {
   const [busy, setBusy] = useState(false);
   const [camNombre, setCamNombre] = useState('Cámara principal');
   const [camUrl, setCamUrl] = useState('');
+  const [stream, setStream] = useState<StreamInfo | null>(null);
+  const [verClave, setVerClave] = useState(false);
+  const [copiadoCampo, setCopiadoCampo] = useState<string | null>(null);
   const [passes, setPasses] = useState<PassApi[]>([]);
   const [paseLabel, setPaseLabel] = useState('');
   const [paseHoras, setPaseHoras] = useState(24);
@@ -113,6 +125,25 @@ export default function PanelMartillero() {
   useEffect(() => {
     if (esMartillero) cargarPases();
   }, [esMartillero, cargarPases]);
+
+  const cargarStream = useCallback(async () => {
+    if (!id) return;
+    try {
+      setStream(await api.get<StreamInfo>(`/subastas/${id}/camara`));
+    } catch {
+      setStream(null);
+    }
+  }, [id]);
+
+  // Estado de la transmisión: al entrar, al cambiar la cámara y cada 10 s
+  // mientras hay clave (para mostrar "recibiendo señal" cuando OBS arranca)
+  useEffect(() => {
+    if (!esMartillero) return;
+    cargarStream();
+    if (!state?.auction.cameraId) return;
+    const t = setInterval(cargarStream, 10000);
+    return () => clearInterval(t);
+  }, [esMartillero, cargarStream, state?.auction.cameraId]);
 
   // Se recarga cada vez que la sala cambia (lote nuevo, puja, cámara)
   useEffect(() => {
@@ -165,10 +196,26 @@ export default function PanelMartillero() {
 
   const prenderCamara = (e: FormEvent) => {
     e.preventDefault();
-    accion(
-      () => api.post(`/subastas/${id}/camara`, { name: camNombre, rtspUrl: camUrl }),
-      'Cámara prendida. El video tarda unos segundos en aparecer.'
-    );
+    accion(async () => {
+      await api.post(`/subastas/${id}/camara`, { name: camNombre, rtspUrl: camUrl });
+      await cargarStream();
+    }, 'Cámara prendida. El video tarda unos segundos en aparecer.');
+  };
+
+  const habilitarObs = () =>
+    accion(async () => {
+      await api.post(`/subastas/${id}/camara`, {});
+      await cargarStream();
+    }, 'Clave generada. Configurá OBS con el servidor y la clave, y tocá "Iniciar transmisión".');
+
+  const copiarCampo = async (campo: string, valor: string) => {
+    try {
+      await navigator.clipboard.writeText(valor);
+      setCopiadoCampo(campo);
+      setTimeout(() => setCopiadoCampo(null), 2000);
+    } catch {
+      window.prompt('Copiá este valor:', valor);
+    }
   };
 
   const crearPase = (e: FormEvent) => {
@@ -200,8 +247,20 @@ export default function PanelMartillero() {
   };
 
   const apagarCamara = () => {
-    if (!window.confirm('¿Apagar la cámara? La sala deja de ver el video.')) return;
-    accion(() => api.delete(`/subastas/${id}/camara`), 'Cámara apagada.');
+    const obs = stream?.mode === 'obs';
+    if (
+      !window.confirm(
+        obs
+          ? '¿Detener la transmisión y anular la clave? La sala deja de ver el video y OBS se desconecta.'
+          : '¿Apagar la cámara? La sala deja de ver el video.'
+      )
+    )
+      return;
+    accion(async () => {
+      await api.delete(`/subastas/${id}/camara`);
+      setVerClave(false);
+      await cargarStream();
+    }, obs ? 'Transmisión detenida y clave anulada.' : 'Cámara apagada.');
   };
 
   if (!esMartillero || !id) return null;
@@ -302,7 +361,49 @@ export default function PanelMartillero() {
               placeholder={<div className={styles.sinVideo}>Sin cámara</div>}
             />
           </div>
-          {cameraId ? (
+          {stream?.mode === 'obs' ? (
+            cameraId && stream.streamKey ? (
+              <div className={styles.obsBox}>
+                <p className={stream.receiving ? styles.senalOk : styles.senalNo}>
+                  {stream.receiving ? '● Recibiendo señal de OBS' : '○ Esperando que OBS empiece a transmitir'}
+                </p>
+                <label className={styles.label}>Servidor</label>
+                <div className={styles.copiable}>
+                  <code>{stream.rtmpUrl}</code>
+                  <button className={styles.btnChico} onClick={() => copiarCampo('server', stream.rtmpUrl ?? '')}>
+                    {copiadoCampo === 'server' ? '¡Copiado!' : 'Copiar'}
+                  </button>
+                </div>
+                <label className={styles.label}>Clave de transmisión</label>
+                <div className={styles.copiable}>
+                  <code>{verClave ? stream.streamKey : '••••••••••••••••••••'}</code>
+                  <button className={styles.btnChico} onClick={() => setVerClave((v) => !v)}>
+                    {verClave ? 'Ocultar' : 'Ver'}
+                  </button>
+                  <button className={styles.btnChico} onClick={() => copiarCampo('key', stream.streamKey ?? '')}>
+                    {copiadoCampo === 'key' ? '¡Copiado!' : 'Copiar'}
+                  </button>
+                </div>
+                <p className={styles.nota}>
+                  En OBS: <strong>Ajustes → Emisión</strong> → Servicio <strong>Personalizado</strong>, pegá el
+                  servidor y la clave, y tocá <strong>Iniciar transmisión</strong>. No compartas la clave: quien la
+                  tenga puede transmitir en esta subasta.
+                </p>
+                <button className={styles.btnGris} onClick={apagarCamara} disabled={busy}>
+                  Detener y anular clave
+                </button>
+              </div>
+            ) : (
+              <>
+                <p className={styles.nota}>
+                  Generá una clave de transmisión para esta subasta y usala en OBS desde la PC del remate.
+                </p>
+                <button className={styles.btnNegro} onClick={habilitarObs} disabled={busy}>
+                  Generar clave de transmisión
+                </button>
+              </>
+            )
+          ) : cameraId ? (
             <button className={styles.btnGris} onClick={apagarCamara} disabled={busy}>
               Apagar cámara
             </button>

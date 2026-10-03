@@ -26,6 +26,7 @@ router.get('/:id/pases/:token/validar', auctionController.checkPass);
 router.get('/:id/pases', requireAuth, requireRole('MARTILLERO', 'ADMIN'), auctionController.listPasses);
 router.post('/:id/pases', requireAuth, requireRole('MARTILLERO', 'ADMIN'), auctionController.createPass);
 router.delete('/:id/pases/:passId', requireAuth, requireRole('MARTILLERO', 'ADMIN'), auctionController.revokePass);
+router.get('/:id/camara', requireAuth, requireRole('MARTILLERO', 'ADMIN'), liveController.streamInfo);
 router.post('/:id/camara', requireAuth, requireRole('MARTILLERO', 'ADMIN'), liveController.startCamera);
 router.delete('/:id/camara', requireAuth, requireRole('MARTILLERO', 'ADMIN'), liveController.stopCamera);
 

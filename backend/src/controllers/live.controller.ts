@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import { Request, Response } from 'express';
 import { Readable } from 'stream';
 import { asyncHandler } from '../utils/asyncHandler';
@@ -8,17 +9,55 @@ import { Errors } from '../utils/AppError';
 import { broadcastRoomState } from '../services/realtime.service';
 
 export const startCamera = asyncHandler(async (req: Request, res: Response) => {
-  const { name, rtspUrl } = startCameraSchema.parse(req.body);
-  const auction = await liveService.startCamera(req.params.id, name, rtspUrl);
+  let auction;
+  if (env.video.mode === 'obs') {
+    // OBS: "prender la cámara" = habilitar la clave de transmisión
+    auction = await liveService.enableObsStream(req.params.id);
+  } else {
+    const { name, rtspUrl } = startCameraSchema.parse(req.body);
+    auction = await liveService.startCamera(req.params.id, name, rtspUrl);
+  }
   // La sala se entera del cameraId nuevo y el reproductor arranca solo
   await broadcastRoomState(req.params.id);
   res.status(201).json({ auction });
 });
 
 export const stopCamera = asyncHandler(async (req: Request, res: Response) => {
-  const auction = await liveService.stopCamera(req.params.id);
+  const auction =
+    env.video.mode === 'obs'
+      ? await liveService.disableObsStream(req.params.id)
+      : await liveService.stopCamera(req.params.id);
   await broadcastRoomState(req.params.id);
   res.json({ auction });
+});
+
+/** Panel del martillero: servidor y clave para OBS, y si está llegando señal. */
+export const streamInfo = asyncHandler(async (req: Request, res: Response) => {
+  res.json(await liveService.getStreamInfo(req.params.id));
+});
+
+/**
+ * Callback on_publish de nginx-rtmp (media-server): llega como form
+ * urlencoded con name=<clave>. 2xx = acepta la transmisión, 403 = la corta.
+ * Protegido con RTMP_AUTH_SECRET (va en la URL configurada en nginx).
+ */
+export const rtmpPublish = asyncHandler(async (req: Request, res: Response) => {
+  const secret = String(req.query.secret ?? '');
+  const expected = env.video.rtmpAuthSecret;
+  const okSecret =
+    expected.length > 0 &&
+    secret.length === expected.length &&
+    crypto.timingSafeEqual(Buffer.from(secret), Buffer.from(expected));
+  if (!okSecret) return res.status(403).send('forbidden');
+
+  const name = typeof req.body?.name === 'string' ? req.body.name : undefined;
+  const valid = await liveService.validatePublishKey(name);
+  if (!valid) {
+    console.warn('[video] transmisión rechazada: clave inválida o subasta cerrada');
+    return res.status(403).send('invalid stream key');
+  }
+  console.log('[video] transmisión aceptada');
+  res.status(200).send('ok');
 });
 
 const ALLOWED_PROTOCOLS = new Set(['hls', 'dash']);

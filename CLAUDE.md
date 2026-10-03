@@ -86,16 +86,30 @@ implementado; usarla como backlog de producto.
   `GET /api/creditos/:id/archivo` (dueño o admin). `/uploads/lots` sí es
   público.
 
-## Video en vivo: decisión (oct 2026)
+## Video en vivo con OBS (decisión oct 2026, implementado)
 
-El martillero transmite desde **una PC con OBS** hacia un servidor de video
-propio en Railway (basado en el nginx-rtmp del repo de Francis: recibe
-RTMP y genera HLS); el backend lo sirve por el proxy autenticado que ya
-existe. Último recurso si eso falla: vivo de YouTube embebido (pero lo ve
-cualquiera con el link). El modelo de rtsp-manager "el servidor se conecta
-a la cámara IP" no sirve tal cual: la cámara está dentro de la red del
-local. Pendiente: desplegar el servidor RTMP con clave de transmisión por
-subasta (validada contra el backend) y mostrarla en el panel del martillero.
+El martillero transmite desde **una PC con OBS** al servicio `media-server/`
+(nginx-rtmp en Alpine, basado en el del repo de Francis; segundo servicio
+en Railway). Flujo:
+
+1. Panel del martillero → "Generar clave de transmisión": guarda un token
+   al azar en `auctions.camera_id`; OBS usa Servidor = `RTMP_PUBLIC_URL`
+   (TCP Proxy de Railway al 1935) y Clave = `camera_<camera_id>`.
+2. Al publicar, nginx llama `on_publish` → `POST /api/live/rtmp/publish?secret=RTMP_AUTH_SECRET`
+   (form, `name=<clave>`); el backend acepta solo claves vigentes de
+   subastas PROXIMA/ACTIVA. `deny play all`: nadie mira por RTMP.
+3. nginx genera HLS en `/hls/camera_<id>/index.m3u8` (puerto 8080, red
+   privada); el backend lo sirve por `GET /api/subastas/:id/vivo/hls/...`
+   con JWT o pase de invitado. `LivePlayer` (hls.js) lo reproduce.
+4. "Detener y anular clave" borra `camera_id` y corta OBS vía
+   `/control/drop/publisher`.
+
+Variables: backend `VIDEO_MODE=obs`, `MEDIA_SERVER_URL` (privada del
+media-server, :8080), `RTMP_PUBLIC_URL`, `RTMP_AUTH_SECRET`; media-server
+`BACKEND_INTERNAL_URL` (privada del backend, **http**, nginx-rtmp no habla
+https), `RTMP_AUTH_SECRET` (el mismo), `PORT=8080`. `VIDEO_MODE=rtsp`
+mantiene el modo anterior con rtsp-manager. Último recurso si OBS falla:
+vivo de YouTube embebido (lo ve cualquiera con el link).
 
 ## Estructura del repo
 

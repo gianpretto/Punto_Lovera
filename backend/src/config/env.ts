@@ -50,7 +50,21 @@ export const env = {
   // un proxy propio que exige el mismo JWT que el resto de la API).
   rtsp: {
     controlUrl: process.env.RTSP_CONTROL_URL ?? 'http://localhost:5000',
-    mediaUrl: process.env.RTSP_MEDIA_URL ?? 'http://localhost:8080',
+    // Servidor de video (media-server/ o el nginx de rtsp-manager): de acá
+    // salen los HLS que el backend proxea con auth
+    mediaUrl: process.env.MEDIA_SERVER_URL ?? process.env.RTSP_MEDIA_URL ?? 'http://localhost:8080',
+  },
+
+  // Video en vivo (decisión oct 2026): "obs" = el martillero transmite desde
+  // OBS al media-server con una clave por subasta. "rtsp" = modo anterior
+  // con rtsp-manager tomando una cámara IP.
+  video: {
+    mode: (process.env.VIDEO_MODE === 'rtsp' ? 'rtsp' : 'obs') as 'obs' | 'rtsp',
+    // Lo que el martillero pega en OBS como "Servidor", ej:
+    // rtmp://xxxx.proxy.rlwy.net:12345/live (TCP Proxy de Railway al 1935)
+    rtmpPublicUrl: process.env.RTMP_PUBLIC_URL ?? 'rtmp://localhost:1935/live',
+    // Compartido con media-server: nginx lo manda al validar una clave
+    rtmpAuthSecret: process.env.RTMP_AUTH_SECRET ?? '',
   },
 
   isProd: process.env.NODE_ENV === 'production',

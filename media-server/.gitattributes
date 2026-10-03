@@ -1,0 +1,4 @@
+# Se ejecutan dentro de Linux: con CRLF el script no arranca
+*.sh text eol=lf
+*.template text eol=lf
+Dockerfile text eol=lf

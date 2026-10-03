@@ -278,3 +278,46 @@
     grid-template-columns: 1fr;
   }
 }
+
+// ---- Transmisión con OBS
+.obsBox {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  font-size: 12px;
+  color: #777;
+  margin-top: 4px;
+}
+
+.copiable {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  code {
+    flex: 1;
+    min-width: 0;
+    overflow-x: auto;
+    white-space: nowrap;
+    background: #f4f4f4;
+    border: 1px solid #e3e3e3;
+    border-radius: 4px;
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+}
+
+.senalOk {
+  color: #2f855a;
+  font-weight: 700;
+  font-size: 13px !important;
+}
+
+.senalNo {
+  color: #b7791f;
+  font-weight: 700;
+  font-size: 13px !important;
+}
