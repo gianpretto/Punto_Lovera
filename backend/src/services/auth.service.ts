@@ -10,6 +10,15 @@ import { getHeldCredit } from './credit.service';
 
 const SALT_ROUNDS = 10;
 
+// Hash descartable para comparar cuando el email no existe: así el login
+// tarda lo mismo exista o no la cuenta (no se puede averiguar por tiempo
+// qué mails están registrados).
+const DUMMY_HASH = bcrypt.hashSync(randomToken(), SALT_ROUNDS);
+
+// El link de verificación de mail vence a las 48 h (se cuenta desde
+// verificationSentAt; reenviar genera uno nuevo)
+const VERIFICATION_TTL_MS = 48 * 60 * 60 * 1000;
+
 export interface RegisterInput {
   email: string;
   password: string;
@@ -87,10 +96,10 @@ export async function register(input: RegisterInput) {
 
 export async function login(email: string, password: string) {
   const [user] = await db.select().from(users).where(eq(users.email, email));
-  if (!user) throw Errors.badRequest('Email o contraseña incorrectos');
 
-  const valid = await bcrypt.compare(password, user.passwordHash);
-  if (!valid) throw Errors.badRequest('Email o contraseña incorrectos');
+  // Siempre se corre bcrypt (contra el hash descartable si no hay cuenta)
+  const valid = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH);
+  if (!user || !valid) throw Errors.badRequest('Email o contraseña incorrectos');
 
   const token = signToken({ userId: user.id, role: user.role });
   return { token, user: await publicUserWithCredit(user) };
@@ -99,6 +108,9 @@ export async function login(email: string, password: string) {
 export async function verifyEmail(token: string) {
   const [user] = await db.select().from(users).where(eq(users.verificationToken, hashToken(token)));
   if (!user) throw Errors.badRequest('Link de verificación inválido o ya usado');
+  if (!user.verificationSentAt || Date.now() - user.verificationSentAt.getTime() > VERIFICATION_TTL_MS) {
+    throw Errors.badRequest('El link venció, pedí uno nuevo');
+  }
 
   const [verified] = await db
     .update(users)

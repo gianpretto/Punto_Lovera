@@ -2,6 +2,10 @@ import fs from 'fs';
 import path from 'path';
 import multer from 'multer';
 import { env } from '../config/env';
+import { Errors } from '../utils/AppError';
+
+// Tamaño máximo por archivo (lo usa también error.middleware.ts en el mensaje)
+export const MAX_UPLOAD_MB = 8;
 
 // NOTA: guardamos en disco local para arrancar rápido. Para producción
 // (Railway/Render no tienen disco persistente confiable) conviene migrar
@@ -39,26 +43,27 @@ function makeStorage(subfolder: string) {
 
 const imageFilter: multer.Options['fileFilter'] = (_req, file, cb) => {
   if (/^image\/(png|jpe?g|webp|gif)$/.test(file.mimetype)) return cb(null, true);
-  cb(new Error('Solo se permiten imágenes (png, jpg, webp, gif)'));
+  // AppError: el middleware de errores lo devuelve como 400 con este motivo
+  cb(Errors.badRequest('Solo se permiten imágenes (png, jpg, webp, gif)'));
 };
 
 const voucherFilter: multer.Options['fileFilter'] = (_req, file, cb) => {
   if (/^image\/(png|jpe?g|webp)$/.test(file.mimetype) || file.mimetype === 'application/pdf') {
     return cb(null, true);
   }
-  cb(new Error('El comprobante debe ser una imagen o un PDF'));
+  cb(Errors.badRequest('El comprobante debe ser una imagen o un PDF'));
 };
 
 export const uploadVoucher = multer({
   storage: makeStorage('vouchers'),
   fileFilter: voucherFilter,
-  limits: { fileSize: 8 * 1024 * 1024 }, // 8MB
+  limits: { fileSize: MAX_UPLOAD_MB * 1024 * 1024 },
 });
 
 export const uploadLotImages = multer({
   storage: makeStorage('lots'),
   fileFilter: imageFilter,
-  limits: { fileSize: 8 * 1024 * 1024 },
+  limits: { fileSize: MAX_UPLOAD_MB * 1024 * 1024 },
 });
 
 /** Convierte la ruta en disco que dejó multer en una URL pública servible. */

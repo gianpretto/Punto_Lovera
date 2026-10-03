@@ -1,28 +1,55 @@
 import { Server, Socket } from 'socket.io';
 import { verifyToken } from '../utils/jwt';
 import { validatePass } from '../services/pass.service';
-import { placeBidAndBroadcast, sendChatMessage, getChatHistory, getRoomState } from '../services/realtime.service';
+import {
+  placeBidAndBroadcast,
+  sendChatMessage,
+  getChatHistory,
+  getRoomState,
+  getLotAuctionId,
+} from '../services/realtime.service';
 import { AppError } from '../utils/AppError';
 
 /**
- * Límites por socket (anti-flood en la sala): como mucho N eventos en una
- * ventana deslizante. Generosos para una persona (en un remate se puja
- * rápido) pero cortan scripts que llenan el chat o martillan la DB.
+ * Límites anti-flood en la sala: como mucho N eventos en una ventana
+ * deslizante. Generosos para una persona (en un remate se puja rápido) pero
+ * cortan scripts que llenan el chat o martillan la DB.
+ *
+ * Se cuentan por USUARIO (no por socket), así abrir varias pestañas o
+ * sockets no multiplica el cupo. Como chatear y pujar ya exigen sesión,
+ * el límite por usuario cubre también el de cada socket.
  */
 const CHAT_LIMIT = { max: 5, windowMs: 10_000 }; // 5 mensajes cada 10 s
 const BID_LIMIT = { max: 10, windowMs: 10_000 }; // 10 pujas cada 10 s
 
-/** Devuelve una función que dice si se puede hacer un evento más ahora. */
-function slidingWindow({ max, windowMs }: { max: number; windowMs: number }) {
-  let hits: number[] = [];
-  return () => {
+/** Devuelve una función que dice si `key` puede hacer un evento más ahora. */
+function slidingWindowByKey({ max, windowMs }: { max: number; windowMs: number }) {
+  const hits = new Map<string, number[]>();
+
+  // Limpieza periódica: se borran los usuarios sin actividad en la ventana,
+  // para que el mapa no crezca indefinidamente. unref: no frena el apagado.
+  setInterval(() => {
     const now = Date.now();
-    hits = hits.filter((t) => now - t < windowMs);
-    if (hits.length >= max) return false;
-    hits.push(now);
+    for (const [key, times] of hits) {
+      if (times.length === 0 || now - times[times.length - 1] >= windowMs) hits.delete(key);
+    }
+  }, 60_000).unref();
+
+  return (key: string) => {
+    const now = Date.now();
+    const recent = (hits.get(key) ?? []).filter((t) => now - t < windowMs);
+    if (recent.length >= max) {
+      hits.set(key, recent);
+      return false;
+    }
+    recent.push(now);
+    hits.set(key, recent);
     return true;
   };
 }
+
+const canChat = slidingWindowByKey(CHAT_LIMIT);
+const canBid = slidingWindowByKey(BID_LIMIT);
 
 /**
  * Mensaje para el cliente: solo los errores de negocio (AppError) se
@@ -80,10 +107,9 @@ export function registerBiddingHandlers(io: Server) {
   });
 
   io.on('connection', (socket: AuthedSocket) => {
-    // Viven en el closure de esta conexión (no en un Map global), así que se
-    // liberan solas al desconectar: no hay nada que limpiar a mano.
-    const canChat = slidingWindow(CHAT_LIMIT);
-    const canBid = slidingWindow(BID_LIMIT);
+    // Subastas a las que este socket entró con auction:join (pasó los
+    // controles de acceso). Pujar y chatear solo se puede en esas.
+    const joined = new Set<string>();
 
     // Ojo: los handlers nunca deben tirar con payloads raros (un throw o un
     // reject sin capturar en un listener tira abajo todo el proceso).
@@ -102,6 +128,7 @@ export function registerBiddingHandlers(io: Server) {
         // Primero el estado (valida que la subasta exista), después la sala
         const state = await getRoomState(auctionId);
         await socket.join(`auction:${auctionId}`);
+        joined.add(auctionId);
         socket.emit('auction:state', state);
         socket.emit('chat:history', await getChatHistory(auctionId));
       } catch (err) {
@@ -112,6 +139,7 @@ export function registerBiddingHandlers(io: Server) {
     socket.on('auction:leave', (payload: Payload) => {
       const auctionId = str(field(payload, 'auctionId'));
       if (!auctionId) return;
+      joined.delete(auctionId);
       socket.leave(`auction:${auctionId}`);
     });
 
@@ -124,12 +152,17 @@ export function registerBiddingHandlers(io: Server) {
       if (!lotId || !Number.isFinite(amount)) {
         return socket.emit('bid:error', { message: 'Puja inválida' });
       }
-      if (!canBid()) {
+      if (!canBid(socket.userId)) {
         return socket.emit('bid:error', {
           message: 'Estás ofertando demasiado rápido. Esperá unos segundos y volvé a intentar.',
         });
       }
       try {
+        // El lote tiene que ser de una subasta en la que el socket haya entrado
+        const lotAuctionId = await getLotAuctionId(lotId);
+        if (!joined.has(lotAuctionId)) {
+          return socket.emit('bid:error', { message: 'Entrá a la sala del remate para poder ofertar' });
+        }
         await placeBidAndBroadcast(lotId, socket.userId, amount);
         // No hace falta emitir acá: placeBidAndBroadcast ya emite bid:new
         // y chat:message a toda la sala.
@@ -145,7 +178,10 @@ export function registerBiddingHandlers(io: Server) {
       const auctionId = str(field(payload, 'auctionId'));
       const text = field(payload, 'text');
       if (!auctionId || typeof text !== 'string' || !text.trim()) return;
-      if (!canChat()) {
+      if (!joined.has(auctionId)) {
+        return socket.emit('chat:error', { message: 'Entrá a la sala del remate para poder chatear' });
+      }
+      if (!canChat(socket.userId)) {
         return socket.emit('chat:error', {
           message: 'Estás mandando mensajes muy seguido. Esperá unos segundos.',
         });

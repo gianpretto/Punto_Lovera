@@ -9,6 +9,7 @@ const server = http.createServer(app);
 
 const io = new Server(server, {
   cors: { origin: env.frontendOrigins, credentials: true },
+  maxHttpBufferSize: 16 * 1024, // 16 KB: los eventos de la sala son chicos (default 1 MB)
 });
 setIo(io);
 registerBiddingHandlers(io);
