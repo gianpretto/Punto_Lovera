@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import type { AddressInfo } from 'net';
 import { io as ioClient, Socket } from 'socket.io-client';
 
@@ -160,11 +161,47 @@ export const DATOS_COMPLETOS = {
   zipCode: '1708',
 };
 
-/** Registra un usuario, le carga saldo directo en la base y completa sus datos. */
+/**
+ * Registra un usuario, le carga saldo directo en la base, marca el mail como
+ * verificado (sin eso no puede pujar) y completa sus datos.
+ */
 export async function crearPostor(app: TestApp, email: string, password: string, saldo: number) {
   await app.api('POST', '/auth/register', { email, password, firstName: 'Postor', lastName: 'Dos' });
-  await app.sql('UPDATE users SET credit_balance = $1 WHERE email = $2', [saldo, email]);
+  await app.sql('UPDATE users SET credit_balance = $1, email_verified = true WHERE email = $2', [saldo, email]);
   const token = await app.login(email, password);
   await app.api('PATCH', '/auth/me', DATOS_COMPLETOS, token);
   return token;
+}
+
+/**
+ * Genera un link de verificación de mail "como si se hubiera mandado hace
+ * `horas`": en la base se guarda solo el SHA-256 del token (igual que
+ * auth.service), y se devuelve el token crudo que iría en el mail.
+ */
+export async function tokenDeVerificacion(app: TestApp, email: string, horas = 0) {
+  const token = crypto.randomBytes(32).toString('hex');
+  const hash = crypto.createHash('sha256').update(token).digest('hex');
+  await app.sql(
+    'UPDATE users SET verification_token = $1, verification_sent_at = now() - make_interval(hours => $2) WHERE email = $3',
+    [hash, horas, email]
+  );
+  return token;
+}
+
+/** PNG de 1x1 para las subidas de archivos. */
+export const PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+  'base64'
+);
+
+/** FormData con un archivo (o varios con el mismo campo) y campos extra. */
+export function formConArchivos(
+  campo: string,
+  archivos: { data: Buffer; type: string; name: string }[],
+  campos: Record<string, string> = {}
+) {
+  const form = new FormData();
+  for (const [k, v] of Object.entries(campos)) form.append(k, v);
+  for (const a of archivos) form.append(campo, new Blob([a.data], { type: a.type }), a.name);
+  return form;
 }

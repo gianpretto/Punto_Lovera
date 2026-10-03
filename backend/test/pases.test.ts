@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { DATOS_COMPLETOS, startTestApp, type TestApp } from './helpers/app';
+import { DATOS_COMPLETOS, startTestApp, tokenDeVerificacion, type TestApp } from './helpers/app';
 
 // Pases de invitado (link para mirar sin cuenta), reglas para ingresar al
 // remate y requisitos para pujar (datos completos + crédito).
@@ -136,11 +136,8 @@ describe('Requisitos para pujar', () => {
 
   beforeAll(async () => {
     await app.api('POST', '/auth/register', { email, password: 'nuevo12345', firstName: 'Nuevo', lastName: 'Postor' });
-    const [{ verification_token }] = await app.sql<{ verification_token: string }>(
-      'SELECT verification_token FROM users WHERE email = $1',
-      [email]
-    );
-    N = (await app.api('POST', '/auth/verify-email', { token: verification_token })).data.token;
+    const token = await tokenDeVerificacion(app, email);
+    N = (await app.api('POST', '/auth/verify-email', { token })).data.token;
     await app.sql('UPDATE users SET credit_balance = 1000000 WHERE email = $1', [email]);
     const current = (await app.api('GET', `/subastas/${auctionId}`)).data.auction.lots[0];
     next = Number(current.currentPrice) + Number(current.bidIncrement);

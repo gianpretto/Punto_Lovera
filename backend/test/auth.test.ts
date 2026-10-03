@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { startTestApp, type TestApp } from './helpers/app';
+import { startTestApp, tokenDeVerificacion, type TestApp } from './helpers/app';
 
 let app: TestApp;
 beforeAll(async () => {
@@ -69,11 +69,15 @@ describe('Auth y perfil', () => {
     });
     expect(reg.status).toBe(201);
 
+    // En la base solo queda el hash: el token crudo viaja en el mail
     const [{ verification_token }] = await app.sql<{ verification_token: string }>(
       'SELECT verification_token FROM users WHERE email = $1',
       [email]
     );
-    const ver = await app.api('POST', '/auth/verify-email', { token: verification_token });
+    expect(verification_token).toMatch(/^[0-9a-f]{64}$/);
+
+    const token = await tokenDeVerificacion(app, email);
+    const ver = await app.api('POST', '/auth/verify-email', { token });
     expect(ver.status).toBe(200);
     expect(ver.data.token).toBeTruthy();
     expect(ver.data.user.email).toBe(email);

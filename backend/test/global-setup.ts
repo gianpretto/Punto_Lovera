@@ -19,6 +19,10 @@ declare module 'vitest' {
  */
 export default async function setup(project: TestProject) {
   const pglite = await PGlite.create();
+  // PGlite toma la zona horaria de la máquina (ej. GMT-3), pero producción
+  // (Neon) corre en UTC y drizzle escribe los timestamp sin zona en UTC: sin
+  // esto, now() y los valores de la app quedarían corridos 3 horas.
+  await pglite.exec(`SET TIME ZONE 'UTC'; ALTER DATABASE postgres SET timezone TO 'UTC';`);
   const server = new PGLiteSocketServer({
     db: pglite,
     host: '127.0.0.1',
