@@ -22,6 +22,9 @@ export default function Header() {
           { to: '/admin/reintegros', label: 'Reintegros a pagar' },
         ]
       : []),
+    ...(user?.role === 'MARTILLERO' || user?.role === 'ADMIN'
+      ? [{ to: '/admin/subastas', label: 'Administrar subastas' }]
+      : []),
   ];
 
   // Se cierra al navegar o al hacer click afuera

@@ -3,7 +3,7 @@ import * as auctionController from '../controllers/auction.controller';
 import * as lotController from '../controllers/lot.controller';
 import * as liveController from '../controllers/live.controller';
 import { requireAuth, requireAuthOrPass, requireRole } from '../middleware/auth.middleware';
-import { uploadLotImages } from '../middleware/upload.middleware';
+import { handleUpload, uploadAuctionCover, uploadLotImages } from '../middleware/upload.middleware';
 
 const router = Router();
 
@@ -34,6 +34,13 @@ router.delete('/:id/camara', requireAuth, requireRole('MARTILLERO', 'ADMIN'), li
 router.post('/', requireAuth, requireRole('MARTILLERO', 'ADMIN'), auctionController.create);
 router.patch('/:id', requireAuth, requireRole('MARTILLERO', 'ADMIN'), auctionController.update);
 router.delete('/:id', requireAuth, requireRole('MARTILLERO', 'ADMIN'), auctionController.remove);
+router.post(
+  '/:id/portada',
+  requireAuth,
+  requireRole('MARTILLERO', 'ADMIN'),
+  handleUpload(uploadAuctionCover.single('image')),
+  auctionController.uploadCover
+);
 router.patch(
   '/:id/lote-actual',
   requireAuth,
@@ -63,8 +70,14 @@ router.post(
   '/:auctionId/lotes/:lotId/imagenes',
   requireAuth,
   requireRole('MARTILLERO', 'ADMIN'),
-  uploadLotImages.array('images', 10),
+  handleUpload(uploadLotImages.array('images', 10)),
   lotController.uploadImages
+);
+router.delete(
+  '/:auctionId/lotes/:lotId/imagenes/:imageId',
+  requireAuth,
+  requireRole('MARTILLERO', 'ADMIN'),
+  lotController.removeImage
 );
 
 export default router;

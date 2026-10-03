@@ -1,6 +1,7 @@
-import { and, asc, eq } from 'drizzle-orm';
+import { and, asc, eq, inArray } from 'drizzle-orm';
 import { db } from '../config/db';
-import { auctions, lots } from '../db/schema';
+import { auctions, bids, lotImages, lots } from '../db/schema';
+import { removeUploadedFile } from '../middleware/upload.middleware';
 import { Errors } from '../utils/AppError';
 
 type AuctionStatus = (typeof auctions.$inferSelect)['status'];
@@ -86,20 +87,48 @@ export async function updateAuction(
     description: string;
     location: string;
     startsAt: Date;
-    coverImageUrl: string;
+    coverImageUrl: string | null;
     status: AuctionStatus;
   }>
 ) {
-  await getAuctionById(id);
+  const before = await getAuctionById(id);
   const [auction] = await db
     .update(auctions)
     .set({ ...data, updatedAt: new Date() })
     .where(eq(auctions.id, id))
     .returning();
+  // Si se cambió o quitó la portada, la imagen vieja (si era subida) ya no se usa
+  if (data.coverImageUrl !== undefined && before.coverImageUrl !== data.coverImageUrl) {
+    await removeUploadedFile(before.coverImageUrl);
+  }
   return auction;
 }
 
+/** Guarda la portada recién subida (POST /subastas/:id/portada). */
+export async function setAuctionCover(id: string, url: string) {
+  return updateAuction(id, { coverImageUrl: url });
+}
+
 export async function deleteAuction(id: string) {
-  await getAuctionById(id);
+  const auction = await getAuctionById(id);
+  const lotIds = auction.lots.map((l) => l.id);
+
+  // Una subasta con lotes vendidos u ofertas tiene historial (compras,
+  // crédito retenido de quien va ganando): no se borra, se cancela.
+  if (auction.lots.some((l) => l.sold)) {
+    throw Errors.badRequest('No se puede borrar una subasta con lotes vendidos. Podés marcarla como cancelada.');
+  }
+  if (lotIds.length > 0) {
+    const [bid] = await db.select({ id: bids.id }).from(bids).where(inArray(bids.lotId, lotIds)).limit(1);
+    if (bid) {
+      throw Errors.badRequest('No se puede borrar una subasta que ya recibió ofertas. Podés marcarla como cancelada.');
+    }
+  }
+
+  const images = lotIds.length
+    ? await db.select({ url: lotImages.url }).from(lotImages).where(inArray(lotImages.lotId, lotIds))
+    : [];
+  // Los lotes, fotos, pases y chat se borran en cascada (FK onDelete: cascade)
   await db.delete(auctions).where(eq(auctions.id, id));
+  await Promise.all([auction.coverImageUrl, ...images.map((i) => i.url)].map((url) => removeUploadedFile(url)));
 }
