@@ -1,0 +1,13 @@
+{
+  // Solo para chequear tipos de los tests (npx tsc --noEmit -p test).
+  // Vitest los ejecuta como ESM, por eso module/moduleResolution distintos al build.
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "rootDir": "..",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ES2022"]
+  },
+  "include": ["./**/*.ts", "../src/**/*.ts", "../vitest.config.ts"]
+}

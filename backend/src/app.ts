@@ -21,7 +21,8 @@ app.use(helmet({ crossOriginResourcePolicy: false })); // permite servir /upload
 app.use(cors({ origin: env.frontendOrigins, credentials: true }));
 // Los JSON de la API son chicos (formularios); los archivos van por multer
 app.use(express.json({ limit: '100kb' }));
-app.use(morgan(env.isProd ? 'combined' : 'dev'));
+// En los tests de integración (NODE_ENV=test) el log de cada request es ruido
+if (env.nodeEnv !== 'test') app.use(morgan(env.isProd ? 'combined' : 'dev'));
 
 // Archivos subidos (comprobantes, fotos de lotes). En producción conviene
 // moverlo a un bucket, ver nota en upload.middleware.ts.

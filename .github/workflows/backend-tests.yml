@@ -1,0 +1,36 @@
+# Tests de integración del backend (API + Socket.io contra Postgres embebido
+# con PGlite: no hace falta levantar servicios ni ffmpeg).
+name: Backend tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - run: npm ci
+
+      - name: Tipos (app)
+        run: npx tsc --noEmit
+
+      - name: Tipos (tests)
+        run: npx tsc --noEmit -p test
+
+      - name: Tests
+        run: npm test
