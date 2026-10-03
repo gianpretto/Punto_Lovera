@@ -62,3 +62,25 @@ export async function sendVoucherRejectedEmail(to: string, amount: number, reaso
       .replace(/>/g, '&gt;')}</p><p>Podés volver a cargarlo en <a href="${link}">${link}</a>.</p>`
   );
 }
+
+// Texto que escribió un admin: se escapa antes de meterlo en el HTML del mail
+const escapeHtml = (s: string) =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+export async function sendWithdrawalApprovedEmail(to: string, amount: number) {
+  const link = `${env.frontendUrl}/creditos`;
+  await send(
+    to,
+    'Tu reintegro fue aprobado — Punto Lovera',
+    `<p>Te transferimos ${pesos(amount)} a la cuenta que nos indicaste y lo descontamos de tu crédito.</p><p><a href="${link}">Ver mi crédito</a></p>`
+  );
+}
+
+export async function sendWithdrawalRejectedEmail(to: string, amount: number, reason: string) {
+  const link = `${env.frontendUrl}/creditos`;
+  await send(
+    to,
+    'Tu reintegro fue rechazado — Punto Lovera',
+    `<p>No pudimos procesar tu pedido de reintegro por ${pesos(amount)}. El monto vuelve a estar disponible en tu crédito.</p><p>Motivo: ${escapeHtml(reason)}</p><p>Podés volver a pedirlo en <a href="${link}">${link}</a>.</p>`
+  );
+}

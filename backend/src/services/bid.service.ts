@@ -49,6 +49,13 @@ export async function placeBid(lotId: string, userId: string, amount: number) {
     const result = await db.transaction(async (tx) => {
       const [user] = await tx.select().from(users).where(eq(users.id, userId)).for('update');
       if (!user) throw Errors.unauthorized();
+      // El login no exige el mail verificado, pero ofertar sí: una puja
+      // compromete plata y tiene que haber un mail real al que avisarle.
+      if (!user.emailVerified) {
+        throw Errors.badRequest(
+          'Verificá tu mail para poder ofertar: revisá tu casilla (y spam) o pedí que te reenviemos el link'
+        );
+      }
       if (!isProfileComplete(user)) {
         throw Errors.badRequest('Completá tus datos personales en "Mis datos" para poder ofertar');
       }
@@ -58,7 +65,7 @@ export async function placeBid(lotId: string, userId: string, amount: number) {
       if (amount > available) {
         throw Errors.badRequest(
           heldElsewhere > 0
-            ? `No tenés crédito disponible suficiente: te quedan ${pesos(available)} (tenés ${pesos(heldElsewhere)} reservados en lotes que vas ganando). Cargá saldo en /creditos`
+            ? `No tenés crédito disponible suficiente: te quedan ${pesos(available)} (tenés ${pesos(heldElsewhere)} reservados en lotes que vas ganando o reintegros pendientes). Cargá saldo en /creditos`
             : 'No tenés crédito suficiente para esta puja. Cargá saldo en /creditos'
         );
       }

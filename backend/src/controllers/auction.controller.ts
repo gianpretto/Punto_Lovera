@@ -4,8 +4,9 @@ import * as auctionService from '../services/auction.service';
 import { createAuctionSchema, createPassSchema, setCurrentLotSchema, updateAuctionSchema } from '../schemas/auction.schema';
 import * as passService from '../services/pass.service';
 import { Errors } from '../utils/AppError';
-import { setCurrentLotAndBroadcast } from '../services/realtime.service';
+import { broadcastRoomState, setCurrentLotAndBroadcast } from '../services/realtime.service';
 import { auctions } from '../db/schema';
+import { removeUploadedFile, toPublicUrl } from '../middleware/upload.middleware';
 
 type AuctionStatus = (typeof auctions.$inferSelect)['status'];
 
@@ -29,7 +30,22 @@ export const create = asyncHandler(async (req: Request, res: Response) => {
 export const update = asyncHandler(async (req: Request, res: Response) => {
   const data = updateAuctionSchema.parse(req.body);
   const auction = await auctionService.updateAuction(req.params.id, data);
+  // La sala abierta se entera del cambio de estado/título (best-effort)
+  broadcastRoomState(req.params.id).catch(() => undefined);
   res.json({ auction });
+});
+
+// Sube la foto de portada (multipart, campo "image") y la deja como coverImageUrl
+export const uploadCover = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.file) throw Errors.badRequest('Elegí una imagen para la portada');
+  const url = toPublicUrl('lots', req.file.filename);
+  try {
+    const auction = await auctionService.setAuctionCover(req.params.id, url);
+    res.status(201).json({ auction });
+  } catch (err) {
+    await removeUploadedFile(url);
+    throw err;
+  }
 });
 
 export const remove = asyncHandler(async (req: Request, res: Response) => {

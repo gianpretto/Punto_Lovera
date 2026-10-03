@@ -1,15 +1,25 @@
 import { Router } from 'express';
 import * as authController from '../controllers/auth.controller';
 import { requireAuth } from '../middleware/auth.middleware';
+import {
+  forgotPasswordLimiter,
+  loginIpLimiter,
+  loginLimiter,
+  registerLimiter,
+  resendVerificationLimiter,
+  resetPasswordLimiter,
+  verifyEmailLimiter,
+} from '../middleware/rateLimit.middleware';
 
 const router = Router();
 
-router.post('/register', authController.register);
-router.post('/login', authController.login);
-router.post('/verify-email', authController.verifyEmail);
-router.post('/resend-verification', authController.resendVerification);
-router.post('/forgot-password', authController.forgotPassword);
-router.post('/reset-password', authController.resetPassword);
+// Límites de intentos estrictos: valores y motivos en rateLimit.middleware.ts
+router.post('/register', registerLimiter, authController.register);
+router.post('/login', loginIpLimiter, loginLimiter, authController.login);
+router.post('/verify-email', verifyEmailLimiter, authController.verifyEmail);
+router.post('/resend-verification', resendVerificationLimiter, authController.resendVerification);
+router.post('/forgot-password', forgotPasswordLimiter, authController.forgotPassword);
+router.post('/reset-password', resetPasswordLimiter, authController.resetPassword);
 router.get('/me', requireAuth, authController.me);
 router.patch('/me', requireAuth, authController.updateMe);
 

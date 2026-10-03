@@ -184,6 +184,30 @@ export const creditVouchers = pgTable('credit_vouchers', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
+// ---------- Reintegros (devolver crédito no usado) ----------
+
+// El usuario pide que le devuelvan parte de su saldo a su cuenta bancaria.
+// Mientras está PENDIENTE el monto queda reservado (credit.service.ts); el
+// admin transfiere por fuera de la plataforma y lo aprueba (se descuenta
+// del saldo) o lo rechaza con un motivo (se libera la reserva).
+export const creditWithdrawals = pgTable('credit_withdrawals', {
+  id: id(),
+  userId: uuid('user_id')
+    .notNull()
+    .references(() => users.id),
+  amount: decimal('amount', { precision: 12, scale: 2 }).notNull(),
+  cbu: text('cbu').notNull(),
+  alias: text('alias'),
+  // Motivo opcional que escribe el usuario
+  reason: text('reason'),
+  status: voucherStatusEnum('status').notNull().default('PENDIENTE'),
+  reviewedById: uuid('reviewed_by_id'),
+  reviewedAt: timestamp('reviewed_at'),
+  rejectionReason: text('rejection_reason'),
+
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
 // ---------- Compras (historial en el panel de usuario) ----------
 
 export const purchases = pgTable('purchases', {
@@ -205,6 +229,7 @@ export const purchases = pgTable('purchases', {
 export const usersRelations = relations(users, ({ many }) => ({
   bids: many(bids),
   vouchers: many(creditVouchers),
+  withdrawals: many(creditWithdrawals),
   purchases: many(purchases),
   chatMessages: many(chatMessages),
 }));
@@ -238,6 +263,10 @@ export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
 
 export const creditVouchersRelations = relations(creditVouchers, ({ one }) => ({
   user: one(users, { fields: [creditVouchers.userId], references: [users.id] }),
+}));
+
+export const creditWithdrawalsRelations = relations(creditWithdrawals, ({ one }) => ({
+  user: one(users, { fields: [creditWithdrawals.userId], references: [users.id] }),
 }));
 
 export const purchasesRelations = relations(purchases, ({ one }) => ({

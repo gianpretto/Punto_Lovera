@@ -7,12 +7,20 @@ import { env } from './config/env';
 import routes from './routes';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 import { UPLOAD_ROOT } from './middleware/upload.middleware';
+import { apiLimiter } from './middleware/rateLimit.middleware';
 
 export const app = express();
 
+// IP real del cliente detrás del proxy de Railway (la usan los límites de
+// intentos). Valor y motivo en env.trustProxy.
+app.set('trust proxy', env.trustProxy);
+// No anunciar "X-Powered-By: Express" (helmet ya lo saca, por las dudas)
+app.disable('x-powered-by');
+
 app.use(helmet({ crossOriginResourcePolicy: false })); // permite servir /uploads a otro origen (el front)
 app.use(cors({ origin: env.frontendOrigins, credentials: true }));
-app.use(express.json());
+// Los JSON de la API son chicos (formularios); los archivos van por multer
+app.use(express.json({ limit: '100kb' }));
 // En los tests de integración (NODE_ENV=test) el log de cada request es ruido
 if (env.nodeEnv !== 'test') app.use(morgan(env.isProd ? 'combined' : 'dev'));
 
@@ -23,7 +31,7 @@ if (env.nodeEnv !== 'test') app.use(morgan(env.isProd ? 'combined' : 'dev'));
 // exige ser el dueño o admin.
 app.use('/uploads/lots', express.static(path.join(UPLOAD_ROOT, 'lots')));
 
-app.use('/api', routes);
+app.use('/api', apiLimiter, routes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
