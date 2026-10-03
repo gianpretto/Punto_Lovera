@@ -39,3 +39,26 @@ export async function sendPasswordResetEmail(to: string, token: string) {
     `<p>Hacé click para elegir una contraseña nueva (el link vence en 1 hora):</p><p><a href="${link}">${link}</a></p>`
   );
 }
+
+const pesos = (n: number) => `$${n.toLocaleString('es-AR')}`;
+
+export async function sendVoucherApprovedEmail(to: string, amount: number) {
+  const link = `${env.frontendUrl}/creditos`;
+  await send(
+    to,
+    'Tu comprobante fue aprobado — Punto Lovera',
+    `<p>Acreditamos ${pesos(amount)} en tu cuenta. Ya podés usarlos para pujar.</p><p><a href="${link}">Ver mi crédito</a></p>`
+  );
+}
+
+export async function sendVoucherRejectedEmail(to: string, amount: number, reason: string) {
+  const link = `${env.frontendUrl}/creditos`;
+  await send(
+    to,
+    'Tu comprobante fue rechazado — Punto Lovera',
+    `<p>No pudimos acreditar el comprobante por ${pesos(amount)}.</p><p>Motivo: ${reason
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')}</p><p>Podés volver a cargarlo en <a href="${link}">${link}</a>.</p>`
+  );
+}

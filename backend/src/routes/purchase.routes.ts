@@ -5,6 +5,7 @@ import { requireAuth, requireRole } from '../middleware/auth.middleware';
 const router = Router();
 
 router.get('/mias', requireAuth, purchaseController.mine);
+router.get('/ofertas', requireAuth, purchaseController.myOffers);
 router.post(
   '/cerrar-lote/:lotId',
   requireAuth,

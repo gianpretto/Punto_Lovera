@@ -1,7 +1,22 @@
-import { eq, sql } from 'drizzle-orm';
+import { and, eq, sql } from 'drizzle-orm';
 import { db } from '../config/db';
 import { creditVouchers, users } from '../db/schema';
 import { Errors } from '../utils/AppError';
+import { sendVoucherApprovedEmail, sendVoucherRejectedEmail } from './mail.service';
+
+async function emailOf(userId: string) {
+  const [u] = await db.select({ email: users.email }).from(users).where(eq(users.id, userId));
+  return u?.email;
+}
+
+// Un mail que falla no tiene que deshacer la aprobación/rechazo
+async function notify(fn: () => Promise<void>) {
+  try {
+    await fn();
+  } catch (err) {
+    console.error('No se pudo enviar el mail del comprobante:', err);
+  }
+}
 
 export async function submitVoucher(userId: string, amount: number, fileUrl: string) {
   const [voucher] = await db
@@ -33,12 +48,14 @@ export async function approveVoucher(voucherId: string, reviewerId: string) {
 
   // Transacción: aprobar el comprobante y acreditar el saldo tienen que
   // pasar juntos o no pasar ninguno de los dos.
-  return db.transaction(async (tx) => {
+  const result = await db.transaction(async (tx) => {
     const [updated] = await tx
       .update(creditVouchers)
       .set({ status: 'APROBADO', reviewedById: reviewerId, reviewedAt: new Date() })
-      .where(eq(creditVouchers.id, voucherId))
+      // status en el WHERE: si dos admins aprueban a la vez, solo uno acredita
+      .where(and(eq(creditVouchers.id, voucherId), eq(creditVouchers.status, 'PENDIENTE')))
       .returning();
+    if (!updated) throw Errors.badRequest('Este comprobante ya fue revisado');
 
     await tx
       .update(users)
@@ -47,6 +64,10 @@ export async function approveVoucher(voucherId: string, reviewerId: string) {
 
     return updated;
   });
+
+  const email = await emailOf(voucher.userId);
+  if (email) await notify(() => sendVoucherApprovedEmail(email, Number(voucher.amount)));
+  return result;
 }
 
 export async function rejectVoucher(voucherId: string, reviewerId: string, reason: string) {
@@ -57,7 +78,19 @@ export async function rejectVoucher(voucherId: string, reviewerId: string, reaso
   const [updated] = await db
     .update(creditVouchers)
     .set({ status: 'RECHAZADO', reviewedById: reviewerId, reviewedAt: new Date(), rejectionReason: reason })
-    .where(eq(creditVouchers.id, voucherId))
+    .where(and(eq(creditVouchers.id, voucherId), eq(creditVouchers.status, 'PENDIENTE')))
     .returning();
+  if (!updated) throw Errors.badRequest('Este comprobante ya fue revisado');
+
+  const email = await emailOf(voucher.userId);
+  if (email) await notify(() => sendVoucherRejectedEmail(email, Number(voucher.amount), reason));
   return updated;
+}
+
+/** Comprobante para ver el archivo: solo el dueño o un admin. */
+export async function getVoucherForViewer(voucherId: string, viewer: { userId: string; role: string }) {
+  const [voucher] = await db.select().from(creditVouchers).where(eq(creditVouchers.id, voucherId));
+  if (!voucher) throw Errors.notFound('Comprobante');
+  if (voucher.userId !== viewer.userId && viewer.role !== 'ADMIN') throw Errors.forbidden();
+  return voucher;
 }

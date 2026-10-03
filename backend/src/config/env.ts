@@ -12,7 +12,18 @@ export const env = {
   nodeEnv: process.env.NODE_ENV ?? 'development',
   port: Number(process.env.PORT ?? 4000),
   databaseUrl: required('DATABASE_URL'),
-  frontendUrl: process.env.FRONTEND_URL ?? 'http://localhost:5173',
+  // FRONTEND_URL puede ser una lista separada por comas (ej: el dominio de
+  // Vercel + http://localhost:5173). La primera se usa para los links de
+  // los mails; todas quedan permitidas por CORS (HTTP y Socket.io).
+  frontendUrl: (process.env.FRONTEND_URL ?? 'http://localhost:5173').split(',')[0].trim(),
+  frontendOrigins: (process.env.FRONTEND_URL ?? 'http://localhost:5173')
+    .split(',')
+    .map((o) => o.trim().replace(/\/$/, ''))
+    .filter(Boolean),
+
+  // Dónde se guardan los archivos subidos. En Railway apuntarlo a un Volume
+  // (ej: /data/uploads), si no se pierden en cada deploy.
+  uploadDir: process.env.UPLOAD_DIR || '',
 
   jwtSecret: required('JWT_SECRET'),
   jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '7d',
@@ -29,6 +40,8 @@ export const env = {
     alias: process.env.TRANSFER_ALIAS ?? '',
     cbu: process.env.TRANSFER_CBU ?? '',
     holder: process.env.TRANSFER_HOLDER ?? '',
+    // Texto libre, ej: "Cuenta corriente en pesos 123-456/7 — Banco X"
+    account: process.env.TRANSFER_ACCOUNT ?? '',
   },
 
   // rtsp-manager (repo de Francis): control-plane (API que prende/apaga

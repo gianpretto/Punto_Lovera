@@ -42,26 +42,39 @@ Desde *Subasta activa*. Antes de entrar se valida, en este orden:
 | no cargó sus datos | Perfil → ver y editar datos personales |
 | no tiene crédito | Cargar crédito → Crédito disponible |
 
+## Pedido del cliente: pase temporal para ver el remate
+
+> Hay que agregar alguna opción para poder generar un link temporal tipo
+> pasaporte, para pasarle a la gente y que no te pida crearte un usuario
+> para poder ver el remate. Por ejemplo, se lo paso a la persona que está
+> rematando el local, que es un cliente de única vez; si le queda el
+> usuario armado, lo único que hace es ocupar espacio en la base de datos.
+
+Interpretación acordada (define también la regla de "Ingresar al remate"):
+
+- **Mirar** la sala (video + chat en modo lectura): con cuenta **o** con un
+  pase temporal. Sin ninguna de las dos → Sign Up (como el diagrama).
+- **Pujar / escribir en el chat**: cuenta + datos cargados + crédito.
+- El pase lo genera el martillero/admin por subasta, con vencimiento y
+  una etiqueta (ej: "Dueño del local"); se puede revocar. Se guarda en una
+  tabla propia, **no** crea usuarios.
+
 ## Diferencias con lo implementado (a oct 2026)
 
-- **Ingresar al remate**: hoy cualquiera entra a la sala como espectador
-  (puede mirar sin sesión) y con sesión puede pujar sin haber cargado sus
-  datos; solo se valida el crédito al pujar. El diagrama pide frenar antes
-  de entrar. **A definir:** ¿se bloquea la entrada a la sala o solo pujar
-  (dejando mirar como espectador)?
+Ya resueltas: panel de usuario desplegable en el header, Crédito disponible
+conectado (datos bancarios, envío de comprobante, informes de depósitos) +
+pantalla de admin `/admin/comprobantes`, y ofertas en curso en
+`/perfil#compras`.
+
+Pendientes:
+
+- **Ingresar al remate + pase temporal** (ver arriba): hoy cualquiera mira
+  sin sesión y con sesión se puede pujar sin datos cargados (solo se valida
+  el crédito).
 - **Verificar correo → Perfil**: hoy después de validar el mail se manda a
   iniciar sesión; el diagrama sigue a completar los datos personales.
-- **Panel de usuario desplegable**: hoy el header muestra "Bienvenido,
-  nombre" (link a /perfil) y SALIR, no un menú desplegable.
-- **Crédito disponible**: el backend ya tiene todo, falta conectarlo en el
-  front: datos bancarios (`GET /api/creditos/transferencia`), envío de
-  comprobante (`POST /api/creditos`, campo `comprobante`) e "informes de
-  depósitos" (`GET /api/creditos/mios`, comprobantes enviados y su estado).
-  Tampoco hay pantalla de admin para aprobar comprobantes
-  (`/api/creditos/pendientes`, `/:id/aprobar`, `/:id/rechazar`). La explicación de garantías no
-  tiene contenido todavía.
-- **Mis compras / ofertas**: hoy solo muestra compras; faltan las ofertas
-  en curso (lotes donde va ganando / pujó).
+- **Garantías**: la explicación en /creditos es un borrador armado a partir
+  de cómo funciona la reserva de crédito; validar el texto con el cliente.
 - **Cómo participar** y **Preguntas frecuentes**: siguen sin contenido en
   ambos front; el diagrama define su estructura (tutorial de pasos + botón
   Registrarse; FAQ en acordeón).

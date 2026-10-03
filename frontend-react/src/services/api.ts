@@ -68,6 +68,29 @@ export const api = {
   delete: <T>(path: string) => request<T>('DELETE', path),
 };
 
+/**
+ * Abre en otra pestaña un archivo protegido por login (ej: un comprobante,
+ * GET /api/creditos/:id/archivo). Un <a href> no puede mandar el header
+ * Authorization, así que se descarga con fetch y se abre como blob.
+ */
+export async function openProtectedFile(path: string) {
+  // La pestaña se abre antes del await para que el navegador no la bloquee
+  const tab = window.open('', '_blank');
+  const token = getToken();
+  const res = await fetch(`${API_URL}/api${path}`, {
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+  });
+  if (!res.ok) {
+    tab?.close();
+    const data = await res.json().catch(() => null);
+    throw new ApiError(data?.error ?? 'No se pudo abrir el archivo', res.status);
+  }
+  const url = URL.createObjectURL(await res.blob());
+  if (tab) tab.location.href = url;
+  else window.location.href = url;
+  setTimeout(() => URL.revokeObjectURL(url), 60_000);
+}
+
 /** URL pública de un archivo subido al backend (/uploads/...). */
 export function uploadUrl(path: string): string {
   return path.startsWith('http') ? path : `${API_URL}${path}`;

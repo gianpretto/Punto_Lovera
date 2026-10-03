@@ -1,11 +1,34 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../services/AuthContext';
 import styles from './Header.module.scss';
 
 export default function Header() {
-  const { currentUser, logout } = useAuth();
+  const { currentUser, user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const location = useLocation();
+
+  // Panel de usuario (desplegable, según el diagrama de flujo)
+  const userLinks = [
+    { to: '/perfil', label: 'Perfil' },
+    { to: '/datos', label: 'Mis datos' },
+    { to: '/creditos', label: 'Crédito disponible' },
+    { to: '/perfil#compras', label: 'Mis compras / ofertas' },
+    ...(user?.role === 'ADMIN' ? [{ to: '/admin/comprobantes', label: 'Comprobantes a revisar' }] : []),
+  ];
+
+  // Se cierra al navegar o al hacer click afuera
+  useEffect(() => setUserMenuOpen(false), [location.pathname]);
+  useEffect(() => {
+    if (!userMenuOpen) return;
+    const onClick = (e: MouseEvent) => {
+      if (!userMenuRef.current?.contains(e.target as Node)) setUserMenuOpen(false);
+    };
+    document.addEventListener('mousedown', onClick);
+    return () => document.removeEventListener('mousedown', onClick);
+  }, [userMenuOpen]);
 
   const toggleMobileMenu = () => setMobileMenuOpen((v) => !v);
   const closeMobileMenu = () => setMobileMenuOpen(false);
@@ -20,9 +43,28 @@ export default function Header() {
           <div className={styles['barra-top__acciones']}>
             {currentUser ? (
               <>
-                <Link className={`${styles['link-top']} ${styles['welcome-msg']}`} to="/perfil">
-                  Bienvenido, <strong>{currentUser}</strong>
-                </Link>
+                <div className={styles['user-menu']} ref={userMenuRef}>
+                  <button
+                    type="button"
+                    className={`${styles['link-top']} ${styles['welcome-msg']} ${styles['user-menu__toggle']}`}
+                    onClick={() => setUserMenuOpen((v) => !v)}
+                    aria-expanded={userMenuOpen}
+                  >
+                    Bienvenido, <strong>{currentUser}</strong> ▾
+                  </button>
+                  {userMenuOpen && (
+                    <div className={styles['user-menu__list']}>
+                      {userLinks.map((l) => (
+                        <Link key={l.to} className={styles['user-menu__item']} to={l.to}>
+                          {l.label}
+                        </Link>
+                      ))}
+                      <button type="button" className={styles['user-menu__item']} onClick={logout}>
+                        Log Out
+                      </button>
+                    </div>
+                  )}
+                </div>
                 <button className={`${styles['link-top']} ${styles['btn-logout']}`} onClick={logout}>
                   SALIR
                 </button>
@@ -116,6 +158,11 @@ export default function Header() {
                   <Link className={styles['welcome-msg-mobile']} to="/perfil" onClick={closeMobileMenu}>
                     Bienvenido, <strong>{currentUser}</strong>
                   </Link>
+                  {userLinks.slice(1).map((l) => (
+                    <Link key={l.to} className={styles['mobile-auth__link']} to={l.to} onClick={closeMobileMenu}>
+                      {l.label}
+                    </Link>
+                  ))}
                   <button
                     className={styles['btn-logout-mobile']}
                     onClick={() => {

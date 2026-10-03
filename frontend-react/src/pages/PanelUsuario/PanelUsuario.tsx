@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../services/AuthContext';
 import { api } from '../../services/api';
 import styles from './PanelUsuario.module.scss';
@@ -42,12 +42,27 @@ const aCompra = (p: PurchaseApi): Compra => ({
 const formatCurrency = (n: number) =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n);
 
+// Forma que devuelve GET /api/compras/ofertas
+interface Oferta {
+  lotId: string;
+  lotNumber: number;
+  lotTitle: string;
+  auctionId: string;
+  auctionTitle: string;
+  auctionStatus: 'PROXIMA' | 'ACTIVA';
+  currentPrice: number;
+  myBestBid: number;
+  winning: boolean;
+}
+
 const formatNumber = (n: number) => n.toLocaleString('es-AR', { maximumFractionDigits: 0 });
 
 export default function PanelUsuario() {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
   const [misCompras, setMisCompras] = useState<Compra[]>([]);
+  const [misOfertas, setMisOfertas] = useState<Oferta[]>([]);
+  const location = useLocation();
   // TODO: el backend todavía no guarda avatar; queda local a este navegador
   const [avatarUrl] = useState<string | null>(() => localStorage.getItem('userAvatar'));
 
@@ -61,7 +76,18 @@ export default function PanelUsuario() {
       .get<{ purchases: PurchaseApi[] }>('/compras/mias')
       .then(({ purchases }) => setMisCompras(purchases.map(aCompra)))
       .catch(() => setMisCompras([]));
+    api
+      .get<{ offers: Oferta[] }>('/compras/ofertas')
+      .then(({ offers }) => setMisOfertas(offers))
+      .catch(() => setMisOfertas([]));
   }, [user]);
+
+  // Link "Mis compras / ofertas" del menú de usuario (/perfil#compras)
+  useEffect(() => {
+    if (location.hash === '#compras') {
+      document.getElementById('compras')?.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [location.hash, misCompras, misOfertas]);
 
   const userName = user ? `${user.firstName} ${user.lastName}`.trim() || 'Usuario' : 'Usuario';
   const userPhone = user?.phone ?? '';
@@ -117,7 +143,43 @@ export default function PanelUsuario() {
         <Link to="/creditos" className={styles.btnCargarCredito}>Cargar créditos</Link>
       </div>
 
-      <div className={styles.purchasesSection}>
+      <div className={styles.purchasesSection} id="compras">
+        {misOfertas.length > 0 && (
+          <>
+            <h3 className={styles.sectionTitle}>Mis ofertas en curso</h3>
+            <div className={`${styles.tableResponsive} ${styles.ofertasTable}`}>
+              <table className={styles.purchasesTable}>
+                <thead>
+                  <tr>
+                    <th>Lote</th>
+                    <th>Subasta</th>
+                    <th>Mi oferta</th>
+                    <th>Precio actual</th>
+                    <th>Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {misOfertas.map((o) => (
+                    <tr key={o.lotId}>
+                      <td>{o.lotNumber}. {o.lotTitle}</td>
+                      <td>
+                        {o.auctionStatus === 'ACTIVA' ? (
+                          <Link to={`/subastas/${o.auctionId}/activa`}>{o.auctionTitle}</Link>
+                        ) : (
+                          o.auctionTitle
+                        )}
+                      </td>
+                      <td>{formatCurrency(o.myBestBid)}</td>
+                      <td>{formatCurrency(o.currentPrice)}</td>
+                      <td><strong>{o.winning ? 'Vas ganando' : 'Te superaron'}</strong></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
+        )}
+
         <h3 className={styles.sectionTitle}>Mis Compras</h3>
 
         <div className={styles.tableResponsive}>

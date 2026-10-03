@@ -63,6 +63,29 @@ registrado → Sign Up; si no cargó sus datos → Perfil; si no tiene crédito
 → Cargar crédito. Al final del doc está la lista de diferencias con lo
 implementado; usarla como backlog de producto.
 
+## Deploy
+
+- **Backend → Railway** (Root Directory `backend`, config en
+  `backend/railway.json`): build `npm run build`, start `npm run
+  start:prod` (aplica migraciones con `dist/db/migrate.js` y levanta el
+  server), healthcheck `/api/health`. Variables: `DATABASE_URL` (Neon
+  pooler), `MIGRATIONS_DATABASE_URL` (Neon directa, opcional),
+  `JWT_SECRET`, `FRONTEND_URL` (lista separada por comas; la primera se usa
+  en los links de los mails), `UPLOAD_DIR` (mount path de un **Volume**, si
+  no los archivos se borran en cada deploy), `TRANSFER_*`, `SMTP_*`
+  (sin SMTP los mails solo se loguean), `RTSP_*`.
+- **Primer admin en producción** (no correr el seed ahí):
+  `ADMIN_EMAIL=... ADMIN_PASSWORD=... npm run create-admin` apuntando a la
+  base de producción (también sirve con `ADMIN_ROLE=MARTILLERO`).
+- **Front React → Vercel**: proyecto con Root Directory `frontend-react`
+  (`frontend-react/vercel.json`, SPA rewrites) y `VITE_API_URL` = URL de
+  Railway. El proyecto Vercel actual publica el Angular (`frontend/`).
+- **Base**: Neon. Rama `dev` para desarrollo/pruebas (es la de
+  `backend/.env`), `production` para datos reales (vaciada, sin seed).
+- Comprobantes de transferencia: privados, se sirven solo por
+  `GET /api/creditos/:id/archivo` (dueño o admin). `/uploads/lots` sí es
+  público.
+
 ## Estructura del repo
 
 ```

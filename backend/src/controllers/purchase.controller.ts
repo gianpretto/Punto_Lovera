@@ -8,6 +8,11 @@ export const mine = asyncHandler(async (req: Request, res: Response) => {
   res.json({ purchases });
 });
 
+export const myOffers = asyncHandler(async (req: Request, res: Response) => {
+  const offers = await purchaseService.listMyActiveOffers(req.user!.userId);
+  res.json({ offers });
+});
+
 export const closeLot = asyncHandler(async (req: Request, res: Response) => {
   const purchase = await closeLotAndBroadcast(req.params.lotId);
   res.status(201).json({ purchase });

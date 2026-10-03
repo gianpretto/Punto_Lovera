@@ -9,6 +9,7 @@ router.get('/transferencia', voucherController.transferInfo);
 
 router.post('/', requireAuth, uploadVoucher.single('comprobante'), voucherController.submit);
 router.get('/mios', requireAuth, voucherController.mine);
+router.get('/:id/archivo', requireAuth, voucherController.file);
 
 router.get('/pendientes', requireAuth, requireRole('ADMIN'), voucherController.pending);
 router.post('/:id/aprobar', requireAuth, requireRole('ADMIN'), voucherController.approve);

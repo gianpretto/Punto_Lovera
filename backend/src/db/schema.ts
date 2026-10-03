@@ -219,6 +219,10 @@ export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
   user: one(users, { fields: [chatMessages.userId], references: [users.id] }),
 }));
 
+export const creditVouchersRelations = relations(creditVouchers, ({ one }) => ({
+  user: one(users, { fields: [creditVouchers.userId], references: [users.id] }),
+}));
+
 export const purchasesRelations = relations(purchases, ({ one }) => ({
   user: one(users, { fields: [purchases.userId], references: [users.id] }),
   lot: one(lots, { fields: [purchases.lotId], references: [lots.id] }),

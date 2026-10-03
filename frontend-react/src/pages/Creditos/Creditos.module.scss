@@ -203,3 +203,98 @@
     }
   }
 }
+
+// ---- Agregados al conectar con el backend (no están en el diseño original)
+
+.montoInput {
+  padding: 14px 16px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 14px;
+  font-family: inherit;
+  min-width: 220px;
+
+  &:focus {
+    outline: none;
+    border-color: #333;
+  }
+}
+
+.alertDanger {
+  color: #dc3545;
+  background: #f8d7da;
+  border: 1px solid #f5c2c7;
+  border-radius: 4px;
+  padding: 12px 16px;
+  font-size: 14px;
+  margin-top: 16px;
+}
+
+.depositsSection {
+  margin-top: 50px;
+}
+
+.tableResponsive {
+  overflow-x: auto;
+}
+
+.depositsTable {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 520px;
+
+  th,
+  td {
+    padding: 14px 8px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+    font-size: 14px;
+    vertical-align: top;
+  }
+
+  th {
+    color: #888;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 12px;
+    letter-spacing: 0.5px;
+  }
+}
+
+.estadoPENDIENTE {
+  color: #b7791f;
+  font-weight: 600;
+}
+
+.estadoAPROBADO {
+  color: #2f855a;
+  font-weight: 600;
+}
+
+.estadoRECHAZADO {
+  color: #c53030;
+  font-weight: 600;
+}
+
+.motivo {
+  font-size: 12px;
+  color: #777;
+  margin-top: 4px;
+}
+
+.linkBtn {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #333;
+  text-decoration: underline;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+}
+
+// El monto va al lado del botón
+.actions {
+  gap: 12px;
+  flex-wrap: wrap;
+}

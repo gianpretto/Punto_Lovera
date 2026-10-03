@@ -8,7 +8,7 @@ import { registerBiddingHandlers } from './sockets/bidding.socket';
 const server = http.createServer(app);
 
 const io = new Server(server, {
-  cors: { origin: env.frontendUrl, credentials: true },
+  cors: { origin: env.frontendOrigins, credentials: true },
 });
 setIo(io);
 registerBiddingHandlers(io);

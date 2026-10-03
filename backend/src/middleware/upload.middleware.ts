@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import multer from 'multer';
+import { env } from '../config/env';
 
 // NOTA: guardamos en disco local para arrancar rápido. Para producción
 // (Railway/Render no tienen disco persistente confiable) conviene migrar
@@ -8,7 +9,7 @@ import multer from 'multer';
 // resto del código solo depende de que `file.url` quede accesible por HTTP,
 // así que el cambio queda contenido acá.
 
-const UPLOAD_ROOT = path.join(__dirname, '..', '..', 'uploads');
+const UPLOAD_ROOT = env.uploadDir ? path.resolve(env.uploadDir) : path.join(__dirname, '..', '..', 'uploads');
 
 function makeStorage(subfolder: string) {
   const dir = path.join(UPLOAD_ROOT, subfolder);

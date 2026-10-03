@@ -8,6 +8,7 @@ import ProximasSubastas from './pages/ProximasSubastas/ProximasSubastas';
 import DetalleSubasta from './pages/DetalleSubasta/DetalleSubasta';
 import SubastaActiva from './pages/SubastaActiva/SubastaActiva';
 import PanelMartillero from './pages/PanelMartillero/PanelMartillero';
+import AdminComprobantes from './pages/AdminComprobantes/AdminComprobantes';
 import Login from './pages/Login/Login';
 import ForgotPassword from './pages/ForgotPassword/ForgotPassword';
 import Registro from './pages/Registro/Registro';
@@ -52,6 +53,7 @@ export default function App() {
           <Route path="/creditos" element={<Creditos />} />
           <Route path="/comprobante-exitoso" element={<ComprobanteExitoso />} />
           <Route path="/reintegro" element={<Reintegro />} />
+          <Route path="/admin/comprobantes" element={<AdminComprobantes />} />
 
           {/* Institucional */}
           <Route path="/quienes-somos" element={<QuienesSomos />} />

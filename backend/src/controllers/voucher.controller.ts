@@ -2,7 +2,8 @@ import { Request, Response } from 'express';
 import { asyncHandler } from '../utils/asyncHandler';
 import * as voucherService from '../services/voucher.service';
 import { rejectVoucherSchema, submitVoucherSchema } from '../schemas/voucher.schema';
-import { toPublicUrl } from '../middleware/upload.middleware';
+import path from 'path';
+import { toPublicUrl, UPLOAD_ROOT } from '../middleware/upload.middleware';
 import { Errors } from '../utils/AppError';
 import { env } from '../config/env';
 
@@ -20,6 +21,17 @@ export const submit = asyncHandler(async (req: Request, res: Response) => {
   const fileUrl = toPublicUrl('vouchers', file.filename);
   const voucher = await voucherService.submitVoucher(req.user!.userId, amount, fileUrl);
   res.status(201).json({ voucher, message: 'Comprobante recibido, un admin lo va a revisar pronto' });
+});
+
+export const file = asyncHandler(async (req: Request, res: Response) => {
+  const voucher = await voucherService.getVoucherForViewer(req.params.id, req.user!);
+  // fileUrl es "/uploads/vouchers/<archivo>": usamos solo el nombre para no
+  // poder salir de la carpeta de comprobantes
+  const filePath = path.join(UPLOAD_ROOT, 'vouchers', path.basename(voucher.fileUrl));
+  res.setHeader('Cache-Control', 'private, no-store');
+  res.sendFile(filePath, (err) => {
+    if (err && !res.headersSent) res.status(404).json({ error: 'Archivo del comprobante no encontrado' });
+  });
 });
 
 export const mine = asyncHandler(async (req: Request, res: Response) => {

@@ -1,6 +1,6 @@
-import { desc, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, max, sql } from 'drizzle-orm';
 import { db } from '../config/db';
-import { bids, lots, purchases, users } from '../db/schema';
+import { auctions, bids, lots, purchases, users } from '../db/schema';
 import { Errors } from '../utils/AppError';
 
 function generateReference() {
@@ -56,4 +56,41 @@ export async function listMyPurchases(userId: string) {
     orderBy: (p, { desc }) => desc(p.createdAt),
     with: { lot: { with: { auction: true } } },
   });
+}
+
+/**
+ * Ofertas en curso: lotes todavía sin adjudicar (en subastas abiertas) en
+ * los que el usuario pujó, con su mejor oferta y si va ganando.
+ */
+export async function listMyActiveOffers(userId: string) {
+  const rows = await db
+    .select({
+      lotId: lots.id,
+      lotNumber: lots.number,
+      lotTitle: lots.title,
+      auctionId: auctions.id,
+      auctionTitle: auctions.title,
+      auctionStatus: auctions.status,
+      currentPrice: lots.currentPrice,
+      leaderId: lots.leaderId,
+      myBestBid: max(bids.amount),
+    })
+    .from(bids)
+    .innerJoin(lots, eq(bids.lotId, lots.id))
+    .innerJoin(auctions, eq(lots.auctionId, auctions.id))
+    .where(and(eq(bids.userId, userId), eq(lots.sold, false), inArray(auctions.status, ['PROXIMA', 'ACTIVA'])))
+    .groupBy(lots.id, auctions.id)
+    .orderBy(auctions.title, lots.number);
+
+  return rows.map((r) => ({
+    lotId: r.lotId,
+    lotNumber: r.lotNumber,
+    lotTitle: r.lotTitle,
+    auctionId: r.auctionId,
+    auctionTitle: r.auctionTitle,
+    auctionStatus: r.auctionStatus,
+    currentPrice: Number(r.currentPrice),
+    myBestBid: Number(r.myBestBid),
+    winning: r.leaderId === userId,
+  }));
 }
