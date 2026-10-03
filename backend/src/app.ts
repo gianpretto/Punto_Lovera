@@ -13,7 +13,8 @@ export const app = express();
 app.use(helmet({ crossOriginResourcePolicy: false })); // permite servir /uploads a otro origen (el front)
 app.use(cors({ origin: env.frontendOrigins, credentials: true }));
 app.use(express.json());
-app.use(morgan(env.isProd ? 'combined' : 'dev'));
+// En los tests de integración (NODE_ENV=test) el log de cada request es ruido
+if (env.nodeEnv !== 'test') app.use(morgan(env.isProd ? 'combined' : 'dev'));
 
 // Archivos subidos (comprobantes, fotos de lotes). En producción conviene
 // moverlo a un bucket, ver nota en upload.middleware.ts.
