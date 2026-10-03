@@ -59,25 +59,32 @@ Interpretación acordada (define también la regla de "Ingresar al remate"):
   una etiqueta (ej: "Dueño del local"); se puede revocar. Se guarda en una
   tabla propia, **no** crea usuarios.
 
-## Diferencias con lo implementado (a oct 2026)
+## Estado (a oct 2026)
 
-Ya resueltas: panel de usuario desplegable en el header, Crédito disponible
-conectado (datos bancarios, envío de comprobante, informes de depósitos) +
-pantalla de admin `/admin/comprobantes`, y ofertas en curso en
-`/perfil#compras`.
+Implementado:
 
-Pendientes:
+- Listas reales: Home (subasta en vivo, próximas con cuenta regresiva,
+  anteriores), Próximas subastas (paginada) y Detalle (lotes + botón
+  "Ingresar al remate" cuando está ACTIVA).
+- **Ingresar al remate**: mirar con cuenta o pase de invitado (sin ninguno
+  → `/registro?volver=<sala>`); al ofertar, si faltan datos → `/datos?volver=<sala>`,
+  si no hay crédito → `/creditos`. El backend también lo exige (socket y
+  video piden sesión o pase; la puja pide datos completos y crédito).
+- **Pases de invitado**: panel del martillero → "Pases de invitado" (crear
+  con etiqueta + vencimiento, copiar link, revocar, ver último uso). El
+  invitado ve video y chat, no puede ofertar ni escribir.
+- **Verificar correo → Perfil**: verificar el mail deja la sesión iniciada
+  y lleva a `/datos`.
+- Panel de usuario desplegable, Crédito disponible conectado + admin de
+  comprobantes, ofertas en curso.
+- **Cómo participar** (`/como-participar`) y **Preguntas frecuentes** (`/faq`,
+  el Home muestra las 3 primeras): textos en `frontend-react/src/content/participar.ts`.
 
-- **Ingresar al remate + pase temporal** (ver arriba): hoy cualquiera mira
-  sin sesión y con sesión se puede pujar sin datos cargados (solo se valida
-  el crédito).
-- **Verificar correo → Perfil**: hoy después de validar el mail se manda a
-  iniciar sesión; el diagrama sigue a completar los datos personales.
-- **Garantías**: la explicación en /creditos es un borrador armado a partir
-  de cómo funciona la reserva de crédito; validar el texto con el cliente.
-- **Cómo participar** y **Preguntas frecuentes**: siguen sin contenido en
-  ambos front; el diagrama define su estructura (tutorial de pasos + botón
-  Registrarse; FAQ en acordeón).
-- **Datos de facturación** en el perfil: el formulario actual tiene
-  DNI/CUIT y dirección; confirmar si con eso alcanza o falta algo
-  (razón social, condición frente al IVA, etc.).
+Pendiente / a validar con el cliente:
+
+- Textos de Cómo participar, FAQ y garantías: son un **borrador** armado a
+  partir de cómo funciona el sistema.
+- **Datos de facturación**: hoy DNI/CUIT y dirección; confirmar si falta
+  razón social, condición frente al IVA, etc.
+- **Reintegro** (`/reintegro`): la pantalla existe pero no está conectada
+  (el backend no tiene pedido de reintegro).

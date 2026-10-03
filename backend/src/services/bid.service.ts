@@ -4,6 +4,7 @@ import { bids, lots, users } from '../db/schema';
 import { Errors } from '../utils/AppError';
 import { getCurrentLot } from './auction.service';
 import { getHeldCredit } from './credit.service';
+import { isProfileComplete } from './auth.service';
 
 const pesos = (n: number) => `$${n.toLocaleString('es-AR')}`;
 
@@ -48,6 +49,9 @@ export async function placeBid(lotId: string, userId: string, amount: number) {
     const result = await db.transaction(async (tx) => {
       const [user] = await tx.select().from(users).where(eq(users.id, userId)).for('update');
       if (!user) throw Errors.unauthorized();
+      if (!isProfileComplete(user)) {
+        throw Errors.badRequest('Completá tus datos personales en "Mis datos" para poder ofertar');
+      }
 
       const heldElsewhere = await getHeldCredit(userId, tx, lotId);
       const available = Number(user.creditBalance) - heldElsewhere;

@@ -21,6 +21,16 @@ export interface RegisterInput {
 
 type UserRow = typeof users.$inferSelect;
 
+/**
+ * "Cargó sus datos" (diagrama de flujo): lo que pide el formulario de
+ * /datos. Sin esto no se puede pujar.
+ */
+export function isProfileComplete(user: UserRow) {
+  return [user.firstName, user.lastName, user.phone, user.dni, user.address, user.city, user.province, user.zipCode].every(
+    (v) => typeof v === 'string' && v.trim() !== ''
+  );
+}
+
 function publicUser(user: UserRow, heldCredit = 0) {
   return {
     id: user.id,
@@ -40,6 +50,7 @@ function publicUser(user: UserRow, heldCredit = 0) {
     // Reservado en lotes que va ganando y lo que le queda para pujar
     heldCredit,
     availableCredit: Number(user.creditBalance) - heldCredit,
+    profileComplete: isProfileComplete(user),
   };
 }
 
@@ -88,10 +99,16 @@ export async function verifyEmail(token: string) {
   const [user] = await db.select().from(users).where(eq(users.verificationToken, token));
   if (!user) throw Errors.badRequest('Link de verificación inválido o ya usado');
 
-  await db
+  const [verified] = await db
     .update(users)
     .set({ emailVerified: true, verificationToken: null })
-    .where(eq(users.id, user.id));
+    .where(eq(users.id, user.id))
+    .returning();
+
+  // El link del mail prueba que es el dueño de la cuenta: lo dejamos logueado
+  // para que siga directo a completar sus datos (diagrama de flujo).
+  const sessionToken = signToken({ userId: verified.id, role: verified.role });
+  return { token: sessionToken, user: await publicUserWithCredit(verified) };
 }
 
 export async function resendVerification(email: string) {

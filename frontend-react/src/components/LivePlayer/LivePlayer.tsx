@@ -15,6 +15,8 @@ interface Props {
   /** null = la subasta no tiene cámara prendida */
   cameraId: string | null;
   token: string | null;
+  /** Pase de invitado: alternativa al token para ver el video */
+  pase?: string | null;
   /** Lo que se muestra cuando no hay video (el placeholder del diseño) */
   placeholder: ReactNode;
 }
@@ -23,13 +25,13 @@ type Estado = 'cargando' | 'en-vivo' | 'esperando';
 
 const REINTENTO_MS = 4000;
 
-export default function LivePlayer({ auctionId, cameraId, token, placeholder }: Props) {
+export default function LivePlayer({ auctionId, cameraId, token, pase = null, placeholder }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [estado, setEstado] = useState<Estado>('cargando');
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !cameraId || !token || !Hls.isSupported()) return;
+    if (!video || !cameraId || !(token || pase) || !Hls.isSupported()) return;
 
     const src = `${API_URL}/api/subastas/${auctionId}/vivo/hls/index.m3u8`;
     let hls: Hls | null = null;
@@ -41,7 +43,8 @@ export default function LivePlayer({ auctionId, cameraId, token, placeholder }: 
       setEstado('cargando');
       hls = new Hls({
         lowLatencyMode: true,
-        xhrSetup: (xhr) => xhr.setRequestHeader('Authorization', `Bearer ${token}`),
+        xhrSetup: (xhr) =>
+          token ? xhr.setRequestHeader('Authorization', `Bearer ${token}`) : xhr.setRequestHeader('X-Pase', pase!),
       });
       hls.loadSource(src);
       hls.attachMedia(video);
@@ -71,11 +74,11 @@ export default function LivePlayer({ auctionId, cameraId, token, placeholder }: 
       clearTimeout(retry);
       hls?.destroy();
     };
-  }, [auctionId, cameraId, token]);
+  }, [auctionId, cameraId, token, pase]);
 
   if (!cameraId) return <>{placeholder}</>;
 
-  if (!token) {
+  if (!token && !pase) {
     return (
       <div className={styles.overlayWrapper}>
         {placeholder}

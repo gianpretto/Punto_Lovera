@@ -25,8 +25,8 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
 
 export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
   const { token } = verifyEmailSchema.parse(req.body);
-  await authService.verifyEmail(token);
-  res.json({ message: 'Cuenta verificada correctamente' });
+  const session = await authService.verifyEmail(token);
+  res.json({ message: 'Cuenta verificada correctamente', ...session });
 });
 
 export const resendVerification = asyncHandler(async (req: Request, res: Response) => {

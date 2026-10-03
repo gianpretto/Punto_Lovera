@@ -29,6 +29,13 @@ async function main() {
       role: 'USER',
       emailVerified: true,
       creditBalance: '500000',
+      // Datos completos: sin esto no puede pujar
+      phone: '1155550000',
+      dni: '30111222',
+      address: 'Av. Rivadavia 1234',
+      city: 'Castelar',
+      province: 'Buenos Aires',
+      zipCode: '1712',
     })
     .onConflictDoNothing({ target: users.email });
 

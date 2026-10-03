@@ -2,7 +2,7 @@ import { Router } from 'express';
 import * as auctionController from '../controllers/auction.controller';
 import * as lotController from '../controllers/lot.controller';
 import * as liveController from '../controllers/live.controller';
-import { requireAuth, requireRole } from '../middleware/auth.middleware';
+import { requireAuth, requireAuthOrPass, requireRole } from '../middleware/auth.middleware';
 import { uploadLotImages } from '../middleware/upload.middleware';
 
 const router = Router();
@@ -19,7 +19,13 @@ router.post('/:auctionId/lotes/:lotId/pujas', requireAuth, lotController.placeBi
 // Video en vivo: cualquier usuario logueado puede MIRAR (el proxy exige
 // JWT porque el media server de rtsp-manager no tiene auth propia).
 // Prender/apagar la cámara es solo martillero/admin.
-router.get('/:id/vivo/:protocol/*', requireAuth, liveController.proxyStream);
+router.get('/:id/vivo/:protocol/*', requireAuthOrPass('id'), liveController.proxyStream);
+
+// Pases de invitado (link temporal para mirar sin cuenta)
+router.get('/:id/pases/:token/validar', auctionController.checkPass);
+router.get('/:id/pases', requireAuth, requireRole('MARTILLERO', 'ADMIN'), auctionController.listPasses);
+router.post('/:id/pases', requireAuth, requireRole('MARTILLERO', 'ADMIN'), auctionController.createPass);
+router.delete('/:id/pases/:passId', requireAuth, requireRole('MARTILLERO', 'ADMIN'), auctionController.revokePass);
 router.post('/:id/camara', requireAuth, requireRole('MARTILLERO', 'ADMIN'), liveController.startCamera);
 router.delete('/:id/camara', requireAuth, requireRole('MARTILLERO', 'ADMIN'), liveController.stopCamera);
 

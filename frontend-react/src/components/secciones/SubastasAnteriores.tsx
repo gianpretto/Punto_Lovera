@@ -1,48 +1,26 @@
+import { useNavigate } from 'react-router-dom';
 import TarjetaSubasta from '../tarjetas/TarjetaSubasta';
-import type { Subasta } from '../../interfaces/subasta';
+import { toSubasta, useAuctions } from '../../services/auctions';
 import styles from './SubastasAnteriores.module.scss';
 
-const subastasAnteriores: Subasta[] = [
-  {
-    titulo: 'Antigua panadería',
-    ubicacion: 'Morón, Buenos Aires',
-    descripcion: 'Panadería familiar vendida recientemente.',
-    fecha: 'Marzo 10/25',
-    hora: '12:00',
-  },
-  {
-    titulo: 'Pequeña imprenta',
-    ubicacion: 'Castelar, Buenos Aires',
-    descripcion: 'Imprenta con prensa offset y clientela estable.',
-    fecha: 'Febrero 05/25',
-    hora: '10:30',
-  },
-  {
-    titulo: 'Lavadero de autos',
-    ubicacion: 'Ituzaingó, Buenos Aires',
-    descripcion: 'Lavadero con sistema automatizado y buen flujo de clientes.',
-    fecha: 'Enero 20/25',
-    hora: '09:00',
-  },
-  {
-    titulo: 'Local de ropa',
-    ubicacion: 'Lomas, Buenos Aires',
-    descripcion: 'Local boutique con stock inicial incluido.',
-    fecha: 'Diciembre 12/24',
-    hora: '14:45',
-  },
-];
-
 export default function SubastasAnteriores() {
+  const navigate = useNavigate();
+  const finalizadas = useAuctions(['FINALIZADA']);
+
+  // Las más recientes primero; sin finalizadas todavía, no se muestra
+  if (!finalizadas || finalizadas.length === 0) return null;
+  const subastasAnteriores = [...finalizadas].reverse().slice(0, 4).map((a) => toSubasta(a, Date.now()));
+
   return (
     <section className={`${styles.prox} ${styles.ant}`}>
       <div className={styles.prox__inner}>
         <h2 className={styles.prox__titulo}>SUBASTAS ANTERIORES</h2>
 
         <div className={styles.prox__grid}>
-          {subastasAnteriores.map((item, i) => (
+          {subastasAnteriores.map((item) => (
             <TarjetaSubasta
-              key={i}
+              key={item.id}
+              id={item.id}
               estado="FINALIZADA"
               titulo={item.titulo}
               ubicacion={item.ubicacion}
@@ -55,7 +33,9 @@ export default function SubastasAnteriores() {
         </div>
 
         <div className={styles.prox__cta}>
-          <button className={styles['btn-negro']}>Ver más subastas →</button>
+          <button className={styles['btn-negro']} onClick={() => navigate('/subastas')}>
+            Ver más subastas →
+          </button>
         </div>
       </div>
     </section>

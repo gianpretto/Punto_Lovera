@@ -65,11 +65,19 @@ const toChat = (m: ServerMessage): ChatMessage => ({
   isOffer: m.isOffer,
 });
 
-export function useAuctionRoom(auctionId: string | undefined, token: string | null, handlers: Handlers = {}) {
+export function useAuctionRoom(
+  auctionId: string | undefined,
+  token: string | null,
+  handlers: Handlers = {},
+  /** Pase de invitado (link temporal): permite mirar sin cuenta */
+  pase: string | null = null
+) {
   const [state, setState] = useState<RoomState | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [connected, setConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** El backend no lo dejó entrar: sin sesión y sin pase válido */
+  const [authRequired, setAuthRequired] = useState(false);
 
   const socketRef = useRef<Socket | null>(null);
   const handlersRef = useRef(handlers);
@@ -82,7 +90,7 @@ export function useAuctionRoom(auctionId: string | undefined, token: string | nu
 
     // Mismo origen en dev (Vite proxea /socket.io) o VITE_API_URL en prod
     const socket = io(API_URL || undefined, {
-      auth: token ? { token } : {},
+      auth: { ...(token ? { token } : {}), ...(pase ? { pase } : {}) },
       transports: ['websocket', 'polling'],
     });
     socketRef.current = socket;
@@ -101,7 +109,10 @@ export function useAuctionRoom(auctionId: string | undefined, token: string | nu
 
     socket.on('auction:state', (s: RoomState) => setState(s));
     socket.on('lot:change', (s: RoomState) => setState(s));
-    socket.on('auction:error', ({ message }: { message: string }) => setError(message));
+    socket.on('auction:error', ({ message, code }: { message: string; code?: string }) => {
+      setError(message);
+      if (code === 'AUTH_REQUIRED') setAuthRequired(true);
+    });
 
     socket.on('chat:history', (history: ServerMessage[]) => setMessages(history.map(toChat)));
     socket.on('chat:message', (m: ServerMessage) => setMessages((prev) => [...prev, toChat(m)]));
@@ -138,7 +149,7 @@ export function useAuctionRoom(auctionId: string | undefined, token: string | nu
       socket.disconnect();
       socketRef.current = null;
     };
-  }, [auctionId, token]);
+  }, [auctionId, token, pase]);
 
   const placeBid = useCallback((lotId: string, amount: number) => {
     socketRef.current?.emit('bid:place', { lotId, amount });
@@ -152,5 +163,5 @@ export function useAuctionRoom(auctionId: string | undefined, token: string | nu
     [auctionId]
   );
 
-  return { state, messages, connected, error, placeBid, sendMessage };
+  return { state, messages, connected, error, authRequired, placeBid, sendMessage };
 }

@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../services/AuthContext';
 import { ApiError } from '../../services/api';
 import styles from './Login.module.scss';
@@ -11,6 +11,10 @@ function validarEmail(email: string) {
 export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const [searchParams] = useSearchParams();
+  // Ej: la sala del remate manda acá con ?volver=/subastas/:id/activa
+  const volver = searchParams.get('volver');
+  const destino = volver && volver.startsWith('/') && !volver.startsWith('//') ? volver : '/';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -40,7 +44,7 @@ export default function Login() {
     setSending(true);
     try {
       await login(email, password);
-      navigate('/');
+      navigate(destino);
     } catch (err) {
       setLoginError(err instanceof ApiError ? err.message : 'Credenciales inválidas o usuario no registrado.');
     } finally {
@@ -108,7 +112,12 @@ export default function Login() {
             <button type="submit" className={`${styles.btn} ${styles.btnBlack}`} disabled={sending}>
               Iniciar Sesión
             </button>
-            <Link to="/registro" className={`${styles.btn} ${styles.btnGray}`}>O creá una cuenta</Link>
+            <Link
+              to={volver ? `/registro?volver=${encodeURIComponent(volver)}` : '/registro'}
+              className={`${styles.btn} ${styles.btnGray}`}
+            >
+              O creá una cuenta
+            </Link>
           </div>
 
           <div className={styles.formFooter}>

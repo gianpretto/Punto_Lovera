@@ -121,6 +121,23 @@ export const lotImages = pgTable('lot_images', {
   position: integer('position').notNull().default(0),
 });
 
+// ---------- Pases de invitado (link temporal para mirar sin cuenta) ----------
+
+export const auctionPasses = pgTable('auction_passes', {
+  id: id(),
+  auctionId: uuid('auction_id')
+    .notNull()
+    .references(() => auctions.id, { onDelete: 'cascade' }),
+  token: text('token').notNull().unique(),
+  // Para quién es (ej: "Dueño del local"), lo ve el martillero
+  label: text('label').notNull(),
+  expiresAt: timestamp('expires_at').notNull(),
+  revokedAt: timestamp('revoked_at'),
+  lastUsedAt: timestamp('last_used_at'),
+  createdById: uuid('created_by_id').references(() => users.id),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
 // ---------- Pujas ----------
 
 export const bids = pgTable('bids', {

@@ -1,0 +1,106 @@
+.wrapper {
+  width: min(1100px, calc(100% - 64px));
+  margin: 0 auto;
+  padding: 60px 0 100px;
+  font-family: 'Montserrat', sans-serif;
+  color: #444;
+
+  @media (max-width: 640px) {
+    width: calc(100% - 32px);
+    padding: 30px 0 60px;
+  }
+}
+
+.header {
+  margin-bottom: 50px;
+}
+
+.titulo {
+  margin: 0 0 12px;
+  font-size: 30px;
+  letter-spacing: 1px;
+  font-weight: 600;
+  color: #555;
+
+  @media (max-width: 640px) {
+    font-size: 24px;
+  }
+}
+
+.subtitulo {
+  margin: 0;
+  font-size: 18px;
+  color: #666;
+}
+
+.pasos {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 30px;
+}
+
+.paso {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
+  border-bottom: 1px solid #111;
+  padding-bottom: 26px;
+}
+
+.numero {
+  flex: 0 0 auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #000;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 18px;
+}
+
+.pasoTitulo {
+  margin: 4px 0 8px;
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+}
+
+.pasoDesc {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.7;
+  color: #555;
+}
+
+.cta {
+  margin-top: 60px;
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.btnNegro {
+  background: #000;
+  color: #fff;
+  padding: 14px 28px;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 15px;
+  text-decoration: none;
+
+  &:hover {
+    opacity: 0.85;
+  }
+}
+
+.link {
+  color: #333;
+  font-size: 15px;
+}

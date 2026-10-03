@@ -3,7 +3,6 @@ import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import { AuthProvider } from './services/AuthContext';
 import Home from './pages/Home/Home';
-import EnConstruccion from './pages/EnConstruccion';
 import ProximasSubastas from './pages/ProximasSubastas/ProximasSubastas';
 import DetalleSubasta from './pages/DetalleSubasta/DetalleSubasta';
 import SubastaActiva from './pages/SubastaActiva/SubastaActiva';
@@ -22,10 +21,8 @@ import QuienesSomos from './pages/QuienesSomos/QuienesSomos';
 import QuieroComprar from './pages/QuieroComprar/QuieroComprar';
 import QuieroVender from './pages/QuieroVender/QuieroVender';
 import Contactanos from './pages/Contactanos/Contactanos';
-
-// Vistas que en el Angular original también son solo un stub sin
-// implementar ("works!") — no hay nada real que portar todavía.
-const stub = (nombre: string) => () => <EnConstruccion nombre={nombre} />;
+import ComoParticipar from './pages/ComoParticipar/ComoParticipar';
+import PreguntasFrecuentesPage from './pages/PreguntasFrecuentesPage';
 
 export default function App() {
   return (
@@ -60,8 +57,8 @@ export default function App() {
           <Route path="/quiero-comprar" element={<QuieroComprar />} />
           <Route path="/quiero-vender" element={<QuieroVender />} />
           <Route path="/contactanos" element={<Contactanos />} />
-          <Route path="/como-participar" element={stub('Cómo participar')()} />
-          <Route path="/faq" element={stub('Preguntas frecuentes')()} />
+          <Route path="/como-participar" element={<ComoParticipar />} />
+          <Route path="/faq" element={<PreguntasFrecuentesPage />} />
 
           {/* Fallback */}
           <Route path="*" element={<Home />} />

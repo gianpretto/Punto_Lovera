@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useLocation, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { api, ApiError } from '../../services/api';
+import { useAuth, type User } from '../../services/AuthContext';
 import styles from './ValidarMail.module.scss';
 
 type Estado = 'pendiente' | 'verificando' | 'verificado' | 'error';
@@ -18,19 +19,28 @@ export default function ValidarMail() {
   const [mensaje, setMensaje] = useState('');
   const [reenviado, setReenviado] = useState(false);
   const pedido = useRef(false);
+  const navigate = useNavigate();
+  const { setSession } = useAuth();
 
   useEffect(() => {
     // StrictMode monta dos veces en dev: el token es de un solo uso
     if (!token || pedido.current) return;
     pedido.current = true;
     api
-      .post('/auth/verify-email', { token })
-      .then(() => setEstado('verificado'))
+      .post<{ token?: string; user?: User }>('/auth/verify-email', { token })
+      .then((res) => {
+        setEstado('verificado');
+        // Diagrama: verificar correo → completar datos personales
+        if (res.token && res.user) {
+          setSession(res.token, res.user);
+          setTimeout(() => navigate('/datos'), 2500);
+        }
+      })
       .catch((err) => {
         setEstado('error');
         setMensaje(err instanceof ApiError ? err.message : 'No se pudo verificar la cuenta.');
       });
-  }, [token]);
+  }, [token, setSession, navigate]);
 
   const resendEmail = async () => {
     if (!email) return;
@@ -51,12 +61,18 @@ export default function ValidarMail() {
 
           {estado === 'verificando' && <p className={styles.validarDesc}>Verificando tu cuenta...</p>}
           {estado === 'verificado' && (
-            <div className={styles.alertSuccess}>¡Listo! Tu cuenta quedó verificada. Ya podés iniciar sesión.</div>
+            <div className={styles.alertSuccess}>
+              ¡Listo! Tu cuenta quedó verificada. Ahora completá tus datos para poder participar.
+            </div>
           )}
           {estado === 'error' && <div className={styles.alertDanger}>{mensaje}</div>}
 
           <div className={styles.formActions}>
-            <Link to="/login" className={`${styles.btn} ${styles.btnBlack}`}>Iniciar sesión</Link>
+            {estado === 'verificado' ? (
+              <Link to="/datos" className={`${styles.btn} ${styles.btnBlack}`}>Completar mis datos</Link>
+            ) : (
+              <Link to="/login" className={`${styles.btn} ${styles.btnBlack}`}>Iniciar sesión</Link>
+            )}
           </div>
         </div>
       </div>

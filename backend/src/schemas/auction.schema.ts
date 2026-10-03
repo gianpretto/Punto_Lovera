@@ -29,3 +29,8 @@ export const placeBidSchema = z.object({
 export const setCurrentLotSchema = z.object({
   lotId: z.string().uuid().nullable(),
 });
+
+export const createPassSchema = z.object({
+  label: z.string().trim().min(1, 'Indicá para quién es el pase').max(80),
+  hours: z.coerce.number().int().min(1).max(24 * 14).default(24),
+});

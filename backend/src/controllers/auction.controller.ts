@@ -1,7 +1,9 @@
 import { Request, Response } from 'express';
 import { asyncHandler } from '../utils/asyncHandler';
 import * as auctionService from '../services/auction.service';
-import { createAuctionSchema, setCurrentLotSchema, updateAuctionSchema } from '../schemas/auction.schema';
+import { createAuctionSchema, createPassSchema, setCurrentLotSchema, updateAuctionSchema } from '../schemas/auction.schema';
+import * as passService from '../services/pass.service';
+import { Errors } from '../utils/AppError';
 import { setCurrentLotAndBroadcast } from '../services/realtime.service';
 import { auctions } from '../db/schema';
 
@@ -41,4 +43,28 @@ export const setCurrentLot = asyncHandler(async (req: Request, res: Response) =>
   const { lotId } = setCurrentLotSchema.parse(req.body);
   const state = await setCurrentLotAndBroadcast(req.params.id, lotId);
   res.json(state);
+});
+
+// ---------- Pases de invitado ----------
+
+export const createPass = asyncHandler(async (req: Request, res: Response) => {
+  const { label, hours } = createPassSchema.parse(req.body);
+  const pass = await passService.createPass(req.params.id, req.user!.userId, label, hours);
+  res.status(201).json({ pass });
+});
+
+export const listPasses = asyncHandler(async (req: Request, res: Response) => {
+  res.json({ passes: await passService.listPasses(req.params.id) });
+});
+
+export const revokePass = asyncHandler(async (req: Request, res: Response) => {
+  await passService.revokePass(req.params.id, req.params.passId);
+  res.status(204).send();
+});
+
+// Público: el front valida el pase del link antes de mostrar la sala
+export const checkPass = asyncHandler(async (req: Request, res: Response) => {
+  const pass = await passService.validatePass(req.params.token, req.params.id);
+  if (!pass) throw Errors.notFound('Pase vigente');
+  res.json({ pass: { label: pass.label, expiresAt: pass.expiresAt } });
 });

@@ -99,3 +99,11 @@
     width: calc(100% - 32px);
   }
 }
+
+// Sin subastas próximas (no está en el diseño original)
+.sinSubastas {
+  text-align: center;
+  color: #666;
+  font-size: 15px;
+  margin: 10px 0 30px;
+}

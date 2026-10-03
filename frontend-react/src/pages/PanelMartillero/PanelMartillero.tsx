@@ -31,6 +31,22 @@ interface AuctionApi {
   lots: LotApi[];
 }
 
+interface PassApi {
+  id: string;
+  label: string;
+  link: string;
+  expiresAt: string;
+  lastUsedAt: string | null;
+}
+
+const DURACIONES = [
+  { horas: 3, texto: '3 horas' },
+  { horas: 12, texto: '12 horas' },
+  { horas: 24, texto: '1 día' },
+  { horas: 72, texto: '3 días' },
+  { horas: 168, texto: '1 semana' },
+];
+
 interface BidApi {
   id: string;
   amount: string;
@@ -65,6 +81,10 @@ export default function PanelMartillero() {
   const [busy, setBusy] = useState(false);
   const [camNombre, setCamNombre] = useState('Cámara principal');
   const [camUrl, setCamUrl] = useState('');
+  const [passes, setPasses] = useState<PassApi[]>([]);
+  const [paseLabel, setPaseLabel] = useState('');
+  const [paseHoras, setPaseHoras] = useState(24);
+  const [copiado, setCopiado] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !esMartillero) navigate(user ? '/' : '/login');
@@ -79,6 +99,20 @@ export default function PanelMartillero() {
       setError(err instanceof ApiError ? err.message : 'No se pudo cargar la subasta');
     }
   }, [id]);
+
+  const cargarPases = useCallback(async () => {
+    if (!id) return;
+    try {
+      const { passes } = await api.get<{ passes: PassApi[] }>(`/subastas/${id}/pases`);
+      setPasses(passes);
+    } catch {
+      setPasses([]);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    if (esMartillero) cargarPases();
+  }, [esMartillero, cargarPases]);
 
   // Se recarga cada vez que la sala cambia (lote nuevo, puja, cámara)
   useEffect(() => {
@@ -135,6 +169,34 @@ export default function PanelMartillero() {
       () => api.post(`/subastas/${id}/camara`, { name: camNombre, rtspUrl: camUrl }),
       'Cámara prendida. El video tarda unos segundos en aparecer.'
     );
+  };
+
+  const crearPase = (e: FormEvent) => {
+    e.preventDefault();
+    accion(async () => {
+      const { pass } = await api.post<{ pass: PassApi }>(`/subastas/${id}/pases`, { label: paseLabel, hours: paseHoras });
+      setPaseLabel('');
+      await cargarPases();
+      await copiarLink(pass);
+    }, 'Pase creado. El link quedó copiado: mandáselo a la persona invitada.');
+  };
+
+  const copiarLink = async (pass: PassApi) => {
+    try {
+      await navigator.clipboard.writeText(pass.link);
+      setCopiado(pass.id);
+      setTimeout(() => setCopiado(null), 2000);
+    } catch {
+      window.prompt('Copiá el link del pase:', pass.link);
+    }
+  };
+
+  const revocarPase = (pass: PassApi) => {
+    if (!window.confirm(`¿Revocar el pase de "${pass.label}"? El link deja de funcionar.`)) return;
+    accion(async () => {
+      await api.delete(`/subastas/${id}/pases/${pass.id}`);
+      await cargarPases();
+    }, 'Pase revocado.');
   };
 
   const apagarCamara = () => {
@@ -267,6 +329,69 @@ export default function PanelMartillero() {
           )}
         </section>
       </div>
+
+      {/* Pases de invitado (pedido del cliente: mirar sin crearse cuenta) */}
+      <section className={styles.card}>
+        <h2>Pases de invitado</h2>
+        <p className={styles.nota}>
+          Link temporal para que alguien mire el remate sin crearse una cuenta (ej: el dueño del local). Con el pase
+          ve el video y el chat, pero no puede ofertar ni escribir.
+        </p>
+        <form className={styles.paseForm} onSubmit={crearPase}>
+          <input
+            className={styles.input}
+            placeholder="¿Para quién es? (ej: Dueño del local)"
+            value={paseLabel}
+            onChange={(e) => setPaseLabel(e.target.value)}
+            maxLength={80}
+            required
+          />
+          <select className={styles.input} value={paseHoras} onChange={(e) => setPaseHoras(Number(e.target.value))}>
+            {DURACIONES.map((d) => (
+              <option key={d.horas} value={d.horas}>
+                Vence en {d.texto}
+              </option>
+            ))}
+          </select>
+          <button className={styles.btnNegro} type="submit" disabled={busy || !paseLabel.trim()}>
+            Crear pase y copiar link
+          </button>
+        </form>
+
+        {passes.length > 0 && (
+          <div className={styles.tableResponsive}>
+            <table className={styles.table}>
+              <thead>
+                <tr>
+                  <th>Para</th>
+                  <th>Vence</th>
+                  <th>Último uso</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                {passes.map((ps) => (
+                  <tr key={ps.id}>
+                    <td>{ps.label}</td>
+                    <td>{new Date(ps.expiresAt).toLocaleString('es-AR', { dateStyle: 'short', timeStyle: 'short' })}</td>
+                    <td>{ps.lastUsedAt ? hora(ps.lastUsedAt) : 'Sin usar'}</td>
+                    <td>
+                      <div className={styles.acciones}>
+                        <button className={styles.btnChico} onClick={() => copiarLink(ps)}>
+                          {copiado === ps.id ? '¡Copiado!' : 'Copiar link'}
+                        </button>
+                        <button className={styles.btnChico} onClick={() => revocarPase(ps)} disabled={busy}>
+                          Revocar
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
 
       {/* Todos los lotes */}
       <section className={styles.card}>

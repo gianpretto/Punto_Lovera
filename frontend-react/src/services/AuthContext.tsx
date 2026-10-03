@@ -26,6 +26,8 @@ export interface User {
   heldCredit: number;
   /** Lo que puede usar para pujar: creditBalance - heldCredit */
   availableCredit: number;
+  /** Cargó todos sus datos personales (requisito para ofertar) */
+  profileComplete: boolean;
 }
 
 export interface UpdateUserData {
@@ -52,6 +54,8 @@ interface AuthContextValue {
   updateUserData: (data: UpdateUserData) => Promise<void>;
   /** Vuelve a pedir el usuario (ej: después de que cambie el saldo). */
   refreshUser: () => Promise<void>;
+  /** Inicia sesión con un token ya emitido (ej: al verificar el mail). */
+  setSession: (token: string, user: User) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -94,6 +98,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // No logueamos todavía, se espera la validación de mail
   }, []);
 
+  const setSession = useCallback((token: string, user: User) => {
+    setToken(token);
+    setUser(user);
+  }, []);
+
   const logout = useCallback(() => {
     setToken(null);
     setUser(null);
@@ -118,7 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, currentUser, loading, login, register, logout, updateUserData, refreshUser }}
+      value={{ user, currentUser, loading, login, register, logout, updateUserData, refreshUser, setSession }}
     >
       {children}
     </AuthContext.Provider>

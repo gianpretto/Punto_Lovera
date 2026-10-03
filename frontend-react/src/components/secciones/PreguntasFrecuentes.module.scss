@@ -1,0 +1,82 @@
+// Copia exacta del bloque .faq de Home.module.scss (diseño original)
+
+.faq {
+  background: #fff;
+  margin-bottom: 100px;
+}
+
+.faq__inner {
+  width: min(1100px, calc(100% - 64px));
+  margin: 0 auto;
+}
+
+.faq__titulo {
+  margin: 0 0 64px;
+  font-size: 30px;
+  letter-spacing: 1px;
+  font-weight: 600;
+  color: #555;
+}
+
+.faq__item {
+  border-bottom: 1px solid #111;
+  padding: 34px 0;
+}
+
+.faq__pregunta {
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+
+  font-size: 24px;
+  color: #444;
+  text-align: left;
+}
+
+.faq__icono {
+  font-size: 22px;
+  transition: transform 0.2s ease;
+}
+
+/* rotación del + */
+.faq__item.activa .faq__icono {
+  transform: rotate(45deg);
+}
+
+.faq__respuesta {
+  margin-top: 18px;
+  max-width: 700px;
+}
+
+.faq__respuesta p {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.9;
+  color: #555;
+}
+
+/* Responsive FAQ */
+@media (max-width: 640px) {
+  .faq {
+    margin-bottom: 60px;
+  }
+
+  .faq__titulo {
+    font-size: 24px;
+    margin-bottom: 40px;
+  }
+
+  .faq__pregunta {
+    font-size: 18px;
+  }
+
+  .faq__respuesta p {
+    font-size: 16px;
+  }
+}

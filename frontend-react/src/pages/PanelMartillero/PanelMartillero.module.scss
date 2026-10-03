@@ -267,3 +267,14 @@
   border-radius: 4px;
   font-size: 14px;
 }
+
+.paseForm {
+  display: grid;
+  grid-template-columns: 1fr 180px auto;
+  gap: 10px;
+  margin-bottom: 14px;
+
+  @media (max-width: 700px) {
+    grid-template-columns: 1fr;
+  }
+}

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth, type User } from '../../services/AuthContext';
 import { ApiError } from '../../services/api';
 import styles from './DatosUsuario.module.scss';
@@ -35,6 +35,10 @@ function formDesdeUsuario(user: User | null): FormState {
 export default function DatosUsuario() {
   const navigate = useNavigate();
   const { user, loading, updateUserData } = useAuth();
+  const [searchParams] = useSearchParams();
+  // Ej: la sala del remate manda acá para completar datos antes de ofertar
+  const volver = searchParams.get('volver');
+  const destino = volver && volver.startsWith('/') && !volver.startsWith('//') ? volver : '/perfil';
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState<FormState>(() => formDesdeUsuario(user));
@@ -131,7 +135,7 @@ export default function DatosUsuario() {
     setDirty(false);
 
     setTimeout(() => {
-      navigate('/perfil');
+      navigate(destino);
     }, 1500);
   };
 

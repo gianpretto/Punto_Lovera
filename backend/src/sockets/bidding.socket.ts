@@ -1,9 +1,12 @@
 import { Server, Socket } from 'socket.io';
 import { verifyToken } from '../utils/jwt';
+import { validatePass } from '../services/pass.service';
 import { placeBidAndBroadcast, sendChatMessage, getChatHistory, getRoomState } from '../services/realtime.service';
 
 interface AuthedSocket extends Socket {
   userId?: string;
+  /** Token del pase de invitado (solo mirar), si entró con uno */
+  pase?: string;
 }
 
 /**
@@ -28,6 +31,8 @@ interface AuthedSocket extends Socket {
 export function registerBiddingHandlers(io: Server) {
   io.use((socket: AuthedSocket, next) => {
     const token = socket.handshake.auth?.token as string | undefined;
+    const pase = socket.handshake.auth?.pase as string | undefined;
+    if (pase) socket.pase = pase;
     if (token) {
       try {
         socket.userId = verifyToken(token).userId;
@@ -42,6 +47,14 @@ export function registerBiddingHandlers(io: Server) {
     socket.on('auction:join', async ({ auctionId }: { auctionId: string }) => {
       if (!auctionId) return;
       try {
+        // Para mirar hace falta sesión o un pase de invitado de esta subasta
+        if (!socket.userId && !(await validatePass(socket.pase, auctionId))) {
+          socket.emit('auction:error', {
+            code: 'AUTH_REQUIRED',
+            message: 'Registrate o iniciá sesión para ingresar al remate',
+          });
+          return;
+        }
         // Primero el estado (valida que la subasta exista), después la sala
         const state = await getRoomState(auctionId);
         await socket.join(`auction:${auctionId}`);

@@ -3,23 +3,13 @@ import SubastaEnVivo from '../../components/secciones/SubastaEnVivo';
 import TarjetaSubasta from '../../components/tarjetas/TarjetaSubasta';
 import Redes from '../../components/secciones/Redes';
 import SubastasAnteriores from '../../components/secciones/SubastasAnteriores';
-import { makeCountdown, type Subasta } from '../../interfaces/subasta';
+import { toSubasta, useAuctions, useNow } from '../../services/auctions';
 import styles from './ProximasSubastas.module.scss';
 
-// 36 items para poder mostrar 3 páginas de 12
-const allSubastas: Subasta[] = Array.from({ length: 36 }, (_, i) => ({
-  id: i + 1,
-  estado: i % 3 === 0 ? 'ACTIVA' : 'PRÓXIMA',
-  titulo: `Subasta #${i + 1} - Heladería con elaboración`,
-  ubicacion: i % 2 === 0 ? 'Castelar, Buenos Aires' : 'Morón, Buenos Aires',
-  descripcion:
-    'Alguna información relevante o interesante para detallar en un muy breve texto descriptivo, que no dure más que esto.',
-  fecha: `Miércoles ${10 + (i % 20)}/11/25`,
-  hora: `${10 + (i % 12)}:00`,
-  countdown: makeCountdown(0, 5, 48, 9),
-}));
-
 export default function ProximasSubastas() {
+  const now = useNow();
+  const proximas = useAuctions(['ACTIVA', 'PROXIMA']);
+  const allSubastas = useMemo(() => (proximas ?? []).map((a) => toSubasta(a, now)), [proximas, now]);
   const [itemsPerPage, setItemsPerPage] = useState(() =>
     typeof window !== 'undefined' && window.innerWidth <= 425 ? 4 : 12
   );
@@ -42,7 +32,7 @@ export default function ProximasSubastas() {
   const paginatedSubastas = useMemo(() => {
     const start = (currentPage - 1) * itemsPerPage;
     return allSubastas.slice(start, start + itemsPerPage);
-  }, [currentPage, itemsPerPage]);
+  }, [currentPage, itemsPerPage, allSubastas]);
 
   const visiblePages = useMemo((): (number | string)[] => {
     const total = totalPages;
@@ -111,11 +101,14 @@ export default function ProximasSubastas() {
                 descripcion={subasta.descripcion}
                 fecha={subasta.fecha}
                 hora={subasta.hora}
-                mostrarCuentaRegresiva={true}
+                mostrarCuentaRegresiva={subasta.estado === 'PRÓXIMA'}
                 countdown={subasta.countdown}
               />
             ))}
           </div>
+          {proximas && allSubastas.length === 0 && (
+            <p className={styles.sinSubastas}>Pronto vamos a publicar nuevas subastas.</p>
+          )}
 
           {totalPages > 1 && (
             <div className={styles.paginationWrapper}>

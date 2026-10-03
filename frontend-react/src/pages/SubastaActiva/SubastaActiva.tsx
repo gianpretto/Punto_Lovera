@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import LivePlayer from '../../components/LivePlayer/LivePlayer';
 import { useAuth } from '../../services/AuthContext';
 import { getToken, uploadUrl } from '../../services/api';
@@ -11,19 +11,35 @@ const IMAGEN_DEFAULT = '/assets/img/default.png';
 export default function SubastaActiva() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user, refreshUser } = useAuth();
+  const { user, loading, refreshUser } = useAuth();
+  const [searchParams] = useSearchParams();
+  // Pase de invitado (link temporal del martillero): mirar sin cuenta
+  const pase = user ? null : searchParams.get('pase');
+  const invitado = !user && Boolean(pase);
+  const aquiMismo = `/subastas/${id}/activa`;
 
   // Con sesión se puja/chatea; sin sesión se mira como espectador
-  const { state, messages, error, placeBid, sendMessage: emitMessage } = useAuctionRoom(
+  const { state, messages, error, authRequired, placeBid, sendMessage: emitMessage } = useAuctionRoom(
     id,
     user ? getToken() : null,
-    { onError: (message) => alert(message) }
+    { onError: (message) => alert(message) },
+    pase
   );
+
+  // Ingresar al remate (diagrama): sin cuenta ni pase → registrarse
+  useEffect(() => {
+    if (!loading && !user && !pase) navigate(`/registro?volver=${encodeURIComponent(aquiMismo)}`);
+  }, [loading, user, pase, navigate, aquiMismo]);
 
   const lot = state?.lot ?? null;
   const esMartillero = user?.role === 'MARTILLERO' || user?.role === 'ADMIN';
   const loteInfo = {
-    nombre: lot ? lot.title : error ?? (state ? 'No quedan lotes en remate' : 'Conectando con la sala...'),
+    nombre:
+      invitado && authRequired
+        ? 'Este link de invitado venció o fue revocado'
+        : lot
+          ? lot.title
+          : (error ?? (state ? 'No quedan lotes en remate' : 'Conectando con la sala...')),
     ubicacion: state?.auction.location ?? '',
     descripcion: lot?.description ?? '',
     martillero: state?.auction.martillero?.toUpperCase() ?? '',
@@ -118,8 +134,25 @@ export default function SubastaActiva() {
     const amount = currentBid;
 
     if (!user) {
-      alert('Tenés que iniciar sesión para ofertar.');
-      navigate('/login');
+      alert(
+        invitado
+          ? 'Estás viendo como invitado. Para ofertar necesitás crear una cuenta.'
+          : 'Tenés que iniciar sesión para ofertar.'
+      );
+      navigate(`/registro?volver=${encodeURIComponent(aquiMismo)}`);
+      return;
+    }
+
+    // Diagrama: si no cargó sus datos → Perfil; si no tiene crédito → Cargar crédito
+    if (!user.profileComplete) {
+      alert('Antes de ofertar completá tus datos personales.');
+      navigate(`/datos?volver=${encodeURIComponent(aquiMismo)}`);
+      return;
+    }
+
+    if (creditoParaEsteLote <= 0) {
+      alert('No tenés crédito disponible. Cargá crédito para poder ofertar.');
+      navigate('/creditos');
       return;
     }
 
@@ -150,7 +183,7 @@ export default function SubastaActiva() {
   const sendMessage = () => {
     if (!newMessage.trim()) return;
     if (!user) {
-      alert('Tenés que iniciar sesión para chatear.');
+      alert(invitado ? 'Como invitado podés leer el chat, pero no escribir.' : 'Tenés que iniciar sesión para chatear.');
       return;
     }
     // El mensaje vuelve por el socket a toda la sala (incluido uno mismo)
@@ -181,6 +214,7 @@ export default function SubastaActiva() {
                 auctionId={id}
                 cameraId={state?.auction.cameraId ?? null}
                 token={user ? getToken() : null}
+                pase={pase}
                 placeholder={
                   <div className={styles.videoPlaceholder}>
                     <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={1}>
@@ -215,8 +249,14 @@ export default function SubastaActiva() {
                     onKeyPress={onlyNumbers}
                   />
                 </div>
-                <span className={styles.userCredits}>TUS CRÉDITOS: ${userCredits.toLocaleString('es-AR')}
-                  {vaGanando && ' · VAS GANANDO'}</span>
+                <span className={styles.userCredits}>{invitado ? (
+                    'MODO INVITADO · SOLO VER'
+                  ) : (
+                    <>
+                      TUS CRÉDITOS: ${userCredits.toLocaleString('es-AR')}
+                      {vaGanando && ' · VAS GANANDO'}
+                    </>
+                  )}</span>
               </div>
               <button className={styles.bidBtn} onClick={increaseBid}>+</button>
             </div>

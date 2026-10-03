@@ -86,6 +86,17 @@ implementado; usarla como backlog de producto.
   `GET /api/creditos/:id/archivo` (dueño o admin). `/uploads/lots` sí es
   público.
 
+## Video en vivo: decisión (oct 2026)
+
+El martillero transmite desde **una PC con OBS** hacia un servidor de video
+propio en Railway (basado en el nginx-rtmp del repo de Francis: recibe
+RTMP y genera HLS); el backend lo sirve por el proxy autenticado que ya
+existe. Último recurso si eso falla: vivo de YouTube embebido (pero lo ve
+cualquiera con el link). El modelo de rtsp-manager "el servidor se conecta
+a la cámara IP" no sirve tal cual: la cámara está dentro de la red del
+local. Pendiente: desplegar el servidor RTMP con clave de transmisión por
+subasta (validada contra el backend) y mostrarla en el panel del martillero.
+
 ## Estructura del repo
 
 ```
@@ -209,6 +220,13 @@ usuario bloqueada (`FOR UPDATE`); si ya lideraba ese lote, su reserva ahí
 se reemplaza por la nueva puja. Ser superado libera la reserva; adjudicar
 descuenta el monto del saldo; finalizar/cancelar la subasta libera lo que
 quedó sin adjudicar. `/auth/me` devuelve `heldCredit` y `availableCredit`.
+
+Reglas de ingreso (diagrama + pedido del cliente): a la sala (socket y
+video) se entra con sesión **o** con un pase de invitado de esa subasta
+(`auction_passes`, `pass.service.ts`; el front lo lee de `?pase=`). Pujar
+pide sesión + datos completos (`isProfileComplete`: nombre, apellido,
+teléfono, DNI, dirección, ciudad, provincia, CP) + crédito disponible. El
+seed deja a `usuario@test.com` con datos completos.
 
 Las pujas y mensajes propios **no** se agregan localmente: vuelven por el
 socket a toda la sala (si no, se duplican).

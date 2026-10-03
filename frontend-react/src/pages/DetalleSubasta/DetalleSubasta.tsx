@@ -1,30 +1,25 @@
-import { useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
+import { formatFecha, formatHora, lotImages, useAuction } from '../../services/auctions';
 import TarjetaProductoCatalogo from '../../components/tarjetas/TarjetaProductoCatalogo';
 import styles from './DetalleSubasta.module.scss';
 
-// Mock data del encabezado de la subasta
-const subastaInfo = {
-  titulo: 'Heladería con elaboración',
-  ubicacion: 'Castelar, Buenos Aires',
-  descripcion:
-    'Gran remate de equipamiento gastronómico completo por cierre definitivo. Oportunidad única para emprendedores del rubro.',
-  fecha: 'Miércoles 11/11/25',
-  hora: '22:30',
-};
-
-// Mock data de lotes
-const lotes = Array.from({ length: 12 }, (_, i) => ({
-  lote: i + 1,
-  titulo: `Lote de mobiliario #${i + 1}`,
-  descripcion:
-    'Juego de mesas y sillas en excelente estado, ideal para salón principal. Madera maciza y tapizado premium.',
-  imagenes: ['/assets/img/default.png', '/assets/img/default.png', '/assets/img/default.png'],
-}));
-
 export default function DetalleSubasta() {
-  // El id de la ruta se usará más adelante para pedir los datos reales al backend
   const { id } = useParams<{ id: string }>();
-  void id;
+  const { auction, error } = useAuction(id);
+
+  const subastaInfo = {
+    titulo: auction?.title ?? (error ? 'Subasta no encontrada' : 'Cargando...'),
+    ubicacion: auction?.location ?? '',
+    descripcion: auction?.description ?? '',
+    fecha: auction ? formatFecha(auction.startsAt) : '',
+    hora: auction ? formatHora(auction.startsAt) : '',
+  };
+  const lotes = (auction?.lots ?? []).map((l) => ({
+    lote: l.number,
+    titulo: l.sold ? `${l.title} (vendido)` : l.title,
+    descripcion: l.description,
+    imagenes: lotImages(l),
+  }));
 
   return (
     <div className={styles.detalleSubastaPage}>
@@ -39,6 +34,12 @@ export default function DetalleSubasta() {
           </div>
 
           <p className={styles.subastaDesc}>{subastaInfo.descripcion}</p>
+
+          {auction?.status === 'ACTIVA' && (
+            <Link to={`/subastas/${auction.id}/activa`} className={styles.btnIngresar}>
+              Ingresar al remate →
+            </Link>
+          )}
         </div>
       </header>
 

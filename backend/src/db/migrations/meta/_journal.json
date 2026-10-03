@@ -36,6 +36,13 @@
       "when": 1791053205890,
       "tag": "0004_lot_leader_credit_hold",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791064460280,
+      "tag": "0005_auction_passes",
+      "breakpoints": true
     }
   ]
 }

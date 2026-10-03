@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../services/AuthContext';
 import { ApiError } from '../../services/api';
 import styles from './Registro.module.scss';
@@ -19,6 +19,8 @@ interface Touched {
 export default function Registro() {
   const navigate = useNavigate();
   const { register } = useAuth();
+  const [searchParams] = useSearchParams();
+  const volver = searchParams.get('volver');
 
   const [nombre, setNombre] = useState('');
   const [apellido, setApellido] = useState('');
@@ -170,7 +172,12 @@ export default function Registro() {
             <button type="submit" className={`${styles.btn} ${styles.btnBlack}`} disabled={sending}>
               Registrarse
             </button>
-            <Link to="/login" className={`${styles.btn} ${styles.btnGray}`}>O iniciá sesión con tu cuenta</Link>
+            <Link
+              to={volver ? `/login?volver=${encodeURIComponent(volver)}` : '/login'}
+              className={`${styles.btn} ${styles.btnGray}`}
+            >
+              O iniciá sesión con tu cuenta
+            </Link>
           </div>
         </form>
       </div>
