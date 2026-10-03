@@ -2,6 +2,42 @@ import { Server, Socket } from 'socket.io';
 import { verifyToken } from '../utils/jwt';
 import { validatePass } from '../services/pass.service';
 import { placeBidAndBroadcast, sendChatMessage, getChatHistory, getRoomState } from '../services/realtime.service';
+import { AppError } from '../utils/AppError';
+
+/**
+ * Límites por socket (anti-flood en la sala): como mucho N eventos en una
+ * ventana deslizante. Generosos para una persona (en un remate se puja
+ * rápido) pero cortan scripts que llenan el chat o martillan la DB.
+ */
+const CHAT_LIMIT = { max: 5, windowMs: 10_000 }; // 5 mensajes cada 10 s
+const BID_LIMIT = { max: 10, windowMs: 10_000 }; // 10 pujas cada 10 s
+
+/** Devuelve una función que dice si se puede hacer un evento más ahora. */
+function slidingWindow({ max, windowMs }: { max: number; windowMs: number }) {
+  let hits: number[] = [];
+  return () => {
+    const now = Date.now();
+    hits = hits.filter((t) => now - t < windowMs);
+    if (hits.length >= max) return false;
+    hits.push(now);
+    return true;
+  };
+}
+
+/**
+ * Mensaje para el cliente: solo los errores de negocio (AppError) se
+ * muestran tal cual; cualquier otro (DB, bug) puede traer detalles internos.
+ */
+function clientMessage(err: unknown, fallback: string) {
+  if (err instanceof AppError) return err.message;
+  console.error('Error en socket:', err);
+  return fallback;
+}
+
+// El payload lo manda el cliente: puede venir vacío, null o con cualquier forma
+type Payload = Record<string, unknown> | null | undefined;
+const field = (p: Payload, key: string) => (p && typeof p === 'object' ? p[key] : undefined);
+const str = (v: unknown) => (typeof v === 'string' && v.length <= 200 ? v : undefined);
 
 interface AuthedSocket extends Socket {
   userId?: string;
@@ -44,7 +80,15 @@ export function registerBiddingHandlers(io: Server) {
   });
 
   io.on('connection', (socket: AuthedSocket) => {
-    socket.on('auction:join', async ({ auctionId }: { auctionId: string }) => {
+    // Viven en el closure de esta conexión (no en un Map global), así que se
+    // liberan solas al desconectar: no hay nada que limpiar a mano.
+    const canChat = slidingWindow(CHAT_LIMIT);
+    const canBid = slidingWindow(BID_LIMIT);
+
+    // Ojo: los handlers nunca deben tirar con payloads raros (un throw o un
+    // reject sin capturar en un listener tira abajo todo el proceso).
+    socket.on('auction:join', async (payload: Payload) => {
+      const auctionId = str(field(payload, 'auctionId'));
       if (!auctionId) return;
       try {
         // Para mirar hace falta sesión o un pase de invitado de esta subasta
@@ -61,37 +105,55 @@ export function registerBiddingHandlers(io: Server) {
         socket.emit('auction:state', state);
         socket.emit('chat:history', await getChatHistory(auctionId));
       } catch (err) {
-        socket.emit('auction:error', { message: err instanceof Error ? err.message : 'No se pudo entrar a la subasta' });
+        socket.emit('auction:error', { message: clientMessage(err, 'No se pudo entrar a la subasta') });
       }
     });
 
-    socket.on('auction:leave', ({ auctionId }: { auctionId: string }) => {
+    socket.on('auction:leave', (payload: Payload) => {
+      const auctionId = str(field(payload, 'auctionId'));
       if (!auctionId) return;
       socket.leave(`auction:${auctionId}`);
     });
 
-    socket.on('bid:place', async ({ lotId, amount }: { lotId: string; amount: number }) => {
+    socket.on('bid:place', async (payload: Payload) => {
       if (!socket.userId) {
         return socket.emit('bid:error', { message: 'Tenés que iniciar sesión para pujar' });
       }
+      const lotId = str(field(payload, 'lotId'));
+      const amount = Number(field(payload, 'amount'));
+      if (!lotId || !Number.isFinite(amount)) {
+        return socket.emit('bid:error', { message: 'Puja inválida' });
+      }
+      if (!canBid()) {
+        return socket.emit('bid:error', {
+          message: 'Estás ofertando demasiado rápido. Esperá unos segundos y volvé a intentar.',
+        });
+      }
       try {
-        await placeBidAndBroadcast(lotId, socket.userId, Number(amount));
+        await placeBidAndBroadcast(lotId, socket.userId, amount);
         // No hace falta emitir acá: placeBidAndBroadcast ya emite bid:new
         // y chat:message a toda la sala.
       } catch (err) {
-        socket.emit('bid:error', { message: err instanceof Error ? err.message : 'No se pudo registrar la puja' });
+        socket.emit('bid:error', { message: clientMessage(err, 'No se pudo registrar la puja') });
       }
     });
 
-    socket.on('chat:message', async ({ auctionId, text }: { auctionId: string; text: string }) => {
+    socket.on('chat:message', async (payload: Payload) => {
       if (!socket.userId) {
         return socket.emit('chat:error', { message: 'Tenés que iniciar sesión para chatear' });
       }
-      if (!auctionId || !text) return;
+      const auctionId = str(field(payload, 'auctionId'));
+      const text = field(payload, 'text');
+      if (!auctionId || typeof text !== 'string' || !text.trim()) return;
+      if (!canChat()) {
+        return socket.emit('chat:error', {
+          message: 'Estás mandando mensajes muy seguido. Esperá unos segundos.',
+        });
+      }
       try {
         await sendChatMessage(auctionId, socket.userId, text);
       } catch (err) {
-        socket.emit('chat:error', { message: err instanceof Error ? err.message : 'No se pudo enviar el mensaje' });
+        socket.emit('chat:error', { message: clientMessage(err, 'No se pudo enviar el mensaje') });
       }
     });
   });

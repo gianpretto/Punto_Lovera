@@ -11,6 +11,15 @@ import { env } from '../config/env';
 
 const UPLOAD_ROOT = env.uploadDir ? path.resolve(env.uploadDir) : path.join(__dirname, '..', '..', 'uploads');
 
+const EXT_BY_MIME: Record<string, string> = {
+  'image/png': '.png',
+  'image/jpeg': '.jpg',
+  'image/jpg': '.jpg',
+  'image/webp': '.webp',
+  'image/gif': '.gif',
+  'application/pdf': '.pdf',
+};
+
 function makeStorage(subfolder: string) {
   const dir = path.join(UPLOAD_ROOT, subfolder);
   fs.mkdirSync(dir, { recursive: true });
@@ -18,7 +27,10 @@ function makeStorage(subfolder: string) {
   return multer.diskStorage({
     destination: (_req, _file, cb) => cb(null, dir),
     filename: (_req, file, cb) => {
-      const ext = path.extname(file.originalname);
+      // La extensión sale del mimetype ya validado, NO del nombre que manda
+      // el cliente: si no, una "imagen" llamada x.html se serviría como HTML
+      // desde /uploads (XSS en el dominio de la API).
+      const ext = EXT_BY_MIME[file.mimetype] ?? '';
       const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}${ext}`;
       cb(null, unique);
     },

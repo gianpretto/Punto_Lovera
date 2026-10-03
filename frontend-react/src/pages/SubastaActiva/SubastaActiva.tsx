@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent }
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import LivePlayer from '../../components/LivePlayer/LivePlayer';
 import { useAuth } from '../../services/AuthContext';
-import { getToken, uploadUrl } from '../../services/api';
+import { api, ApiError, getToken, uploadUrl } from '../../services/api';
 import { useAuctionRoom } from '../../services/useAuctionRoom';
 import styles from './SubastaActiva.module.scss';
 
@@ -140,6 +140,22 @@ export default function SubastaActiva() {
           : 'Tenés que iniciar sesión para ofertar.'
       );
       navigate(`/registro?volver=${encodeURIComponent(aquiMismo)}`);
+      return;
+    }
+
+    // Para ofertar hace falta el mail verificado (el login no lo exige)
+    if (!user.emailVerified) {
+      const reenviar = window.confirm(
+        'Verificá tu mail para poder ofertar: revisá tu casilla (y la carpeta de spam).\n\n¿Querés que te reenviemos el mail de verificación?'
+      );
+      if (reenviar) {
+        api
+          .post('/auth/resend-verification', { email: user.email })
+          .then(() => alert('Listo, te reenviamos el mail. Cuando confirmes tu cuenta vas a poder ofertar.'))
+          .catch((err) => alert(err instanceof ApiError ? err.message : 'No se pudo reenviar el mail.'));
+      }
+      // Por si ya lo verificó en otra pestaña: el próximo click ya lo toma
+      refreshUser();
       return;
     }
 

@@ -74,5 +74,12 @@ export const env = {
     rtmpAuthSecret: (process.env.RTMP_AUTH_SECRET ?? '').trim(),
   },
 
+  // Cuántos proxies hay delante del backend (para `trust proxy`). Railway
+  // pone UN proxy (su edge) que agrega la IP real del cliente al final de
+  // X-Forwarded-For, así que 1 = tomar la IP que vio ese proxy. Un número
+  // más alto dejaría que el cliente falsee su IP con el header y esquive
+  // los límites de intentos. Sin proxy delante (ej. local directo): 0.
+  trustProxy: Number(process.env.TRUST_PROXY ?? 1),
+
   isProd: process.env.NODE_ENV === 'production',
 };

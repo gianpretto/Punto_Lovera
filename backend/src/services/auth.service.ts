@@ -3,7 +3,7 @@ import { eq } from 'drizzle-orm';
 import { db } from '../config/db';
 import { users } from '../db/schema';
 import { signToken } from '../utils/jwt';
-import { randomToken } from '../utils/tokens';
+import { hashToken, randomToken } from '../utils/tokens';
 import { Errors } from '../utils/AppError';
 import { sendPasswordResetEmail, sendVerificationEmail } from './mail.service';
 import { getHeldCredit } from './credit.service';
@@ -74,7 +74,8 @@ export async function register(input: RegisterInput) {
       lastName: input.lastName,
       phone: input.phone,
       dni: input.dni,
-      verificationToken,
+      // En la DB va el hash; el token crudo solo en el mail (ver hashToken)
+      verificationToken: hashToken(verificationToken),
       verificationSentAt: new Date(),
     })
     .returning();
@@ -96,7 +97,7 @@ export async function login(email: string, password: string) {
 }
 
 export async function verifyEmail(token: string) {
-  const [user] = await db.select().from(users).where(eq(users.verificationToken, token));
+  const [user] = await db.select().from(users).where(eq(users.verificationToken, hashToken(token)));
   if (!user) throw Errors.badRequest('Link de verificación inválido o ya usado');
 
   const [verified] = await db
@@ -119,7 +120,7 @@ export async function resendVerification(email: string) {
   const verificationToken = randomToken();
   await db
     .update(users)
-    .set({ verificationToken, verificationSentAt: new Date() })
+    .set({ verificationToken: hashToken(verificationToken), verificationSentAt: new Date() })
     .where(eq(users.id, user.id));
 
   await sendVerificationEmail(user.email, verificationToken);
@@ -133,13 +134,16 @@ export async function requestPasswordReset(email: string) {
   const resetToken = randomToken();
   const resetTokenExpiry = new Date(Date.now() + 60 * 60 * 1000); // 1h
 
-  await db.update(users).set({ resetToken, resetTokenExpiry }).where(eq(users.id, user.id));
+  await db
+    .update(users)
+    .set({ resetToken: hashToken(resetToken), resetTokenExpiry })
+    .where(eq(users.id, user.id));
 
   await sendPasswordResetEmail(user.email, resetToken);
 }
 
 export async function resetPassword(token: string, newPassword: string) {
-  const [user] = await db.select().from(users).where(eq(users.resetToken, token));
+  const [user] = await db.select().from(users).where(eq(users.resetToken, hashToken(token)));
   if (!user || !user.resetTokenExpiry || user.resetTokenExpiry < new Date()) {
     throw Errors.badRequest('Link de recuperación inválido o vencido');
   }
