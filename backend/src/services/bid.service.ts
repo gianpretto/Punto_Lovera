@@ -58,7 +58,7 @@ export async function placeBid(lotId: string, userId: string, amount: number) {
       if (amount > available) {
         throw Errors.badRequest(
           heldElsewhere > 0
-            ? `No tenés crédito disponible suficiente: te quedan ${pesos(available)} (tenés ${pesos(heldElsewhere)} reservados en lotes que vas ganando). Cargá saldo en /creditos`
+            ? `No tenés crédito disponible suficiente: te quedan ${pesos(available)} (tenés ${pesos(heldElsewhere)} reservados en lotes que vas ganando o reintegros pendientes). Cargá saldo en /creditos`
             : 'No tenés crédito suficiente para esta puja. Cargá saldo en /creditos'
         );
       }

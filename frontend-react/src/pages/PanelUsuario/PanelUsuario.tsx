@@ -138,7 +138,7 @@ export default function PanelUsuario() {
         <h2 className={styles.creditTitle}>Crédito disponible</h2>
         <div className={styles.creditAmount}>$ {formatNumber(creditoDisponible)}</div>
         {creditoReservado > 0 && (
-          <p className={styles.creditHeld}>$ {formatNumber(creditoReservado)} reservados en lotes que vas ganando</p>
+          <p className={styles.creditHeld}>$ {formatNumber(creditoReservado)} reservados (lotes que vas ganando y reintegros en trámite)</p>
         )}
         <Link to="/creditos" className={styles.btnCargarCredito}>Cargar créditos</Link>
       </div>

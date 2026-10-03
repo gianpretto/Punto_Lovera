@@ -16,7 +16,12 @@ export default function Header() {
     { to: '/datos', label: 'Mis datos' },
     { to: '/creditos', label: 'Crédito disponible' },
     { to: '/perfil#compras', label: 'Mis compras / ofertas' },
-    ...(user?.role === 'ADMIN' ? [{ to: '/admin/comprobantes', label: 'Comprobantes a revisar' }] : []),
+    ...(user?.role === 'ADMIN'
+      ? [
+          { to: '/admin/comprobantes', label: 'Comprobantes a revisar' },
+          { to: '/admin/reintegros', label: 'Reintegros a pagar' },
+        ]
+      : []),
   ];
 
   // Se cierra al navegar o al hacer click afuera

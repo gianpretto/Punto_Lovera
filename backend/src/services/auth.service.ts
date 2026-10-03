@@ -47,7 +47,8 @@ function publicUser(user: UserRow, heldCredit = 0) {
     role: user.role,
     emailVerified: user.emailVerified,
     creditBalance: Number(user.creditBalance),
-    // Reservado en lotes que va ganando y lo que le queda para pujar
+    // Reservado (lotes que va ganando + reintegros pendientes) y lo que le
+    // queda para pujar o pedir de reintegro
     heldCredit,
     availableCredit: Number(user.creditBalance) - heldCredit,
     profileComplete: isProfileComplete(user),
