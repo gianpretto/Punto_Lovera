@@ -84,7 +84,15 @@ export async function approveWithdrawal(withdrawalId: string, reviewerId: string
   // Transacción: marcar el reintegro como aprobado y descontar el saldo
   // tienen que pasar juntos o no pasar ninguno de los dos.
   const result = await db.transaction(async (tx) => {
-    await tx.select({ id: users.id }).from(users).where(eq(users.id, withdrawal.userId)).for('update');
+    const [owner] = await tx
+      .select({ balance: users.creditBalance })
+      .from(users)
+      .where(eq(users.id, withdrawal.userId))
+      .for('update');
+    // Defensa extra: el monto estuvo reservado, pero nunca dejar saldo negativo
+    if (!owner || Number(owner.balance) < Number(withdrawal.amount)) {
+      throw Errors.badRequest('El usuario no tiene saldo suficiente para este reintegro');
+    }
 
     const [updated] = await tx
       .update(creditWithdrawals)
