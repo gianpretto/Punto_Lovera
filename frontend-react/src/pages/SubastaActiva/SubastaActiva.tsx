@@ -1,42 +1,52 @@
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useAuth } from '../../services/AuthContext';
+import { getToken, uploadUrl } from '../../services/api';
+import { useAuctionRoom } from '../../services/useAuctionRoom';
 import styles from './SubastaActiva.module.scss';
 
-interface Message {
-  user: string;
-  text: string;
-  time: string;
-  isOffer?: boolean;
-}
-
-const loteInfo = {
-  nombre: 'Heladería con elaboración',
-  ubicacion: 'Castelar, Buenos Aires',
-  descripcion:
-    'Alguna información relevante o interesante pero detallar en un muy breve texto descriptivo, que no dure más que esto.',
-  martillero: 'JUAN JANITEZ',
-  imagenes: ['/assets/img/default.png', '/assets/img/default.png', '/assets/img/default.png'],
-};
-
-const BASELINE = 1000000;
-const INCREMENT = 50000;
+const IMAGEN_DEFAULT = '/assets/img/default.png';
 
 export default function SubastaActiva() {
-  // El id de la ruta se usará más adelante para pedir los datos reales al backend
   const { id } = useParams<{ id: string }>();
-  void id;
+  const navigate = useNavigate();
+  const { user } = useAuth();
 
-  const [currentBid, setCurrentBid] = useState(BASELINE);
-  const [userCredits] = useState(20000000);
+  // Con sesión se puja/chatea; sin sesión se mira como espectador
+  const { state, messages, error, placeBid, sendMessage: emitMessage } = useAuctionRoom(
+    id,
+    user ? getToken() : null,
+    { onError: (message) => alert(message) }
+  );
+
+  const lot = state?.lot ?? null;
+  const loteInfo = {
+    nombre: lot ? lot.title : error ?? (state ? 'No quedan lotes en remate' : 'Conectando con la sala...'),
+    ubicacion: state?.auction.location ?? '',
+    descripcion: lot?.description ?? '',
+    martillero: state?.auction.martillero?.toUpperCase() ?? '',
+    imagenes: lot && lot.images.length > 0 ? lot.images.map(uploadUrl) : [IMAGEN_DEFAULT],
+  };
+  const minNextBid = lot?.minNextBid ?? 0;
+  const increment = lot?.bidIncrement ?? 0;
+
+  const [currentBid, setCurrentBid] = useState(0);
+  const userCredits = user?.creditBalance ?? 0;
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [isChatExpanded, setIsChatExpanded] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([
-    { user: 'Sistema', text: 'Bienvenido a la subasta en vivo.', time: '16:00' },
-    { user: 'Martillero', text: 'Iniciamos la puja por este excelente lote.', time: '16:01' },
-    { user: 'Usuario_123', text: 'Ofertó $1.000.000', time: '16:02', isOffer: true },
-  ]);
   const [newMessage, setNewMessage] = useState('');
+
+  // Cambió el lote en remate: volver a la primera foto
+  useEffect(() => {
+    setCurrentIndex(0);
+  }, [lot?.id]);
+
+  // Si alguien pujó y la oferta que estaba armando quedó por debajo del
+  // mínimo, la subimos al mínimo nuevo
+  useEffect(() => {
+    setCurrentBid((v) => (v < minNextBid ? minNextBid : v));
+  }, [minNextBid]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -81,8 +91,8 @@ export default function SubastaActiva() {
     setCurrentBid(numericValue ? parseInt(numericValue, 10) : 0);
   };
 
-  const increaseBid = () => setCurrentBid((v) => v + INCREMENT);
-  const decreaseBid = () => setCurrentBid((v) => (v > BASELINE ? v - INCREMENT : v));
+  const increaseBid = () => setCurrentBid((v) => v + increment);
+  const decreaseBid = () => setCurrentBid((v) => (v - increment >= minNextBid ? v - increment : v));
 
   const onlyNumbers = (event: ReactKeyboardEvent<HTMLInputElement>) => {
     if (!/[0-9]/.test(event.key)) {
@@ -92,6 +102,17 @@ export default function SubastaActiva() {
 
   const placeOffer = () => {
     const amount = currentBid;
+
+    if (!user) {
+      alert('Tenés que iniciar sesión para ofertar.');
+      navigate('/login');
+      return;
+    }
+
+    if (!lot) {
+      alert('No hay ningún lote en remate en este momento.');
+      return;
+    }
 
     if (!amount || amount <= 0) {
       alert('Por favor, ingresa un monto válido.');
@@ -103,35 +124,24 @@ export default function SubastaActiva() {
       return;
     }
 
-    if (amount < BASELINE) {
-      alert('La oferta no puede ser menor al precio base ($1.000.000).');
+    if (amount < minNextBid) {
+      alert(`La oferta mínima es $${minNextBid.toLocaleString('es-AR')}.`);
       return;
     }
 
-    const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    setMessages((prev) => [
-      ...prev,
-      { user: 'Tú', text: `Ofertó $${amount.toLocaleString('es-AR')}`, time, isOffer: true },
-    ]);
-
-    setTimeout(() => {
-      setMessages((prev) => [
-        ...prev,
-        {
-          user: 'Martillero',
-          text: `¡Nueva oferta recibida de $${amount.toLocaleString('es-AR')}!`,
-          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        },
-      ]);
-    }, 1000);
+    // La confirmación llega por el socket (bid:new + mensaje en el chat)
+    placeBid(lot.id, amount);
   };
 
   const sendMessage = () => {
-    if (newMessage.trim()) {
-      const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      setMessages((prev) => [...prev, { user: 'Tú', text: newMessage, time }]);
-      setNewMessage('');
+    if (!newMessage.trim()) return;
+    if (!user) {
+      alert('Tenés que iniciar sesión para chatear.');
+      return;
     }
+    // El mensaje vuelve por el socket a toda la sala (incluido uno mismo)
+    emitMessage(newMessage);
+    setNewMessage('');
   };
 
   const onChatKeyUp = (e: ReactKeyboardEvent<HTMLInputElement>) => {
@@ -155,7 +165,7 @@ export default function SubastaActiva() {
               </svg>
             </div>
             <div className={styles.streamBanner}>
-              <span className={styles.bannerText}>SE VENDE EN ${currentBid.toLocaleString('es-AR')}</span>
+              <span className={styles.bannerText}>SE VENDE EN ${(lot?.currentPrice ?? 0).toLocaleString('es-AR')}</span>
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2}>
                 <circle cx="12" cy="12" r="10"></circle>
                 <polyline points="12 6 12 12 16 14"></polyline>
@@ -181,7 +191,7 @@ export default function SubastaActiva() {
               </div>
               <button className={styles.bidBtn} onClick={increaseBid}>+</button>
             </div>
-            <button className={styles.offerBtn} onClick={placeOffer}>OFERTAR</button>
+            <button className={styles.offerBtn} onClick={placeOffer} disabled={!lot}>OFERTAR</button>
           </div>
         </div>
 
@@ -228,7 +238,7 @@ export default function SubastaActiva() {
                 <div className={styles.chatHeaderMinimal}>CHAT EN VIVO ·</div>
                 <div className={styles.chatMessagesScroll} ref={scrollRef}>
                   {messages.map((msg, i) => (
-                    <div className={`${styles.message} ${msg.isOffer ? styles.isOffer : ''}`} key={i}>
+                    <div className={`${styles.message} ${msg.isOffer ? styles.isOffer : ''}`} key={msg.id ?? `local-${i}`}>
                       <span className={styles.messageUser}>{msg.user}:</span>
                       <span className={styles.messageText}>{msg.text}</span>
                       <span className={styles.messageTime}>{msg.time}</span>

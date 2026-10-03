@@ -25,3 +25,7 @@ export const updateLotSchema = createLotSchema.partial();
 export const placeBidSchema = z.object({
   amount: z.coerce.number().positive(),
 });
+
+export const setCurrentLotSchema = z.object({
+  lotId: z.string().uuid().nullable(),
+});

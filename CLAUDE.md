@@ -102,8 +102,8 @@ Playwright sobre las 19 rutas, sin errores de consola/React):
 - Institucionales: QuienesSomos, QuieroComprar, QuieroVender (comparten
   layout vía `pages/QuieroComprar/AccionPage.tsx`), Contactanos
 - Subastas: ProximasSubastas (con paginación), DetalleSubasta,
-  SubastaActiva (sala de puja: lightbox, chat, contador — la lógica de
-  puja/chat todavía es local/mock, **falta conectarla al WebSocket real**)
+  SubastaActiva (sala de puja: lightbox, chat, contador — conectada al
+  WebSocket real, ver abajo)
 - Auth/usuario: Login, Registro, ForgotPassword, ValidarMail,
   DatosUsuario, PanelUsuario, Creditos, ComprobanteExitoso, Reintegro
 
@@ -132,18 +132,41 @@ El avatar sigue siendo local (el backend no guarda avatar todavía).
 En dev, Vite proxea `/api`, `/uploads` y `/socket.io` a `localhost:4000`
 (`vite.config.ts`); `FRONTEND_URL` del backend apunta a `localhost:5173`.
 
+### Sala en vivo (`SubastaActiva` + `src/services/useAuctionRoom.ts`)
+
+Conectada al Socket.io del backend. Con sesión se puja y chatea; sin
+sesión se mira como espectador. Eventos (documentados también en
+`backend/src/sockets/bidding.socket.ts`):
+
+- cliente → `auction:join`, `auction:leave`, `bid:place`, `chat:message`
+- servidor → `auction:state` (al entrar), `chat:history`, `bid:new`,
+  `chat:message`, `lot:change`, `lot:sold`, y `bid:error` / `chat:error` /
+  `auction:error` al socket que falló
+
+Lote en remate: `auctions.current_lot_id` (migración 0003). Lo mueve el
+martillero con `PATCH /api/subastas/:id/lote-actual { lotId }`; si es null
+se usa el primer lote sin vender. Al cerrar un lote
+(`POST /api/compras/cerrar-lote/:lotId`) la sala recibe `lot:sold` y avanza
+sola al siguiente. Solo se puede pujar al lote en remate.
+
+Las pujas y mensajes propios **no** se agregan localmente: vuelven por el
+socket a toda la sala (si no, se duplican).
+
+Probado end-to-end (28 checks de auth + sala con dos clientes, y la UI en
+el navegador) contra un Postgres embebido (PGlite) porque no había Docker.
+
 ## Pendiente / próximos pasos
 
 1. **Conectar el resto del frontend React al backend real** (auth y perfil
    ya están; faltan subastas/lotes — Home, ProximasSubastas,
    DetalleSubasta — y Creditos/comprobantes, que hoy usan datos
    hardcodeados).
-2. Conectar `SubastaActiva` al WebSocket real de pujas/chat del backend
-   (hoy la lógica de la sala en vivo es local, con `setTimeout` simulando
-   respuestas). Antes hay que decidir cómo se sabe qué lote está en
-   remate en cada momento: el schema no tiene "lote actual" y `bid:place`
-   necesita un `lotId` (propuesta: `auctions.currentLotId` + evento
-   `lot:change` que dispara el martillero).
+2. Sala en vivo: falta el video (el `streamContainer` sigue siendo un
+   placeholder; el backend ya tiene el proxy autenticado
+   `/api/subastas/:id/vivo/...` hacia rtsp-manager) y una UI para el
+   martillero (cambiar de lote / cerrar lote — hoy solo por API). Además
+   la puja no descuenta ni reserva crédito: solo valida que el saldo
+   alcance (decidir con el colega cómo se descuenta al adjudicar).
 3. Revisión y pulido visual conjunto (comparación final pixel a pixel).
 4. Decidir contenido real para `/como-participar` y `/faq` (hoy vacíos en
    ambos frontends).

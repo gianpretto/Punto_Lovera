@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { asyncHandler } from '../utils/asyncHandler';
 import * as purchaseService from '../services/purchase.service';
+import { closeLotAndBroadcast } from '../services/realtime.service';
 
 export const mine = asyncHandler(async (req: Request, res: Response) => {
   const purchases = await purchaseService.listMyPurchases(req.user!.userId);
@@ -8,6 +9,6 @@ export const mine = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const closeLot = asyncHandler(async (req: Request, res: Response) => {
-  const purchase = await purchaseService.closeLotAndCreatePurchase(req.params.lotId);
+  const purchase = await closeLotAndBroadcast(req.params.lotId);
   res.status(201).json({ purchase });
 });

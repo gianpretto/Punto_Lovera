@@ -1,7 +1,8 @@
 import { Request, Response } from 'express';
 import { asyncHandler } from '../utils/asyncHandler';
 import * as auctionService from '../services/auction.service';
-import { createAuctionSchema, updateAuctionSchema } from '../schemas/auction.schema';
+import { createAuctionSchema, setCurrentLotSchema, updateAuctionSchema } from '../schemas/auction.schema';
+import { setCurrentLotAndBroadcast } from '../services/realtime.service';
 import { auctions } from '../db/schema';
 
 type AuctionStatus = (typeof auctions.$inferSelect)['status'];
@@ -32,4 +33,12 @@ export const update = asyncHandler(async (req: Request, res: Response) => {
 export const remove = asyncHandler(async (req: Request, res: Response) => {
   await auctionService.deleteAuction(req.params.id);
   res.status(204).send();
+});
+
+// El martillero elige qué lote se remata ahora en la sala en vivo
+// (lotId: null = volver al primer lote sin vender).
+export const setCurrentLot = asyncHandler(async (req: Request, res: Response) => {
+  const { lotId } = setCurrentLotSchema.parse(req.body);
+  const state = await setCurrentLotAndBroadcast(req.params.id, lotId);
+  res.json(state);
 });

@@ -73,6 +73,12 @@ export const auctions = pgTable('auctions', {
   // cámara en vivo activa. Null = sin video, solo chat/pujas.
   cameraId: text('camera_id'),
 
+  // Lote que se está rematando ahora en la sala en vivo. Lo mueve el
+  // martillero (PATCH /subastas/:id/lote-actual) y avanza solo al cerrar un
+  // lote. Null = todavía no se eligió: se usa el primer lote sin vender.
+  // Sin FK a lots para no armar una referencia circular auctions <-> lots.
+  currentLotId: uuid('current_lot_id'),
+
   createdById: uuid('created_by_id').references(() => users.id),
 
   createdAt: timestamp('created_at').notNull().defaultNow(),

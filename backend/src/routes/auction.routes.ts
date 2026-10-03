@@ -27,6 +27,12 @@ router.delete('/:id/camara', requireAuth, requireRole('MARTILLERO', 'ADMIN'), li
 router.post('/', requireAuth, requireRole('MARTILLERO', 'ADMIN'), auctionController.create);
 router.patch('/:id', requireAuth, requireRole('MARTILLERO', 'ADMIN'), auctionController.update);
 router.delete('/:id', requireAuth, requireRole('MARTILLERO', 'ADMIN'), auctionController.remove);
+router.patch(
+  '/:id/lote-actual',
+  requireAuth,
+  requireRole('MARTILLERO', 'ADMIN'),
+  auctionController.setCurrentLot
+);
 
 router.post(
   '/:auctionId/lotes',

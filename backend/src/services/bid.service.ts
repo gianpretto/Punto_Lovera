@@ -2,6 +2,7 @@ import { and, eq } from 'drizzle-orm';
 import { db } from '../config/db';
 import { bids, lots, users } from '../db/schema';
 import { Errors } from '../utils/AppError';
+import { getCurrentLot } from './auction.service';
 
 /**
  * Registra una puja sobre un lote.
@@ -23,6 +24,10 @@ export async function placeBid(lotId: string, userId: string, amount: number) {
       throw Errors.badRequest('Esta subasta no está activa en este momento');
     }
     if (lot.sold) throw Errors.badRequest('Este lote ya fue adjudicado');
+    const current = await getCurrentLot(lot.auctionId);
+    if (current?.id !== lot.id) {
+      throw Errors.badRequest('Este lote no está en remate en este momento');
+    }
 
     const currentPrice = Number(lot.currentPrice);
     const minNext = currentPrice + Number(lot.bidIncrement);

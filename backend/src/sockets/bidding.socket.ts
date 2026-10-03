@@ -1,6 +1,6 @@
 import { Server, Socket } from 'socket.io';
 import { verifyToken } from '../utils/jwt';
-import { placeBidAndBroadcast, sendChatMessage, getChatHistory } from '../services/realtime.service';
+import { placeBidAndBroadcast, sendChatMessage, getChatHistory, getRoomState } from '../services/realtime.service';
 
 interface AuthedSocket extends Socket {
   userId?: string;
@@ -15,6 +15,11 @@ interface AuthedSocket extends Socket {
  *   socket.emit('auction:join', { auctionId })
  *   socket.emit('bid:place', { lotId, amount })
  *   socket.emit('chat:message', { auctionId, text })
+ *
+ * El servidor emite a la sala: 'auction:state' (al entrar), 'chat:history',
+ * 'bid:new', 'chat:message', 'lot:change' (otro lote en remate) y
+ * 'lot:sold' (lote adjudicado); y al socket que falla: 'bid:error',
+ * 'chat:error', 'auction:error'.
  *
  * Se autentica en la conexión (no en cada evento) para no repetir el
  * verify del JWT en cada puja; si el token es inválido, igual dejamos
@@ -36,9 +41,15 @@ export function registerBiddingHandlers(io: Server) {
   io.on('connection', (socket: AuthedSocket) => {
     socket.on('auction:join', async ({ auctionId }: { auctionId: string }) => {
       if (!auctionId) return;
-      await socket.join(`auction:${auctionId}`);
-      const history = await getChatHistory(auctionId);
-      socket.emit('chat:history', history);
+      try {
+        // Primero el estado (valida que la subasta exista), después la sala
+        const state = await getRoomState(auctionId);
+        await socket.join(`auction:${auctionId}`);
+        socket.emit('auction:state', state);
+        socket.emit('chat:history', await getChatHistory(auctionId));
+      } catch (err) {
+        socket.emit('auction:error', { message: err instanceof Error ? err.message : 'No se pudo entrar a la subasta' });
+      }
     });
 
     socket.on('auction:leave', ({ auctionId }: { auctionId: string }) => {

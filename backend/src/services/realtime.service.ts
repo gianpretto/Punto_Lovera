@@ -1,7 +1,10 @@
 import { eq } from 'drizzle-orm';
 import { db } from '../config/db';
-import { chatMessages, users } from '../db/schema';
+import { auctions, chatMessages, users } from '../db/schema';
+import { Errors } from '../utils/AppError';
+import * as auctionService from './auction.service';
 import * as bidService from './bid.service';
+import * as purchaseService from './purchase.service';
 import { getIo } from '../sockets/io';
 
 /**
@@ -34,6 +37,7 @@ export async function placeBidAndBroadcast(lotId: string, userId: string, amount
     io.to(room).emit('bid:new', {
       lotId: result.lot.id,
       currentPrice: Number(result.lot.currentPrice),
+      minNextBid: Number(result.lot.currentPrice) + Number(result.lot.bidIncrement),
       bid: { ...result.bid, amount: Number(result.bid.amount) },
     });
     io.to(room).emit('chat:message', {
@@ -88,4 +92,87 @@ export async function getChatHistory(auctionId: string) {
     time: m.createdAt,
     isOffer: m.isOffer,
   }));
+}
+
+// ---------- Estado de la sala (qué lote se remata ahora) ----------
+
+type CurrentLot = NonNullable<Awaited<ReturnType<typeof auctionService.getCurrentLot>>>;
+
+function lotPayload(lot: CurrentLot) {
+  const currentPrice = Number(lot.currentPrice);
+  const bidIncrement = Number(lot.bidIncrement);
+  return {
+    id: lot.id,
+    number: lot.number,
+    title: lot.title,
+    description: lot.description,
+    startingPrice: Number(lot.startingPrice),
+    currentPrice,
+    bidIncrement,
+    minNextBid: currentPrice + bidIncrement,
+    images: lot.images.map((i) => i.url),
+  };
+}
+
+/**
+ * Todo lo que necesita la sala al entrar (evento 'auction:state'): datos
+ * de la subasta y el lote que se está rematando. lot = null cuando ya no
+ * quedan lotes sin vender.
+ */
+export async function getRoomState(auctionId: string) {
+  const auction = await db.query.auctions.findFirst({
+    where: eq(auctions.id, auctionId),
+    with: { createdBy: { columns: { firstName: true, lastName: true } } },
+  });
+  if (!auction) throw Errors.notFound('Subasta');
+
+  const lot = await auctionService.getCurrentLot(auctionId);
+  return {
+    auction: {
+      id: auction.id,
+      title: auction.title,
+      location: auction.location,
+      status: auction.status,
+      cameraId: auction.cameraId,
+      martillero: auction.createdBy ? `${auction.createdBy.firstName} ${auction.createdBy.lastName}` : null,
+    },
+    lot: lot ? lotPayload(lot) : null,
+  };
+}
+
+async function broadcastRoomState(auctionId: string) {
+  const state = await getRoomState(auctionId);
+  getIo()?.to(`auction:${auctionId}`).emit('lot:change', state);
+  return state;
+}
+
+/** El martillero pasa a otro lote: se avisa a toda la sala. */
+export async function setCurrentLotAndBroadcast(auctionId: string, lotId: string | null) {
+  await auctionService.setCurrentLot(auctionId, lotId);
+  return broadcastRoomState(auctionId);
+}
+
+/**
+ * Cierra el lote (adjudica al mejor postor), avisa a la sala con
+ * 'lot:sold' y avanza solo al siguiente lote sin vender ('lot:change').
+ */
+export async function closeLotAndBroadcast(lotId: string) {
+  const purchase = await purchaseService.closeLotAndCreatePurchase(lotId);
+  const lot = await db.query.lots.findFirst({ where: (l, { eq }) => eq(l.id, lotId) });
+  if (!lot) return purchase;
+
+  const [winner] = await db
+    .select({ firstName: users.firstName, lastName: users.lastName })
+    .from(users)
+    .where(eq(users.id, purchase.userId));
+
+  getIo()?.to(`auction:${lot.auctionId}`).emit('lot:sold', {
+    lotId,
+    amount: Number(purchase.totalAmount),
+    winner: winner ? `${winner.firstName} ${winner.lastName}` : 'Usuario',
+  });
+
+  await auctionService.setCurrentLot(lot.auctionId, null);
+  await broadcastRoomState(lot.auctionId);
+  return purchase;
 }

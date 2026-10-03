@@ -4,7 +4,7 @@
 // proxea a http://localhost:4000 (ver vite.config.ts), así no hay CORS.
 // En producción se puede apuntar a otro host con VITE_API_URL.
 
-const API_URL = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? '';
+export const API_URL = (import.meta.env.VITE_API_URL as string | undefined)?.replace(/\/$/, '') ?? '';
 
 const TOKEN_KEY = 'authToken';
 
