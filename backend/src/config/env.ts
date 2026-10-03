@@ -8,6 +8,12 @@ function required(name: string, fallback?: string): string {
   return value;
 }
 
+// OBS necesita "rtmp://" adelante; se agrega si se cargó solo host:puerto/live
+function withRtmpScheme(url: string) {
+  const u = url.trim();
+  return /^rtmps?:\/\//i.test(u) ? u : `rtmp://${u}`;
+}
+
 export const env = {
   nodeEnv: process.env.NODE_ENV ?? 'development',
   port: Number(process.env.PORT ?? 4000),
@@ -62,7 +68,7 @@ export const env = {
     mode: (process.env.VIDEO_MODE === 'rtsp' ? 'rtsp' : 'obs') as 'obs' | 'rtsp',
     // Lo que el martillero pega en OBS como "Servidor", ej:
     // rtmp://xxxx.proxy.rlwy.net:12345/live (TCP Proxy de Railway al 1935)
-    rtmpPublicUrl: (process.env.RTMP_PUBLIC_URL ?? 'rtmp://localhost:1935/live').trim(),
+    rtmpPublicUrl: withRtmpScheme(process.env.RTMP_PUBLIC_URL ?? 'rtmp://localhost:1935/live'),
     // Compartido con media-server: nginx lo manda al validar una clave
     // trim: en el panel de Railway es fácil pegarlo con un salto de línea al final
     rtmpAuthSecret: (process.env.RTMP_AUTH_SECRET ?? '').trim(),
