@@ -7,6 +7,7 @@ import EnConstruccion from './pages/EnConstruccion';
 import ProximasSubastas from './pages/ProximasSubastas/ProximasSubastas';
 import DetalleSubasta from './pages/DetalleSubasta/DetalleSubasta';
 import SubastaActiva from './pages/SubastaActiva/SubastaActiva';
+import PanelMartillero from './pages/PanelMartillero/PanelMartillero';
 import Login from './pages/Login/Login';
 import ForgotPassword from './pages/ForgotPassword/ForgotPassword';
 import Registro from './pages/Registro/Registro';
@@ -39,6 +40,7 @@ export default function App() {
           <Route path="/subastas" element={<ProximasSubastas />} />
           <Route path="/subastas/:id" element={<DetalleSubasta />} />
           <Route path="/subastas/:id/activa" element={<SubastaActiva />} />
+          <Route path="/subastas/:id/martillero" element={<PanelMartillero />} />
 
           {/* Autenticación / usuario */}
           <Route path="/login" element={<Login />} />

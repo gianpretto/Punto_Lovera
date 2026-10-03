@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import LivePlayer from '../../components/LivePlayer/LivePlayer';
 import { useAuth } from '../../services/AuthContext';
 import { getToken, uploadUrl } from '../../services/api';
 import { useAuctionRoom } from '../../services/useAuctionRoom';
@@ -20,6 +21,7 @@ export default function SubastaActiva() {
   );
 
   const lot = state?.lot ?? null;
+  const esMartillero = user?.role === 'MARTILLERO' || user?.role === 'ADMIN';
   const loteInfo = {
     nombre: lot ? lot.title : error ?? (state ? 'No quedan lotes en remate' : 'Conectando con la sala...'),
     ubicacion: state?.auction.location ?? '',
@@ -152,18 +154,32 @@ export default function SubastaActiva() {
     <div className={styles.activeAuctionContainer}>
       <div className={styles.auctionHeader}>
         <h1>SUBASTA ACTIVA · EN VIVO</h1>
+        {esMartillero && (
+          <Link to={`/subastas/${id}/martillero`} className={styles.panelLink}>
+            Panel del martillero
+          </Link>
+        )}
       </div>
 
       <div className={styles.auctionGrid}>
         <div className={styles.mainContent}>
           <div className={styles.streamContainer}>
-            <div className={styles.videoPlaceholder}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={1}>
-                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                <polyline points="21 15 16 10 5 21"></polyline>
-              </svg>
-            </div>
+            {id && (
+              <LivePlayer
+                auctionId={id}
+                cameraId={state?.auction.cameraId ?? null}
+                token={user ? getToken() : null}
+                placeholder={
+                  <div className={styles.videoPlaceholder}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={1}>
+                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                      <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                      <polyline points="21 15 16 10 5 21"></polyline>
+                    </svg>
+                  </div>
+                }
+              />
+            )}
             <div className={styles.streamBanner}>
               <span className={styles.bannerText}>SE VENDE EN ${(lot?.currentPrice ?? 0).toLocaleString('es-AR')}</span>
               <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2}>

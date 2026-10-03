@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { eq } from 'drizzle-orm';
 import { db } from '../config/db';
 import { auctions } from '../db/schema';
@@ -39,12 +40,17 @@ async function callControlPlane(path: string, init?: RequestInit): Promise<RtspM
 export async function startCamera(auctionId: string, name: string, rtspUrl: string) {
   const auction = await getAuctionById(auctionId);
 
+  // El cameraId lo generamos nosotros (y no rtsp-manager) para que, si el
+  // stream falla al arrancar, el reintento reuse el mismo id: rtsp-manager
+  // guarda la configuración aunque responda error, y si dejáramos que él
+  // genere el UUID cada intento fallido quedaría un stream huérfano.
+  const requestedId = auction.cameraId ?? randomUUID();
   const result = await callControlPlane('/streams', {
     method: 'POST',
-    body: JSON.stringify({ cameraId: auction.cameraId ?? undefined, name, rtspUrl }),
+    body: JSON.stringify({ cameraId: requestedId, name, rtspUrl }),
   });
 
-  const cameraId = result.data!.configuration.cameraId;
+  const cameraId = result.data?.configuration?.cameraId ?? requestedId;
   const [updated] = await db.update(auctions).set({ cameraId, updatedAt: new Date() }).where(eq(auctions.id, auctionId)).returning();
   return updated;
 }

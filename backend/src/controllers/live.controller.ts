@@ -5,15 +5,19 @@ import * as liveService from '../services/live.service';
 import { startCameraSchema } from '../schemas/live.schema';
 import { env } from '../config/env';
 import { Errors } from '../utils/AppError';
+import { broadcastRoomState } from '../services/realtime.service';
 
 export const startCamera = asyncHandler(async (req: Request, res: Response) => {
   const { name, rtspUrl } = startCameraSchema.parse(req.body);
   const auction = await liveService.startCamera(req.params.id, name, rtspUrl);
+  // La sala se entera del cameraId nuevo y el reproductor arranca solo
+  await broadcastRoomState(req.params.id);
   res.status(201).json({ auction });
 });
 
 export const stopCamera = asyncHandler(async (req: Request, res: Response) => {
   const auction = await liveService.stopCamera(req.params.id);
+  await broadcastRoomState(req.params.id);
   res.json({ auction });
 });
 

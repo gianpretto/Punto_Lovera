@@ -596,3 +596,13 @@
   font-size: 12px;
   opacity: 0.7;
 }
+
+// Solo visible para martillero/admin (no está en el diseño original)
+.panelLink {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #333;
+  text-decoration: underline;
+}

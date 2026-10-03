@@ -1,0 +1,312 @@
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { Link, useNavigate, useParams } from 'react-router-dom';
+import LivePlayer from '../../components/LivePlayer/LivePlayer';
+import { useAuth } from '../../services/AuthContext';
+import { api, ApiError, getToken } from '../../services/api';
+import { useAuctionRoom } from '../../services/useAuctionRoom';
+import styles from './PanelMartillero.module.scss';
+
+// Panel del martillero (pantalla nueva, no existe en el diseño Angular):
+// elegir qué lote se remata, adjudicarlo, abrir/cerrar la subasta y
+// prender/apagar la cámara. Todo lo que cambia acá le llega a la sala en
+// vivo por el socket (lot:change / lot:sold / estado de la cámara).
+
+type AuctionStatus = 'PROXIMA' | 'ACTIVA' | 'FINALIZADA' | 'CANCELADA';
+
+interface LotApi {
+  id: string;
+  number: number;
+  title: string;
+  startingPrice: string;
+  currentPrice: string;
+  sold: boolean;
+}
+
+interface AuctionApi {
+  id: string;
+  title: string;
+  location: string;
+  status: AuctionStatus;
+  cameraId: string | null;
+  lots: LotApi[];
+}
+
+interface BidApi {
+  id: string;
+  amount: string;
+  createdAt: string;
+  user: { firstName: string; lastName: string };
+}
+
+const ESTADOS: Record<AuctionStatus, string> = {
+  PROXIMA: 'Próxima',
+  ACTIVA: 'Activa (en vivo)',
+  FINALIZADA: 'Finalizada',
+  CANCELADA: 'Cancelada',
+};
+
+const pesos = (n: number | string) => `$${Number(n).toLocaleString('es-AR')}`;
+const hora = (iso: string) => new Date(iso).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+
+export default function PanelMartillero() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const { user, loading } = useAuth();
+  const esMartillero = user?.role === 'MARTILLERO' || user?.role === 'ADMIN';
+  const token = user ? getToken() : null;
+
+  const { state, connected } = useAuctionRoom(esMartillero ? id : undefined, token);
+  const lotActual = state?.lot ?? null;
+
+  const [auction, setAuction] = useState<AuctionApi | null>(null);
+  const [bids, setBids] = useState<BidApi[]>([]);
+  const [error, setError] = useState('');
+  const [aviso, setAviso] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [camNombre, setCamNombre] = useState('Cámara principal');
+  const [camUrl, setCamUrl] = useState('');
+
+  useEffect(() => {
+    if (!loading && !esMartillero) navigate(user ? '/' : '/login');
+  }, [loading, esMartillero, user, navigate]);
+
+  const cargarSubasta = useCallback(async () => {
+    if (!id) return;
+    try {
+      const { auction } = await api.get<{ auction: AuctionApi }>(`/subastas/${id}`);
+      setAuction(auction);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'No se pudo cargar la subasta');
+    }
+  }, [id]);
+
+  // Se recarga cada vez que la sala cambia (lote nuevo, puja, cámara)
+  useEffect(() => {
+    if (esMartillero) cargarSubasta();
+  }, [esMartillero, cargarSubasta, lotActual?.id, lotActual?.currentPrice, state?.auction.cameraId]);
+
+  useEffect(() => {
+    if (!id || !lotActual) {
+      setBids([]);
+      return;
+    }
+    api
+      .get<{ bids: BidApi[] }>(`/subastas/${id}/lotes/${lotActual.id}/pujas`)
+      .then(({ bids }) => setBids(bids))
+      .catch(() => setBids([]));
+  }, [id, lotActual?.id, lotActual?.currentPrice]);
+
+  const accion = async (fn: () => Promise<unknown>, ok?: string) => {
+    setError('');
+    setAviso('');
+    setBusy(true);
+    try {
+      await fn();
+      if (ok) setAviso(ok);
+      await cargarSubasta();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Ocurrió un error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const cambiarEstado = (status: AuctionStatus) =>
+    accion(() => api.patch(`/subastas/${id}`, { status }), `La subasta quedó ${ESTADOS[status].toLowerCase()}.`);
+
+  const ponerEnRemate = (lotId: string) =>
+    accion(() => api.patch(`/subastas/${id}/lote-actual`, { lotId }));
+
+  const adjudicar = () => {
+    if (!lotActual) return;
+    const mejor = bids[0];
+    if (!mejor) {
+      setError('Este lote no tiene pujas: no se puede adjudicar. Podés pasar a otro lote.');
+      return;
+    }
+    const quien = `${mejor.user.firstName} ${mejor.user.lastName}`;
+    if (!window.confirm(`¿Adjudicar "${lotActual.title}" a ${quien} por ${pesos(mejor.amount)}?`)) return;
+    accion(() => api.post(`/compras/cerrar-lote/${lotActual.id}`), `Lote adjudicado a ${quien}.`);
+  };
+
+  const prenderCamara = (e: FormEvent) => {
+    e.preventDefault();
+    accion(
+      () => api.post(`/subastas/${id}/camara`, { name: camNombre, rtspUrl: camUrl }),
+      'Cámara prendida. El video tarda unos segundos en aparecer.'
+    );
+  };
+
+  const apagarCamara = () => {
+    if (!window.confirm('¿Apagar la cámara? La sala deja de ver el video.')) return;
+    accion(() => api.delete(`/subastas/${id}/camara`), 'Cámara apagada.');
+  };
+
+  if (!esMartillero || !id) return null;
+
+  const status = auction?.status;
+  const cameraId = state?.auction.cameraId ?? auction?.cameraId ?? null;
+
+  return (
+    <div className={styles.panel}>
+      <div className={styles.header}>
+        <div>
+          <h1>PANEL DEL MARTILLERO</h1>
+          <p className={styles.subtitle}>
+            {auction ? `${auction.title} · ${auction.location}` : 'Cargando...'}
+          </p>
+        </div>
+        <Link to={`/subastas/${id}/activa`} className={styles.btnGris}>Ver la sala</Link>
+      </div>
+
+      {error && <div className={styles.alertDanger}>{error}</div>}
+      {aviso && <div className={styles.alertSuccess}>{aviso}</div>}
+
+      <div className={styles.grid}>
+        {/* Lote en remate */}
+        <section className={styles.card}>
+          <h2>Lote en remate</h2>
+          {lotActual ? (
+            <>
+              <p className={styles.lotTitle}>
+                Lote {lotActual.number} · {lotActual.title}
+              </p>
+              <div className={styles.precios}>
+                <div>
+                  <span className={styles.label}>Precio actual</span>
+                  <span className={styles.precio}>{pesos(lotActual.currentPrice)}</span>
+                </div>
+                <div>
+                  <span className={styles.label}>Próxima puja mínima</span>
+                  <span className={styles.precio}>{pesos(lotActual.minNextBid)}</span>
+                </div>
+              </div>
+
+              <h3>Últimas pujas</h3>
+              {bids.length === 0 ? (
+                <p className={styles.vacio}>Todavía no hay pujas.</p>
+              ) : (
+                <ul className={styles.bids}>
+                  {bids.slice(0, 8).map((b, i) => (
+                    <li key={b.id} className={i === 0 ? styles.bidMejor : ''}>
+                      <span>{b.user.firstName} {b.user.lastName}</span>
+                      <strong>{pesos(b.amount)}</strong>
+                      <span className={styles.hora}>{hora(b.createdAt)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <button className={styles.btnNegro} onClick={adjudicar} disabled={busy || bids.length === 0}>
+                Adjudicar lote al mejor postor
+              </button>
+            </>
+          ) : (
+            <p className={styles.vacio}>{state ? 'No quedan lotes sin vender.' : 'Conectando con la sala...'}</p>
+          )}
+          <p className={styles.conexion}>{connected ? '● Conectado a la sala' : '○ Sin conexión con la sala'}</p>
+        </section>
+
+        {/* Estado de la subasta + cámara */}
+        <section className={styles.card}>
+          <h2>Subasta</h2>
+          <p>
+            Estado: <strong>{status ? ESTADOS[status] : '...'}</strong>
+          </p>
+          <div className={styles.acciones}>
+            {status !== 'ACTIVA' && (
+              <button className={styles.btnNegro} onClick={() => cambiarEstado('ACTIVA')} disabled={busy}>
+                Abrir subasta
+              </button>
+            )}
+            {status === 'ACTIVA' && (
+              <button
+                className={styles.btnGris}
+                onClick={() => window.confirm('¿Finalizar la subasta? Ya no se van a poder hacer pujas.') && cambiarEstado('FINALIZADA')}
+                disabled={busy}
+              >
+                Finalizar subasta
+              </button>
+            )}
+          </div>
+          {status !== 'ACTIVA' && <p className={styles.nota}>Solo se puede pujar con la subasta abierta.</p>}
+
+          <h2 className={styles.mt}>Cámara</h2>
+          <div className={styles.preview}>
+            <LivePlayer
+              auctionId={id}
+              cameraId={cameraId}
+              token={token}
+              placeholder={<div className={styles.sinVideo}>Sin cámara</div>}
+            />
+          </div>
+          {cameraId ? (
+            <button className={styles.btnGris} onClick={apagarCamara} disabled={busy}>
+              Apagar cámara
+            </button>
+          ) : (
+            <form className={styles.camForm} onSubmit={prenderCamara}>
+              <input
+                className={styles.input}
+                placeholder="Nombre de la cámara"
+                value={camNombre}
+                onChange={(e) => setCamNombre(e.target.value)}
+                required
+              />
+              <input
+                className={styles.input}
+                placeholder="rtsp://usuario:clave@ip:554/stream"
+                value={camUrl}
+                onChange={(e) => setCamUrl(e.target.value)}
+                required
+              />
+              <button className={styles.btnNegro} type="submit" disabled={busy || !camUrl.startsWith('rtsp://')}>
+                Prender cámara
+              </button>
+            </form>
+          )}
+        </section>
+      </div>
+
+      {/* Todos los lotes */}
+      <section className={styles.card}>
+        <h2>Lotes</h2>
+        <div className={styles.tableResponsive}>
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Lote</th>
+                <th>Base</th>
+                <th>Precio actual</th>
+                <th>Estado</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {auction?.lots.map((l) => {
+                const enRemate = lotActual?.id === l.id;
+                return (
+                  <tr key={l.id} className={enRemate ? styles.filaActual : ''}>
+                    <td>{l.number}</td>
+                    <td>{l.title}</td>
+                    <td>{pesos(l.startingPrice)}</td>
+                    <td>{pesos(l.currentPrice)}</td>
+                    <td>{l.sold ? 'Vendido' : enRemate ? 'En remate' : 'Pendiente'}</td>
+                    <td>
+                      {!l.sold && !enRemate && (
+                        <button className={styles.btnChico} onClick={() => ponerEnRemate(l.id)} disabled={busy}>
+                          Poner en remate
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  );
+}

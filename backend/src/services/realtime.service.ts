@@ -140,7 +140,8 @@ export async function getRoomState(auctionId: string) {
   };
 }
 
-async function broadcastRoomState(auctionId: string) {
+/** Reenvía el estado de la sala a todos (ej: se prendió/apagó la cámara). */
+export async function broadcastRoomState(auctionId: string) {
   const state = await getRoomState(auctionId);
   getIo()?.to(`auction:${auctionId}`).emit('lot:change', state);
   return state;

@@ -20,6 +20,12 @@ delegado en gran parte a Claude, con revisión conjunta periódica.
 
 ## Cómo pushear a GitHub (importante, leer antes de reintentar nada)
 
+**Actualización (oct 2026):** si la sesión corre en la app de escritorio
+de Claude directamente sobre la compu de Gian (Windows, carpeta
+`Punto_Lovera_Front`), `git push origin main` funciona: usa el Git
+Credential Manager de Windows. Lo de abajo aplica solo a sesiones en el
+sandbox de la nube.
+
 Esta sesión corre en un sandbox de la nube de Anthropic. **Ese sandbox NO
 tiene, y nunca va a tener, credenciales de GitHub de Gian** — es una
 limitación conocida y actual de la plataforma (proxy de git bloquea
@@ -149,11 +155,26 @@ se usa el primer lote sin vender. Al cerrar un lote
 (`POST /api/compras/cerrar-lote/:lotId`) la sala recibe `lot:sold` y avanza
 sola al siguiente. Solo se puede pujar al lote en remate.
 
+Video: `components/LivePlayer` reproduce HLS con hls.js contra el proxy
+autenticado del backend (`/api/subastas/:id/vivo/hls/index.m3u8`, manda el
+JWT en cada request; sin sesión muestra "Iniciá sesión para ver..."). Si la
+cámara recién se prendió o se corta, reintenta solo cada 4 s. Cuando el
+martillero prende/apaga la cámara la sala recibe el `cameraId` por
+`lot:change` y el reproductor arranca/para solo.
+
+Panel del martillero: `/subastas/:id/martillero` (solo MARTILLERO/ADMIN;
+link desde la sala). Abrir/finalizar subasta, poner un lote en remate,
+adjudicar al mejor postor y prender/apagar la cámara (nombre + URL rtsp).
+Es una pantalla interna nueva, sin diseño de la diseñadora.
+
 Las pujas y mensajes propios **no** se agregan localmente: vuelven por el
 socket a toda la sala (si no, se duplican).
 
-Probado end-to-end (28 checks de auth + sala con dos clientes, y la UI en
-el navegador) contra un Postgres embebido (PGlite) porque no había Docker.
+Probado end-to-end (28 checks de auth + sala con dos clientes, 9 de
+cámara/proxy de video, y la UI en el navegador) contra un Postgres
+embebido (PGlite) y un rtsp-manager falso (misma API `/streams`, ffmpeg con
+patrón de prueba publicando HLS como nginx con `hls_nested on`), porque no
+había Docker.
 
 ## Pendiente / próximos pasos
 
@@ -161,12 +182,13 @@ el navegador) contra un Postgres embebido (PGlite) porque no había Docker.
    ya están; faltan subastas/lotes — Home, ProximasSubastas,
    DetalleSubasta — y Creditos/comprobantes, que hoy usan datos
    hardcodeados).
-2. Sala en vivo: falta el video (el `streamContainer` sigue siendo un
-   placeholder; el backend ya tiene el proxy autenticado
-   `/api/subastas/:id/vivo/...` hacia rtsp-manager) y una UI para el
-   martillero (cambiar de lote / cerrar lote — hoy solo por API). Además
-   la puja no descuenta ni reserva crédito: solo valida que el saldo
-   alcance (decidir con el colega cómo se descuenta al adjudicar).
+2. **Créditos (a definir con el colega):** la puja no descuenta ni
+   reserva crédito, solo valida que el saldo alcance; al adjudicar tampoco
+   se descuenta nada. Opciones: descontar al adjudicar, reservar al pujar
+   y liberar al ser superado, o seña/garantía fija por subasta.
+   Probar el video con el rtsp-manager real de Francis (solo se probó con
+   el falso) y la cámara chica del martillero en la sala (sigue siendo
+   placeholder: hoy hay una sola cámara por subasta).
 3. Revisión y pulido visual conjunto (comparación final pixel a pixel).
 4. Decidir contenido real para `/como-participar` y `/faq` (hoy vacíos en
    ambos frontends).
