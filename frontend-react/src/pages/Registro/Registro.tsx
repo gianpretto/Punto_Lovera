@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../services/AuthContext';
+import { ApiError } from '../../services/api';
 import styles from './Registro.module.scss';
 
 function validarEmail(email: string) {
@@ -25,6 +26,8 @@ export default function Registro() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [registerError, setRegisterError] = useState('');
   const [touched, setTouched] = useState<Touched>({
     nombre: false,
     apellido: false,
@@ -37,7 +40,7 @@ export default function Registro() {
     nombre: { required: nombre.trim() === '' },
     apellido: { required: apellido.trim() === '' },
     email: { required: email.trim() === '', email: email.trim() !== '' && !validarEmail(email) },
-    password: { required: password === '', minlength: password !== '' && password.length < 6 },
+    password: { required: password === '', minlength: password !== '' && password.length < 8 },
     confirmPassword: {
       required: confirmPassword === '',
       mismatch: confirmPassword !== '' && confirmPassword !== password,
@@ -51,14 +54,23 @@ export default function Registro() {
 
   const formInvalid = (Object.keys(errors) as (keyof Touched)[]).some((f) => hasError(f));
 
-  const onSubmit = (e: FormEvent) => {
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
+    setRegisterError('');
 
-    if (formInvalid) return;
+    if (formInvalid || sending) return;
 
-    register(email, password, nombre, apellido);
-    navigate('/validar-mail');
+    setSending(true);
+    try {
+      await register(email, password, nombre, apellido);
+      // El mail viaja a /validar-mail para poder ofrecer "Reenviar correo"
+      navigate('/validar-mail', { state: { email } });
+    } catch (err) {
+      setRegisterError(err instanceof ApiError ? err.message : 'No se pudo crear la cuenta. Intentá de nuevo.');
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -73,6 +85,8 @@ export default function Registro() {
         <h1 className={styles.registroTitle}>REGISTRARSE</h1>
 
         <form className={styles.registroForm} onSubmit={onSubmit} noValidate>
+          {registerError && <div className={styles.alertDanger}>{registerError}</div>}
+
           <div className={styles.formGroup}>
             <input
               type="text"
@@ -131,7 +145,7 @@ export default function Registro() {
               <div className={styles.invalidFeedback}>La contraseña es obligatoria</div>
             )}
             {showError('password') && !errors.password.required && errors.password.minlength && (
-              <div className={styles.invalidFeedback}>Mínimo 6 caracteres</div>
+              <div className={styles.invalidFeedback}>Mínimo 8 caracteres</div>
             )}
           </div>
 
@@ -153,7 +167,9 @@ export default function Registro() {
           </div>
 
           <div className={styles.formActions}>
-            <button type="submit" className={`${styles.btn} ${styles.btnBlack}`}>Registrarse</button>
+            <button type="submit" className={`${styles.btn} ${styles.btnBlack}`} disabled={sending}>
+              Registrarse
+            </button>
             <Link to="/login" className={`${styles.btn} ${styles.btnGray}`}>O iniciá sesión con tu cuenta</Link>
           </div>
         </form>

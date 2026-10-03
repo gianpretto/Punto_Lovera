@@ -133,3 +133,13 @@
   background: #ccc;
   color: #333;
 }
+
+// Error devuelto por el backend (mismo estilo que en Login)
+.alertDanger {
+  color: #dc3545;
+  background: #f8d7da;
+  border: 1px solid #f5c2c7;
+  border-radius: 4px;
+  padding: 12px 16px;
+  font-size: 14px;
+}

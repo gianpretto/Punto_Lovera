@@ -5,7 +5,9 @@ import {
   forgotPasswordSchema,
   loginSchema,
   registerSchema,
+  resendVerificationSchema,
   resetPasswordSchema,
+  updateProfileSchema,
   verifyEmailSchema,
 } from '../schemas/auth.schema';
 
@@ -27,6 +29,12 @@ export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
   res.json({ message: 'Cuenta verificada correctamente' });
 });
 
+export const resendVerification = asyncHandler(async (req: Request, res: Response) => {
+  const { email } = resendVerificationSchema.parse(req.body);
+  await authService.resendVerification(email);
+  res.json({ message: 'Si la cuenta existe y no está verificada, te reenviamos el mail' });
+});
+
 export const forgotPassword = asyncHandler(async (req: Request, res: Response) => {
   const { email } = forgotPasswordSchema.parse(req.body);
   await authService.requestPasswordReset(email);
@@ -41,5 +49,11 @@ export const resetPassword = asyncHandler(async (req: Request, res: Response) =>
 
 export const me = asyncHandler(async (req: Request, res: Response) => {
   const user = await authService.getMe(req.user!.userId);
+  res.json({ user });
+});
+
+export const updateMe = asyncHandler(async (req: Request, res: Response) => {
+  const input = updateProfileSchema.parse(req.body);
+  const user = await authService.updateProfile(req.user!.userId, input);
   res.json({ user });
 });

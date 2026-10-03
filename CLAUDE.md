@@ -116,21 +116,34 @@ contenido.
 **Se descartaron sin portar** (dead code en Angular, confirmado que no los
 usa ninguna vista real): `TituloConCards`, `BannerSaldo`, `TextoImagen`.
 
-### `AuthContext` (`src/services/AuthContext.tsx`)
+### `AuthContext` (`src/services/AuthContext.tsx`) y `api.ts`
 
-Port 1:1 del `AuthService` mock de Angular (login/registro/logout contra
-`localStorage`, sin backend real todavía). El resto de los componentes
-consume `useAuth()` sin saber que es mock — cuando se conecte al backend
-real, solo hay que tocar este archivo.
+Auth real contra el backend (JWT): `login` → `POST /api/auth/login`, el
+token se guarda en `localStorage` (`authToken`) y `src/services/api.ts` lo
+manda como `Authorization: Bearer`. Al cargar la app se valida con
+`GET /auth/me`. Expone `user` (con `creditBalance`), `currentUser` (nombre
+para el header), `loading`, y `login/register/updateUserData` (async).
+
+Ya conectadas al backend: Login, Registro, ValidarMail (`?token=` del mail
++ reenviar), ForgotPassword (`?token=` → nueva contraseña), DatosUsuario
+(`PATCH /auth/me`), PanelUsuario (datos, saldo y `GET /compras/mias`).
+El avatar sigue siendo local (el backend no guarda avatar todavía).
+
+En dev, Vite proxea `/api`, `/uploads` y `/socket.io` a `localhost:4000`
+(`vite.config.ts`); `FRONTEND_URL` del backend apunta a `localhost:5173`.
 
 ## Pendiente / próximos pasos
 
-1. **Conectar el frontend React al backend real** (reemplazar
-   `AuthContext` mock y los datos hardcodeados de cada vista por llamadas
-   reales a la API de `backend/`). Es la tarea más grande que queda.
+1. **Conectar el resto del frontend React al backend real** (auth y perfil
+   ya están; faltan subastas/lotes — Home, ProximasSubastas,
+   DetalleSubasta — y Creditos/comprobantes, que hoy usan datos
+   hardcodeados).
 2. Conectar `SubastaActiva` al WebSocket real de pujas/chat del backend
    (hoy la lógica de la sala en vivo es local, con `setTimeout` simulando
-   respuestas).
+   respuestas). Antes hay que decidir cómo se sabe qué lote está en
+   remate en cada momento: el schema no tiene "lote actual" y `bid:place`
+   necesita un `lotId` (propuesta: `auctions.currentLotId` + evento
+   `lot:change` que dispara el martillero).
 3. Revisión y pulido visual conjunto (comparación final pixel a pixel).
 4. Decidir contenido real para `/como-participar` y `/faq` (hoy vacíos en
    ambos frontends).

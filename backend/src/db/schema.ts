@@ -5,6 +5,7 @@
 import { randomUUID } from 'crypto';
 import {
   boolean,
+  date,
   decimal,
   integer,
   pgEnum,
@@ -32,6 +33,14 @@ export const users = pgTable('users', {
   lastName: text('last_name').notNull(),
   phone: text('phone'),
   dni: text('dni'),
+
+  // Datos personales que se completan en /datos (DatosUsuario)
+  birthDate: date('birth_date'),
+  address: text('address'),
+  city: text('city'),
+  province: text('province'),
+  zipCode: text('zip_code'),
+
   role: userRoleEnum('role').notNull().default('USER'),
 
   emailVerified: boolean('email_verified').notNull().default(false),

@@ -1,6 +1,7 @@
-import { useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useAuth } from '../../services/AuthContext';
+import { useAuth, type User } from '../../services/AuthContext';
+import { ApiError } from '../../services/api';
 import styles from './DatosUsuario.module.scss';
 
 interface FormState {
@@ -17,22 +18,27 @@ interface FormState {
 
 const soloNumeros = /^[0-9]*$/;
 
+function formDesdeUsuario(user: User | null): FormState {
+  return {
+    nombre: user?.firstName ?? '',
+    apellido: user?.lastName ?? '',
+    telefono: user?.phone ?? '',
+    dni: user?.dni ?? '',
+    fechaNacimiento: user?.birthDate ?? '',
+    direccion: user?.address ?? '',
+    ciudad: user?.city ?? '',
+    provincia: user?.province ?? '',
+    cp: user?.zipCode ?? '',
+  };
+}
+
 export default function DatosUsuario() {
   const navigate = useNavigate();
-  const { updateUserData } = useAuth();
+  const { user, loading, updateUserData } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [form, setForm] = useState<FormState>(() => ({
-    nombre: localStorage.getItem('registeredName') || '',
-    apellido: localStorage.getItem('registeredLastname') || '',
-    telefono: localStorage.getItem('registeredPhone') || '',
-    dni: localStorage.getItem('registeredDni') || '',
-    fechaNacimiento: localStorage.getItem('registeredBirth') || '',
-    direccion: localStorage.getItem('registeredAddress') || '',
-    ciudad: localStorage.getItem('registeredCity') || '',
-    provincia: localStorage.getItem('registeredProvince') || '',
-    cp: localStorage.getItem('registeredZip') || '',
-  }));
+  const [form, setForm] = useState<FormState>(() => formDesdeUsuario(user));
+  // TODO: el backend todavía no guarda avatar; queda local a este navegador
   const [avatarUrl, setAvatarUrl] = useState<string | null>(() => localStorage.getItem('userAvatar'));
   const [touched, setTouched] = useState<Record<keyof FormState, boolean>>({
     nombre: false,
@@ -48,6 +54,20 @@ export default function DatosUsuario() {
   const [dirty, setDirty] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [sending, setSending] = useState(false);
+
+  // Sin sesión no hay datos que editar
+  useEffect(() => {
+    if (!loading && !user) navigate('/login');
+  }, [loading, user, navigate]);
+
+  // Si el usuario termina de cargar después del primer render, completamos
+  // el formulario (sin pisar lo que ya se haya editado).
+  useEffect(() => {
+    if (user && !dirty) setForm(formDesdeUsuario(user));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 
   const setField = (field: keyof FormState, value: string) => {
     setForm((f) => ({ ...f, [field]: value }));
@@ -90,14 +110,22 @@ export default function DatosUsuario() {
     }
   };
 
-  const onSubmit = (e: FormEvent) => {
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
+    setErrorMessage('');
 
-    if (formInvalid) return;
+    if (formInvalid || sending) return;
 
-    updateUserData(form);
-    localStorage.setItem('registeredBirth', form.fechaNacimiento);
+    setSending(true);
+    try {
+      await updateUserData(form);
+    } catch (err) {
+      setErrorMessage(err instanceof ApiError ? err.message : 'No se pudieron guardar los datos.');
+      return;
+    } finally {
+      setSending(false);
+    }
 
     setSuccessMessage('Datos actualizados correctamente.');
     setDirty(false);
@@ -245,8 +273,9 @@ export default function DatosUsuario() {
         </div>
 
         {successMessage && <div className={`${styles.alert} ${styles.alertSuccess}`}>{successMessage}</div>}
+        {errorMessage && <div className={`${styles.alert} ${styles.alertDanger}`}>{errorMessage}</div>}
 
-        <button type="submit" className={styles.btnBlack} disabled={!dirty || formInvalid}>
+        <button type="submit" className={styles.btnBlack} disabled={!dirty || formInvalid || sending}>
           Guardar cambios
         </button>
       </form>

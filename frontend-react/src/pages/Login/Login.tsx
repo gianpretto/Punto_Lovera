@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../services/AuthContext';
+import { ApiError } from '../../services/api';
 import styles from './Login.module.scss';
 
 function validarEmail(email: string) {
@@ -16,6 +17,7 @@ export default function Login() {
   const [rememberMe, setRememberMe] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [loginError, setLoginError] = useState('');
+  const [sending, setSending] = useState(false);
 
   const emailErrors = {
     required: email.trim() === '',
@@ -28,17 +30,21 @@ export default function Login() {
   const formInvalid =
     emailErrors.required || emailErrors.email || passwordErrors.required || passwordErrors.minlength;
 
-  const onSubmit = (e: FormEvent) => {
+  const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
     setLoginError('');
 
-    if (formInvalid) return;
+    if (formInvalid || sending) return;
 
-    if (login(email, password)) {
+    setSending(true);
+    try {
+      await login(email, password);
       navigate('/');
-    } else {
-      setLoginError('Credenciales inválidas o usuario no registrado.');
+    } catch (err) {
+      setLoginError(err instanceof ApiError ? err.message : 'Credenciales inválidas o usuario no registrado.');
+    } finally {
+      setSending(false);
     }
   };
 
@@ -99,7 +105,9 @@ export default function Login() {
           </div>
 
           <div className={styles.formActions}>
-            <button type="submit" className={`${styles.btn} ${styles.btnBlack}`}>Iniciar Sesión</button>
+            <button type="submit" className={`${styles.btn} ${styles.btnBlack}`} disabled={sending}>
+              Iniciar Sesión
+            </button>
             <Link to="/registro" className={`${styles.btn} ${styles.btnGray}`}>O creá una cuenta</Link>
           </div>
 

@@ -1,15 +1,34 @@
-import { createContext, useCallback, useContext, useState, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from 'react';
+import { api, ApiError, getToken, setToken } from './api';
 
-// Puerto 1:1 del AuthService "mock" que ya tenía el front en Angular
-// (localStorage, sin backend real todavía). Cuando conectemos el backend
-// de verdad, solo cambia lo de adentro de este archivo — los componentes
-// que usan useAuth() no se tocan.
+// Auth real contra el backend (JWT). El token se guarda en localStorage y
+// api.ts lo manda en cada request; al montar se valida con GET /auth/me.
+
+export type UserRole = 'USER' | 'MARTILLERO' | 'ADMIN';
+
+export interface User {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone: string | null;
+  dni: string | null;
+  birthDate: string | null;
+  address: string | null;
+  city: string | null;
+  province: string | null;
+  zipCode: string | null;
+  role: UserRole;
+  emailVerified: boolean;
+  creditBalance: number;
+}
 
 export interface UpdateUserData {
   nombre?: string;
   apellido?: string;
   telefono?: string;
   dni?: string;
+  fechaNacimiento?: string;
   direccion?: string;
   ciudad?: string;
   provincia?: string;
@@ -17,65 +36,85 @@ export interface UpdateUserData {
 }
 
 interface AuthContextValue {
+  user: User | null;
+  /** Nombre para mostrar (header). null si no hay sesión. */
   currentUser: string | null;
-  login: (email: string, password: string) => boolean;
-  register: (email: string, password: string, nombre: string, apellido: string) => void;
+  /** true mientras se valida el token guardado al cargar la app. */
+  loading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, nombre: string, apellido: string) => Promise<void>;
   logout: () => void;
-  updateUserData: (data: UpdateUserData) => void;
+  updateUserData: (data: UpdateUserData) => Promise<void>;
+  /** Vuelve a pedir el usuario (ej: después de que cambie el saldo). */
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [currentUser, setCurrentUser] = useState<string | null>(() =>
-    localStorage.getItem('currentUser')
-  );
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(() => Boolean(getToken()));
 
-  const register = useCallback((email: string, password: string, nombre: string, apellido: string) => {
-    localStorage.setItem('registeredEmail', email);
-    localStorage.setItem('registeredPassword', password);
-    localStorage.setItem('registeredName', nombre);
-    localStorage.setItem('registeredLastname', apellido);
+  const refreshUser = useCallback(async () => {
+    if (!getToken()) {
+      setUser(null);
+      return;
+    }
+    try {
+      const { user } = await api.get<{ user: User }>('/auth/me');
+      setUser(user);
+    } catch (err) {
+      // Token vencido o inválido: cerramos sesión. Si es un error de red
+      // dejamos el token para reintentar en la próxima carga.
+      if (err instanceof ApiError && (err.status === 401 || err.status === 404)) {
+        setToken(null);
+        setUser(null);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!getToken()) return;
+    refreshUser().finally(() => setLoading(false));
+  }, [refreshUser]);
+
+  const login = useCallback(async (email: string, password: string) => {
+    const { token, user } = await api.post<{ token: string; user: User }>('/auth/login', { email, password });
+    setToken(token);
+    setUser(user);
+  }, []);
+
+  const register = useCallback(async (email: string, password: string, nombre: string, apellido: string) => {
+    await api.post('/auth/register', { email, password, firstName: nombre, lastName: apellido });
     // No logueamos todavía, se espera la validación de mail
   }, []);
 
-  const login = useCallback((email: string, password: string) => {
-    const storedEmail = localStorage.getItem('registeredEmail');
-    const storedPass = localStorage.getItem('registeredPassword');
-    const storedName = localStorage.getItem('registeredName');
-
-    if (email === storedEmail && password === storedPass) {
-      const displayValue = storedName ? storedName : email;
-      localStorage.setItem('currentUser', displayValue);
-      setCurrentUser(displayValue);
-      return true;
-    }
-    return false;
-  }, []);
-
   const logout = useCallback(() => {
-    localStorage.removeItem('currentUser');
-    setCurrentUser(null);
+    setToken(null);
+    setUser(null);
   }, []);
 
-  const updateUserData = useCallback((data: UpdateUserData) => {
-    if (data.nombre) localStorage.setItem('registeredName', data.nombre);
-    if (data.apellido) localStorage.setItem('registeredLastname', data.apellido);
-    if (data.telefono) localStorage.setItem('registeredPhone', data.telefono);
-    if (data.dni) localStorage.setItem('registeredDni', data.dni);
-    if (data.direccion) localStorage.setItem('registeredAddress', data.direccion);
-    if (data.ciudad) localStorage.setItem('registeredCity', data.ciudad);
-    if (data.provincia) localStorage.setItem('registeredProvince', data.provincia);
-    if (data.cp) localStorage.setItem('registeredZip', data.cp);
-
-    if (data.nombre) {
-      localStorage.setItem('currentUser', data.nombre);
-      setCurrentUser(data.nombre);
-    }
+  const updateUserData = useCallback(async (data: UpdateUserData) => {
+    const { user } = await api.patch<{ user: User }>('/auth/me', {
+      firstName: data.nombre,
+      lastName: data.apellido,
+      phone: data.telefono,
+      dni: data.dni,
+      birthDate: data.fechaNacimiento,
+      address: data.direccion,
+      city: data.ciudad,
+      province: data.provincia,
+      zipCode: data.cp,
+    });
+    setUser(user);
   }, []);
+
+  const currentUser = user ? user.firstName || user.email : null;
 
   return (
-    <AuthContext.Provider value={{ currentUser, login, register, logout, updateUserData }}>
+    <AuthContext.Provider
+      value={{ user, currentUser, loading, login, register, logout, updateUserData, refreshUser }}
+    >
       {children}
     </AuthContext.Provider>
   );

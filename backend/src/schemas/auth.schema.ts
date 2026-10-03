@@ -26,3 +26,27 @@ export const resetPasswordSchema = z.object({
 export const verifyEmailSchema = z.object({
   token: z.string().min(1),
 });
+
+export const resendVerificationSchema = z.object({
+  email: z.string().email(),
+});
+
+const soloNumeros = z.string().regex(/^[0-9]*$/, 'Solo números');
+
+// Todos opcionales: el front manda solo lo que se editó en /datos.
+// '' se acepta y se guarda como null (campo borrado).
+export const updateProfileSchema = z.object({
+  firstName: z.string().trim().min(1, 'Falta el nombre').optional(),
+  lastName: z.string().trim().min(1, 'Falta el apellido').optional(),
+  phone: soloNumeros.optional(),
+  dni: soloNumeros.optional(),
+  birthDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha inválida (AAAA-MM-DD)')
+    .or(z.literal(''))
+    .optional(),
+  address: z.string().trim().optional(),
+  city: z.string().trim().optional(),
+  province: z.string().trim().optional(),
+  zipCode: z.string().trim().optional(),
+});

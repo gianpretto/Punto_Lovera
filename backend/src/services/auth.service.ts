@@ -26,6 +26,13 @@ function publicUser(user: UserRow) {
     email: user.email,
     firstName: user.firstName,
     lastName: user.lastName,
+    phone: user.phone,
+    dni: user.dni,
+    birthDate: user.birthDate,
+    address: user.address,
+    city: user.city,
+    province: user.province,
+    zipCode: user.zipCode,
     role: user.role,
     emailVerified: user.emailVerified,
     creditBalance: Number(user.creditBalance),
@@ -79,6 +86,20 @@ export async function verifyEmail(token: string) {
     .where(eq(users.id, user.id));
 }
 
+export async function resendVerification(email: string) {
+  const [user] = await db.select().from(users).where(eq(users.email, email));
+  // Igual que en recuperar contraseña: no revelamos si el mail existe.
+  if (!user || user.emailVerified) return;
+
+  const verificationToken = randomToken();
+  await db
+    .update(users)
+    .set({ verificationToken, verificationSentAt: new Date() })
+    .where(eq(users.id, user.id));
+
+  await sendVerificationEmail(user.email, verificationToken);
+}
+
 export async function requestPasswordReset(email: string) {
   const [user] = await db.select().from(users).where(eq(users.email, email));
   // No revelamos si el mail existe o no (evita enumeración de usuarios).
@@ -107,6 +128,35 @@ export async function resetPassword(token: string, newPassword: string) {
 
 export async function getMe(userId: string) {
   const [user] = await db.select().from(users).where(eq(users.id, userId));
+  if (!user) throw Errors.notFound('Usuario');
+  return publicUser(user);
+}
+
+export type UpdateProfileInput = Partial<{
+  firstName: string;
+  lastName: string;
+  phone: string;
+  dni: string;
+  birthDate: string;
+  address: string;
+  city: string;
+  province: string;
+  zipCode: string;
+}>;
+
+export async function updateProfile(userId: string, input: UpdateProfileInput) {
+  // '' => null, así el usuario puede borrar un campo opcional
+  const values = Object.fromEntries(
+    Object.entries(input)
+      .filter(([, v]) => v !== undefined)
+      .map(([k, v]) => [k, v === '' ? null : v])
+  );
+
+  const [user] = await db
+    .update(users)
+    .set({ ...values, updatedAt: new Date() })
+    .where(eq(users.id, userId))
+    .returning();
   if (!user) throw Errors.notFound('Usuario');
   return publicUser(user);
 }

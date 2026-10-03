@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../services/AuthContext';
+import { api } from '../../services/api';
 import styles from './PanelUsuario.module.scss';
 
 interface Compra {
@@ -11,15 +13,31 @@ interface Compra {
   valorTotal: number;
 }
 
-const misCompras: Compra[] = [
-  { id: 75, referencia: 'Lote 123456', fecha: '11-11-2024', descripcion: 'Lorem ipsum dolor lorem en amet', valorUnitario: 123000, valorTotal: 456456 },
-  { id: 75, referencia: 'Lote 123456', fecha: '11-11-2024', descripcion: 'Lorem ipsum dolor lorem en amet', valorUnitario: 123000, valorTotal: 456456 },
-  { id: 75, referencia: 'Lote 123456', fecha: '11-11-2024', descripcion: 'Lorem ipsum dolor lorem en amet', valorUnitario: 123000, valorTotal: 456456 },
-  { id: 75, referencia: 'Lote 123456', fecha: '11-11-2024', descripcion: 'Lorem ipsum dolor lorem en amet', valorUnitario: 123000, valorTotal: 456456 },
-  { id: 75, referencia: 'Lote 123456', fecha: '11-11-2024', descripcion: 'Lorem ipsum dolor lorem en amet', valorUnitario: 123000, valorTotal: 456456 },
-];
+// Forma que devuelve GET /api/compras/mias
+interface PurchaseApi {
+  id: string;
+  reference: string;
+  totalAmount: string;
+  createdAt: string;
+  lot: { number: number; title: string; auction: { title: string } };
+}
 
-const creditoDisponible = 20000000;
+const formatFecha = (iso: string) => {
+  const d = new Date(iso);
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  return `${dd}-${mm}-${d.getFullYear()}`;
+};
+
+const aCompra = (p: PurchaseApi): Compra => ({
+  id: p.lot.number,
+  referencia: p.reference,
+  fecha: formatFecha(p.createdAt),
+  descripcion: `${p.lot.title} (${p.lot.auction.title})`,
+  // Un lote = una unidad: precio unitario y total coinciden
+  valorUnitario: Number(p.totalAmount),
+  valorTotal: Number(p.totalAmount),
+});
 
 const formatCurrency = (n: number) =>
   new Intl.NumberFormat('es-AR', { style: 'currency', currency: 'ARS', maximumFractionDigits: 0 }).format(n);
@@ -27,31 +45,30 @@ const formatCurrency = (n: number) =>
 const formatNumber = (n: number) => n.toLocaleString('es-AR', { maximumFractionDigits: 0 });
 
 export default function PanelUsuario() {
-  const [userName, setUserName] = useState('Usuario');
-  const [userPhone, setUserPhone] = useState('');
-  const [userDni, setUserDni] = useState('');
-  const [userAddress, setUserAddress] = useState('');
-  const [userCity, setUserCity] = useState('');
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const { user, loading } = useAuth();
+  const [misCompras, setMisCompras] = useState<Compra[]>([]);
+  // TODO: el backend todavía no guarda avatar; queda local a este navegador
+  const [avatarUrl] = useState<string | null>(() => localStorage.getItem('userAvatar'));
 
   useEffect(() => {
-    const storedName = localStorage.getItem('registeredName');
-    const storedLastName = localStorage.getItem('registeredLastname');
-    const storedPhone = localStorage.getItem('registeredPhone');
-    const storedDni = localStorage.getItem('registeredDni');
-    const storedAddress = localStorage.getItem('registeredAddress');
-    const storedCity = localStorage.getItem('registeredCity');
+    if (!loading && !user) navigate('/login');
+  }, [loading, user, navigate]);
 
-    setAvatarUrl(localStorage.getItem('userAvatar'));
+  useEffect(() => {
+    if (!user) return;
+    api
+      .get<{ purchases: PurchaseApi[] }>('/compras/mias')
+      .then(({ purchases }) => setMisCompras(purchases.map(aCompra)))
+      .catch(() => setMisCompras([]));
+  }, [user]);
 
-    if (storedName || storedLastName) {
-      setUserName(`${storedName || ''} ${storedLastName || ''}`.trim() || 'Usuario');
-    }
-    setUserPhone(storedPhone || '');
-    setUserDni(storedDni || '');
-    setUserAddress(storedAddress || '');
-    setUserCity(storedCity || '');
-  }, []);
+  const userName = user ? `${user.firstName} ${user.lastName}`.trim() || 'Usuario' : 'Usuario';
+  const userPhone = user?.phone ?? '';
+  const userDni = user?.dni ?? '';
+  const userAddress = user?.address ?? '';
+  const userCity = user?.city ?? '';
+  const creditoDisponible = user?.creditBalance ?? 0;
 
   return (
     <div className={styles.perfilWrapper}>
@@ -122,6 +139,11 @@ export default function PanelUsuario() {
                   <td><strong>{formatCurrency(compra.valorTotal)}</strong></td>
                 </tr>
               ))}
+              {misCompras.length === 0 && (
+                <tr>
+                  <td colSpan={6}>Todavía no tenés compras.</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
