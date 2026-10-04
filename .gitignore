@@ -1,0 +1,12 @@
+# Mapa del código generado localmente con graphify (no es parte del proyecto)
+graphify-out/
+.graphifyignore
+
+# Copias de trabajo de los agentes de Claude Code
+.claude/worktrees/
+
+# Secretos sueltos (nunca subir)
+secretos-railway.txt
+*.env
+.env.*
+!.env.example

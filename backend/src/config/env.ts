@@ -87,3 +87,9 @@ export const env = {
 
   isProd: process.env.NODE_ENV === 'production',
 };
+
+// Un JWT_SECRET corto se puede adivinar por fuerza bruta y con él cualquiera
+// firmaría tokens de admin: en producción exigimos uno largo.
+if (env.isProd && env.jwtSecret.length < 32) {
+  throw new Error('JWT_SECRET tiene que tener al menos 32 caracteres en producción');
+}

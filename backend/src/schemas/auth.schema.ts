@@ -5,9 +5,15 @@ import { z } from 'zod';
 // registrar dos veces el mismo mail).
 const email = (msg?: string) => z.string().trim().toLowerCase().email(msg);
 
+// bcrypt solo usa los primeros 72 bytes: más largo daría una falsa seguridad
+const newPassword = z
+  .string()
+  .min(8, 'La contraseña debe tener al menos 8 caracteres')
+  .refine((v) => Buffer.byteLength(v, 'utf8') <= 72, 'La contraseña puede tener como máximo 72 caracteres');
+
 export const registerSchema = z.object({
   email: email('Email inválido'),
-  password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
+  password: newPassword,
   firstName: z.string().min(1, 'Falta el nombre'),
   lastName: z.string().min(1, 'Falta el apellido'),
   phone: z.string().optional(),
@@ -16,7 +22,7 @@ export const registerSchema = z.object({
 
 export const loginSchema = z.object({
   email: email(),
-  password: z.string().min(1),
+  password: z.string().min(1).max(200),
 });
 
 export const forgotPasswordSchema = z.object({
@@ -25,7 +31,7 @@ export const forgotPasswordSchema = z.object({
 
 export const resetPasswordSchema = z.object({
   token: z.string().min(1),
-  password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
+  password: newPassword,
 });
 
 export const verifyEmailSchema = z.object({

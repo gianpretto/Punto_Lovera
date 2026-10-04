@@ -38,6 +38,14 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
     return res.status(400).json({ error: MULTER_MESSAGES[err.code] ?? 'No se pudo procesar el archivo subido' });
   }
 
+  // Postgres: un id que no es un uuid válido (ej: /subastas/abc) → error
+  // del cliente, no del servidor. drizzle lo envuelve en err.cause.
+  const pgCode =
+    (err as { code?: string } | null)?.code ?? (err as { cause?: { code?: string } } | null)?.cause?.code;
+  if (pgCode === '22P02') {
+    return res.status(400).json({ error: 'Identificador inválido' });
+  }
+
   // Errores de express.json (body-parser): JSON mal formado o demasiado
   // grande. Son culpa del cliente, no un 500.
   const type = (err as { type?: string } | null)?.type;

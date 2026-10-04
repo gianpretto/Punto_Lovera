@@ -11,7 +11,8 @@ const router = Router();
 router.get('/', auctionController.list);
 router.get('/:id', auctionController.getOne);
 router.get('/:auctionId/lotes/:lotId', lotController.getOne);
-router.get('/:auctionId/lotes/:lotId/pujas', lotController.bids);
+// Lista de pujas con nombre y apellido de cada postor: solo el panel del martillero
+router.get('/:auctionId/lotes/:lotId/pujas', requireAuth, requireRole('MARTILLERO', 'ADMIN'), lotController.bids);
 
 // Solo usuarios autenticados
 router.post('/:auctionId/lotes/:lotId/pujas', requireAuth, lotController.placeBid);

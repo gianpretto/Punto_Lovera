@@ -159,3 +159,34 @@ describe('Archivos y cuerpos inválidos', () => {
     expect((await send(JSON.stringify({ email: 'x'.repeat(200 * 1024) }))).status).toBe(413);
   });
 });
+
+describe('Revisión de seguridad (checklist)', () => {
+  it('un id que no es uuid devuelve 400, no 500', async () => {
+    const res = await app.api('GET', '/subastas/esto-no-es-un-uuid');
+    expect(res.status).toBe(400);
+    expect(res.data.error).toBe('Identificador inválido');
+  });
+
+  it('la lista de pujas con nombres solo la ve el martillero o el admin', async () => {
+    const path = `/subastas/${auctionId}/lotes/${lotId}/pujas`;
+    expect((await app.api('GET', path)).status).toBe(401);
+    expect((await app.api('GET', path, null, U)).status).toBe(403);
+    expect((await app.api('GET', path, null, A)).status).toBe(200);
+  });
+
+  it('no acepta contraseñas de más de 72 bytes (bcrypt las truncaría)', async () => {
+    const res = await app.api('POST', '/auth/register', {
+      email: 'larga@test.com',
+      password: 'x'.repeat(73),
+      firstName: 'A',
+      lastName: 'B',
+    });
+    expect(res.status).toBe(400);
+  });
+
+  it('rechaza un JWT sin firma (alg "none") aunque diga ser admin', async () => {
+    const b64 = (o: object) => Buffer.from(JSON.stringify(o)).toString('base64url');
+    const falso = `${b64({ alg: 'none', typ: 'JWT' })}.${b64({ userId: '00000000-0000-0000-0000-000000000000', role: 'ADMIN' })}.`;
+    expect((await app.api('GET', '/creditos/pendientes', null, falso)).status).toBe(401);
+  });
+});
