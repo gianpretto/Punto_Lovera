@@ -72,6 +72,10 @@ export const env = {
     // Compartido con media-server: nginx lo manda al validar una clave
     // trim: en el panel de Railway es fácil pegarlo con un salto de línea al final
     rtmpAuthSecret: (process.env.RTMP_AUTH_SECRET ?? '').trim(),
+    // Una subasta PROXIMA se abre sola (pasa a ACTIVA) cuando OBS empieza a
+    // transmitir, si faltan como mucho estas horas para el horario
+    // programado (así una prueba de OBS el día anterior no la abre).
+    autoOpenWindowHours: Number(process.env.AUTO_OPEN_WINDOW_HOURS ?? 2),
   },
 
   // Cuántos proxies hay delante del backend (para `trust proxy`). Railway

@@ -104,3 +104,22 @@ describe('Salud y CORS', () => {
     expect(res.headers.get('access-control-allow-origin')).toBeNull();
   });
 });
+
+describe('Mails únicos sin importar mayúsculas', () => {
+  it('no se puede registrar dos veces el mismo mail aunque cambien las mayúsculas', async () => {
+    const datos = { password: 'clave12345', firstName: 'Ana', lastName: 'Pérez' };
+    const primero = await app.api('POST', '/auth/register', { ...datos, email: '  Ana.Perez@Mail.com ' });
+    expect(primero.status).toBe(201);
+    expect(primero.data.user.email).toBe('ana.perez@mail.com');
+
+    const repetido = await app.api('POST', '/auth/register', { ...datos, email: 'ana.perez@mail.com' });
+    expect(repetido.status).toBe(409);
+    expect(repetido.data.error).toBe('Ya existe una cuenta con ese email');
+  });
+
+  it('el login funciona con el mail escrito con otras mayúsculas', async () => {
+    const res = await app.api('POST', '/auth/login', { email: 'ANA.PEREZ@mail.com', password: 'clave12345' });
+    expect(res.status).toBe(200);
+    expect(res.data.user.email).toBe('ana.perez@mail.com');
+  });
+});

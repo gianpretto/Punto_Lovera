@@ -51,12 +51,17 @@ export const rtmpPublish = asyncHandler(async (req: Request, res: Response) => {
   if (!okSecret) return res.status(403).send('forbidden');
 
   const name = typeof req.body?.name === 'string' ? req.body.name : undefined;
-  const valid = await liveService.validatePublishKey(name);
-  if (!valid) {
+  const auctionId = await liveService.validatePublishKey(name);
+  if (!auctionId) {
     console.warn('[video] transmisión rechazada: clave inválida o subasta cerrada');
     return res.status(403).send('invalid stream key');
   }
   console.log('[video] transmisión aceptada');
+  // El remate arranca cuando arranca la transmisión (si es la hora)
+  if (await liveService.autoOpenOnStream(auctionId)) {
+    console.log('[video] subasta abierta automáticamente al empezar la transmisión');
+    await broadcastRoomState(auctionId);
+  }
   res.status(200).send('ok');
 });
 

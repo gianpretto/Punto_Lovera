@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { eq } from 'drizzle-orm';
+import { and, eq, lte } from 'drizzle-orm';
 import { db } from '../config/db';
 import { auctions } from '../db/schema';
 import { env } from '../config/env';
@@ -82,15 +82,36 @@ export async function disableObsStream(auctionId: string) {
  * Validación que pide el media-server cuando OBS empieza a transmitir.
  * Acepta solo una clave vigente de una subasta próxima o activa.
  */
-export async function validatePublishKey(name: string | undefined) {
-  if (!name || !name.startsWith(STREAM_PREFIX)) return false;
+export async function validatePublishKey(name: string | undefined): Promise<string | null> {
+  if (!name || !name.startsWith(STREAM_PREFIX)) return null;
   const cameraId = name.slice(STREAM_PREFIX.length);
-  if (!cameraId) return false;
+  if (!cameraId) return null;
   const [auction] = await db
     .select({ id: auctions.id, status: auctions.status })
     .from(auctions)
     .where(eq(auctions.cameraId, cameraId));
-  return Boolean(auction && (auction.status === 'ACTIVA' || auction.status === 'PROXIMA'));
+  return auction && (auction.status === 'ACTIVA' || auction.status === 'PROXIMA') ? auction.id : null;
+}
+
+/**
+ * Decisión de producto: el remate empieza cuando empieza la transmisión.
+ * Si la subasta está PROXIMA y ya estamos dentro de la ventana previa al
+ * horario (AUTO_OPEN_WINDOW_HOURS), pasa a ACTIVA. Devuelve true si la abrió.
+ */
+export async function autoOpenOnStream(auctionId: string) {
+  const windowMs = env.video.autoOpenWindowHours * 60 * 60 * 1000;
+  const [updated] = await db
+    .update(auctions)
+    .set({ status: 'ACTIVA', updatedAt: new Date() })
+    .where(
+      and(
+        eq(auctions.id, auctionId),
+        eq(auctions.status, 'PROXIMA'),
+        lte(auctions.startsAt, new Date(Date.now() + windowMs))
+      )
+    )
+    .returning({ id: auctions.id });
+  return Boolean(updated);
 }
 
 /** ¿Está llegando señal? (existe la playlist HLS en el media-server) */

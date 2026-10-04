@@ -386,8 +386,9 @@ export default function PanelMartillero() {
                 </div>
                 <p className={styles.nota}>
                   En OBS: <strong>Ajustes → Emisión</strong> → Servicio <strong>Personalizado</strong>, pegá el
-                  servidor y la clave, y tocá <strong>Iniciar transmisión</strong>. No compartas la clave: quien la
-                  tenga puede transmitir en esta subasta.
+                  servidor y la clave, y tocá <strong>Iniciar transmisión</strong>. Si la subasta está próxima, se abre sola cuando empezás a
+                  transmitir (desde 2 h antes del horario). No compartas la clave: quien la tenga puede transmitir en
+                  esta subasta.
                 </p>
                 <button className={styles.btnGris} onClick={apagarCamara} disabled={busy}>
                   Detener y anular clave

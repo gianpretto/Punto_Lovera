@@ -152,3 +152,43 @@ describe('Clave de transmisión', () => {
     expect(await onPublish(key2)).toBe(403);
   });
 });
+
+describe('La subasta se abre sola cuando empieza la transmisión', () => {
+  /** Subasta PROXIMA nueva, con clave de transmisión, que empieza en `horas`. */
+  async function subastaConClave(horas: number) {
+    const startsAt = new Date(Date.now() + horas * 60 * 60 * 1000).toISOString();
+    const { data } = await app.api('POST', '/subastas', { title: `Remate en ${horas} h`, description: 'd', location: 'l', startsAt }, A);
+    const id = data.auction.id as string;
+    await app.api('POST', `/subastas/${id}/camara`, {}, A);
+    const key = (await app.api('GET', `/subastas/${id}/camara`, null, A)).data.streamKey as string;
+    return { id, key };
+  }
+  const estado = async (id: string) => (await app.api('GET', `/subastas/${id}`)).data.auction.status;
+
+  it('a 1 h del horario: al transmitir pasa de PROXIMA a ACTIVA y la sala se entera', async () => {
+    const { id, key } = await subastaConClave(1);
+    expect(await estado(id)).toBe('PROXIMA');
+    const room = app.room({ token: U });
+    room.emit('auction:join', { auctionId: id });
+    await room.waitFor('auction:state');
+
+    expect(await onPublish(key)).toBe(200);
+    expect(await estado(id)).toBe('ACTIVA');
+    const cambio = await room.waitFor('lot:change');
+    expect(cambio.auction.status).toBe('ACTIVA');
+    room.socket.disconnect();
+  });
+
+  it('a 3 días del horario: acepta la transmisión (prueba de OBS) pero no la abre', async () => {
+    const { id, key } = await subastaConClave(72);
+    expect(await onPublish(key)).toBe(200);
+    expect(await estado(id)).toBe('PROXIMA');
+  });
+
+  it('una subasta ya ACTIVA sigue igual al volver a transmitir', async () => {
+    const { id, key } = await subastaConClave(0.5);
+    await app.api('PATCH', `/subastas/${id}`, { status: 'ACTIVA' }, A);
+    expect(await onPublish(key)).toBe(200);
+    expect(await estado(id)).toBe('ACTIVA');
+  });
+});

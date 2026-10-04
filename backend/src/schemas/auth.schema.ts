@@ -1,7 +1,12 @@
 import { z } from 'zod';
 
+// Los mails se guardan y comparan siempre en minúsculas y sin espacios: así
+// "Juan@mail.com" y "juan@mail.com" son la misma cuenta (no se puede
+// registrar dos veces el mismo mail).
+const email = (msg?: string) => z.string().trim().toLowerCase().email(msg);
+
 export const registerSchema = z.object({
-  email: z.string().email('Email inválido'),
+  email: email('Email inválido'),
   password: z.string().min(8, 'La contraseña debe tener al menos 8 caracteres'),
   firstName: z.string().min(1, 'Falta el nombre'),
   lastName: z.string().min(1, 'Falta el apellido'),
@@ -10,12 +15,12 @@ export const registerSchema = z.object({
 });
 
 export const loginSchema = z.object({
-  email: z.string().email(),
+  email: email(),
   password: z.string().min(1),
 });
 
 export const forgotPasswordSchema = z.object({
-  email: z.string().email(),
+  email: email(),
 });
 
 export const resetPasswordSchema = z.object({
@@ -28,7 +33,7 @@ export const verifyEmailSchema = z.object({
 });
 
 export const resendVerificationSchema = z.object({
-  email: z.string().email(),
+  email: email(),
 });
 
 const soloNumeros = z.string().regex(/^[0-9]*$/, 'Solo números');

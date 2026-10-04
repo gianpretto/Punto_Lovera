@@ -147,6 +147,21 @@ vivo de YouTube embebido (lo ve cualquiera con el link).
   necesita base ni servicios externos; ver `backend/test/`). CI en
   `.github/workflows/backend-tests.yml` en cada push a `main`.
 
+## Decisiones del cliente (oct 2026)
+
+- **Textos e imágenes de toda la web**: los está haciendo la diseñadora.
+  No reescribir textos ni cambiar imágenes por iniciativa propia (los de
+  FAQ / Cómo participar / garantías son borradores hasta que lleguen).
+- **Datos de facturación**: todavía no definidos por el cliente.
+- **Apertura de la subasta**: el remate empieza cuando empieza la
+  transmisión. Al aceptar el `on_publish` de OBS, una subasta PROXIMA pasa
+  sola a ACTIVA si faltan como mucho `AUTO_OPEN_WINDOW_HOURS` (default 2)
+  para el horario; si no, solo se acepta el video (prueba de OBS). El
+  martillero también puede abrirla a mano.
+- **Mails únicos**: no puede haber dos cuentas con el mismo mail; se
+  avisa en el registro ("Ya existe una cuenta con ese email"). Los mails
+  se normalizan a minúsculas sin espacios (migración 0007).
+
 ## Pendiente de seguridad antes de producción
 
 La contraseña de Neon (`neondb_owner`, ramas dev y production), el
