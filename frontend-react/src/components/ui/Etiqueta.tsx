@@ -6,8 +6,8 @@ import styles from './Etiqueta.module.scss';
 //  - tamaño 'grande': 24/27 bold (PREGUNTAS FRECUENTES)
 interface Props {
   children: string;
-  /** Color sobre fondo oscuro (blanco) o claro (#2e2d2b) */
-  tono?: 'claro' | 'oscuro';
+  /** Color sobre fondo oscuro (blanco) o claro (#2e2d2b); 'verde' (#3e6d72) sobre fondo claro */
+  tono?: 'claro' | 'oscuro' | 'verde';
   tamano?: 'chica' | 'grande';
   className?: string;
 }

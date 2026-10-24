@@ -1,0 +1,420 @@
+@use '../../styles/tokens' as t;
+
+// Medidas del diseño (Figma "Quiero comprar", 1440 px): banda verde de
+// 502 px, "Por qué elegirnos" de 1415 px sobre el patrón de logos y la
+// sección oscura "Cómo comprar" de 4574 px con la línea de tiempo centrada
+// (x 720) y los pasos alternados a cada lado.
+
+.pagina {
+  font-family: t.$font-texto;
+}
+
+// Título de sección 72.66/80 en Instrument Serif
+@mixin titulo-seccion {
+  @include t.titulo-display(72.66px, 1.101);
+
+  @include t.mobile {
+    font-size: 40px;
+  }
+}
+
+// Botón claro del diseño: 319 × 43, texto 16/22
+a.botonClaro {
+  min-width: 319px;
+  font-size: 16px;
+  line-height: 22px;
+
+  @include t.mobile {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+// ---------- Banda verde
+.hero {
+  background: t.$verde;
+  color: t.$blanco;
+  padding: 62px 0 78px;
+
+  @include t.mobile {
+    padding: 48px 0 56px;
+  }
+}
+
+.heroContenido {
+  @include t.contenedor;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 413px;
+  column-gap: 40px;
+
+  @include t.tablet {
+    grid-template-columns: 1fr;
+    row-gap: 40px;
+  }
+}
+
+.heroTitulo {
+  @include t.titulo-display(96px, 1.104);
+  max-width: 560px;
+  margin-top: 17px;
+  color: t.$blanco;
+
+  @include t.mobile {
+    font-size: 52px;
+  }
+}
+
+.heroLado {
+  align-self: end;
+  margin-bottom: 20px;
+
+  @include t.tablet {
+    margin-bottom: 0;
+  }
+}
+
+.heroBajada {
+  max-width: 401px;
+  margin: 0 0 57px;
+  font-size: 16px;
+  line-height: 22px;
+
+  @include t.tablet {
+    margin-bottom: 32px;
+  }
+}
+
+// ---------- Por qué elegirnos (patrón de logos sobre blanco)
+.razones {
+  @include t.fondo-patron(t.$blanco);
+  padding: 116px 0 120px;
+
+  &::before {
+    background-position: -398px -101px;
+  }
+
+  @include t.mobile {
+    padding: 64px 0;
+  }
+}
+
+.razonesContenido {
+  @include t.contenedor;
+}
+
+.razonesTitulo {
+  @include titulo-seccion;
+  max-width: 800px;
+  margin-top: 20px;
+  color: t.$gris-oscuro;
+}
+
+.tarjetas {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 21px;
+  margin: 120px 0 0;
+  padding: 0;
+  list-style: none;
+
+  @include t.tablet {
+    margin-top: 64px;
+  }
+
+  @include t.mobile {
+    grid-template-columns: 1fr;
+    max-width: 413px;
+    margin: 48px auto 0;
+  }
+}
+
+.tarjeta {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 352px;
+  padding: 39px 38px 41px;
+
+  @include t.tablet {
+    padding: 39px 20px 32px;
+  }
+  border: 1px solid t.$gris-oscuro;
+  background: t.$blanco;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.tarjetaNumero {
+  position: absolute;
+  top: 23px;
+  left: 20px;
+  font-size: 12px;
+  line-height: 13px;
+  font-weight: 900;
+  color: t.$verde;
+}
+
+.tarjetaIcono {
+  display: block;
+  width: 113px;
+  height: 112px;
+}
+
+.tarjetaTitulo {
+  margin: 29px 0 0;
+  font-family: t.$font-titulo;
+  font-weight: 400;
+  font-size: 32px;
+  line-height: 42px;
+  color: t.$gris-oscuro;
+}
+
+.tarjetaTexto {
+  max-width: 336px;
+  margin: 23px 0 0;
+  font-size: 16px;
+  line-height: 22px;
+  color: t.$gris-texto;
+}
+
+.proceso {
+  display: block;
+  width: 100%;
+  height: auto;
+  margin-top: 73px;
+
+  @include t.mobile {
+    margin-top: 48px;
+  }
+}
+
+// ---------- Cómo comprar (línea de tiempo)
+.pasos {
+  background: t.$gris-oscuro;
+  color: t.$blanco;
+  padding: 112px 0 138px;
+
+  @include t.mobile {
+    padding: 64px 0 80px;
+  }
+}
+
+.pasosContenido {
+  @include t.contenedor;
+}
+
+.pasosEncabezado {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 413px;
+  column-gap: 40px;
+  align-items: end;
+
+  @include t.tablet {
+    grid-template-columns: 1fr;
+    row-gap: 24px;
+  }
+}
+
+.pasosTitulo {
+  @include titulo-seccion;
+  max-width: 760px;
+  margin-top: 20px;
+  color: t.$blanco;
+}
+
+.pasosBajada {
+  margin: 0 0 4px;
+  font-size: 16px;
+  line-height: 22px;
+}
+
+.lineaTiempo {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 160px;
+  margin: 181px 0 0;
+  padding: 0;
+  list-style: none;
+
+  // Línea vertical de 1 px, de 64 px antes del primer paso a 149 px
+  // después del último
+  &::before {
+    content: '';
+    position: absolute;
+    top: -64px;
+    bottom: -149px;
+    left: 50%;
+    width: 1px;
+    background: t.$blanco;
+  }
+
+  @include t.tablet {
+    gap: 72px;
+    margin-top: 72px;
+    padding-left: 40px;
+
+    &::before {
+      top: 0;
+      bottom: 0;
+      left: 5px;
+    }
+  }
+}
+
+.paso {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 242px minmax(0, 1fr);
+  align-items: center;
+
+  @include t.tablet {
+    position: relative;
+    grid-template-columns: 1fr;
+    row-gap: 32px;
+  }
+
+  // En el diseño los últimos dos pasos van 10 px más separados
+  &:nth-child(n + 5) {
+    margin-top: 10px;
+
+    @include t.tablet {
+      margin-top: 0;
+    }
+  }
+}
+
+.pasoTexto {
+  grid-row: 1;
+  grid-column: 3;
+  max-width: 325px;
+
+  @include t.tablet {
+    grid-column: 1;
+  }
+}
+
+.pasoImagen {
+  grid-row: 1;
+  grid-column: 1;
+  aspect-ratio: 522 / 392;
+  overflow: hidden;
+  background: t.$fondo;
+
+  img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  @include t.tablet {
+    grid-row: 2;
+    grid-column: 1;
+    max-width: 522px;
+  }
+}
+
+.cuadrada {
+  aspect-ratio: 1;
+}
+
+// Pasos impares: texto a la izquierda (x 297 → 217 px adentro de la
+// columna) e imagen a la derecha
+.pasoTextoIzquierda {
+  .pasoTexto {
+    grid-column: 1;
+    width: 325px;
+    margin-left: 41.8%;
+
+    @include t.tablet {
+      width: auto;
+      margin-left: 0;
+    }
+  }
+
+  .pasoImagen {
+    grid-column: 3;
+
+    @include t.tablet {
+      grid-column: 1;
+    }
+  }
+}
+
+.pasoPunto {
+  grid-row: 1;
+  grid-column: 2;
+  justify-self: center;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: t.$verde;
+
+  @include t.tablet {
+    position: absolute;
+    grid-row: auto;
+    grid-column: auto;
+    top: 0;
+    left: -40px;
+  }
+}
+
+.pasoEtiqueta {
+  margin: 0;
+  font-size: 12px;
+  line-height: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.pasoTitulo {
+  max-width: 257px;
+  margin: 71px 0 0;
+  font-family: t.$font-titulo;
+  font-weight: 400;
+  font-size: 36px;
+  line-height: 40px;
+
+  @include t.tablet {
+    margin-top: 24px;
+  }
+}
+
+.pasoDescripcion {
+  min-height: 66px; // caja de 3 renglones del diseño
+  margin: 24px 0 0;
+  font-size: 16px;
+  line-height: 22px;
+}
+
+a.botonPaso {
+  min-width: 281px;
+  margin-top: 30px;
+  font-size: 20px;
+  line-height: 27px;
+
+  @include t.mobile {
+    min-width: 0;
+    width: 100%;
+    font-size: 18px;
+  }
+}
+
+.cierre {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 40px;
+  margin-top: 226px;
+  text-align: center;
+
+  @include t.tablet {
+    margin-top: 96px;
+  }
+}
+
+.cierreTitulo {
+  @include titulo-seccion;
+  color: t.$blanco;
+}
