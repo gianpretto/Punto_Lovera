@@ -119,6 +119,12 @@
   }
 }
 
+.barraClara {
+  background: t.$fondo;
+  border-bottom: 1px solid t.$gris-texto;
+  box-sizing: border-box;
+}
+
 .logo {
   display: flex;
   flex: none;

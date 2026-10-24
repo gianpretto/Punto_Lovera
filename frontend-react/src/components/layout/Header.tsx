@@ -12,6 +12,11 @@ const NAV = [
   { to: '/contactanos', label: 'Contactanos' },
 ];
 
+// En el diseño la barra principal es gris solo en estas páginas (las que
+// arrancan con una banda de color); en el resto toma el fondo de la página
+// con una línea abajo.
+const RUTAS_BARRA_GRIS = ['/', '/quiero-comprar', '/quiero-vender'];
+
 export default function Header() {
   const { currentUser, user, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -98,7 +103,7 @@ export default function Header() {
       </div>
 
       {/* Barra principal */}
-      <div className={styles.barraMain}>
+      <div className={`${styles.barraMain} ${RUTAS_BARRA_GRIS.includes(location.pathname) ? '' : styles.barraClara}`}>
         <div className={styles.contenedor}>
           <Link className={styles.logo} to="/" aria-label="Punto Lovera, ir al inicio">
             <img src="/assets/figma/logo-oscuro.svg" alt="Punto Lovera" width={217} height={22} />
