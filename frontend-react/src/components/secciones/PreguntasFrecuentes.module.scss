@@ -1,82 +1,166 @@
-// Copia exacta del bloque .faq de Home.module.scss (diseño original)
+@use '../../styles/tokens' as t;
+
+// Medidas del diseño (Home 3323 → 4012): etiqueta grande, título 96/106 a
+// 55 px; acordeón desde x 730 (650 px del contenido) de 630 px de ancho:
+// número 12/13 negrita verde, pregunta 20/27 negrita a 88 px, chevron de
+// 22 x 10; respuesta 16/22 a 36 px de la pregunta; línea verde de 1 px.
 
 .faq {
-  background: #fff;
-  margin-bottom: 100px;
+  font-family: t.$font-texto;
 }
 
-.faq__inner {
-  width: min(1100px, calc(100% - 64px));
-  margin: 0 auto;
+.contenedor {
+  @include t.contenedor;
+  display: grid;
+  grid-template-columns: minmax(0, 650fr) minmax(0, 630fr);
+  align-items: start;
+
+  @include t.tablet {
+    grid-template-columns: 1fr;
+    row-gap: 48px;
+  }
 }
 
-.faq__titulo {
-  margin: 0 0 64px;
-  font-size: 30px;
-  letter-spacing: 1px;
-  font-weight: 600;
-  color: #555;
+.columnaTitulo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
 }
 
-.faq__item {
-  border-bottom: 1px solid #111;
-  padding: 34px 0;
+.titulo {
+  @include t.titulo-display(96px, 1.104);
+  margin-top: 55px;
+  color: t.$gris-oscuro;
+
+  @include t.mobile {
+    margin-top: 32px;
+  }
 }
 
-.faq__pregunta {
-  width: 100%;
-  background: none;
-  border: none;
+.boton {
+  margin-top: 78px;
+  padding: 0 16px;
+  font-size: 20px;
+  line-height: 27px;
+
+  @include t.tablet {
+    margin-top: 40px;
+  }
+}
+
+.link {
+  margin-top: 136px;
+  padding-bottom: 15px;
+  border-bottom: 1px solid t.$gris-oscuro;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 18px;
+  color: t.$gris-oscuro;
+  text-decoration: none;
+
+  span {
+    font-weight: 400;
+  }
+
+  &:hover {
+    color: t.$verde;
+    border-color: t.$verde;
+  }
+
+  @include t.tablet {
+    margin-top: 40px;
+  }
+}
+
+.lista {
+  list-style: none;
+  margin: 97px 0 0;
   padding: 0;
+
+  @include t.tablet {
+    margin-top: 0;
+  }
+}
+
+.item {
+  padding: 58px 0 46px; // 47 en el diseño, menos el borde
+  border-bottom: 1px solid t.$verde;
+
+  &:first-child {
+    padding-top: 0;
+  }
+
+  @include t.mobile {
+    padding: 28px 0 24px;
+  }
+}
+
+.pregunta {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  min-height: 27px;
+  padding: 0 0 14px;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  color: t.$gris-texto;
   cursor: pointer;
 
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-
-  font-size: 24px;
-  color: #444;
-  text-align: left;
+  &:focus-visible {
+    outline: 2px solid t.$verde;
+    outline-offset: 4px;
+  }
 }
 
-.faq__icono {
-  font-size: 22px;
+.numero {
+  flex: 0 0 88px;
+  padding-top: 7px;
+  font-weight: 900;
+  font-size: 12px;
+  line-height: 13px;
+  color: t.$verde;
+
+  @include t.mobile {
+    flex-basis: 40px;
+  }
+}
+
+.textoPregunta {
+  flex: 1;
+  font-weight: 700;
+  font-size: 20px;
+  line-height: 27px;
+
+  @include t.mobile {
+    font-size: 18px;
+    line-height: 24px;
+  }
+}
+
+.chevron {
+  flex: none;
+  margin: 7px 0 0 16px;
+  color: t.$verde;
   transition: transform 0.2s ease;
 }
 
-/* rotación del + */
-.faq__item.activa .faq__icono {
-  transform: rotate(45deg);
+.chevronAbierto {
+  transform: rotate(180deg);
 }
 
-.faq__respuesta {
-  margin-top: 18px;
-  max-width: 700px;
-}
+.respuesta {
+  padding: 22px 0 0 88px;
 
-.faq__respuesta p {
-  margin: 0;
-  font-size: 18px;
-  line-height: 1.9;
-  color: #555;
-}
-
-/* Responsive FAQ */
-@media (max-width: 640px) {
-  .faq {
-    margin-bottom: 60px;
-  }
-
-  .faq__titulo {
-    font-size: 24px;
-    margin-bottom: 40px;
-  }
-
-  .faq__pregunta {
-    font-size: 18px;
-  }
-
-  .faq__respuesta p {
+  p {
+    margin: 0;
     font-size: 16px;
+    line-height: 22px;
+    color: t.$gris-texto;
+  }
+
+  @include t.mobile {
+    padding: 8px 0 0 40px;
   }
 }

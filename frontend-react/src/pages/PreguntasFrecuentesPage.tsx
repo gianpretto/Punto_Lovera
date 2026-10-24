@@ -1,10 +1,11 @@
 import PreguntasFrecuentes from '../components/secciones/PreguntasFrecuentes';
 import { preguntasFrecuentes } from '../content/participar';
+import styles from './PreguntasFrecuentesPage.module.scss';
 
-// /faq: todas las preguntas (el Home muestra solo las primeras 3)
+// /faq: todas las preguntas, con el mismo bloque del Home
 export default function PreguntasFrecuentesPage() {
   return (
-    <div style={{ paddingTop: 60 }}>
+    <div className={styles.pagina}>
       <PreguntasFrecuentes items={preguntasFrecuentes} />
     </div>
   );
