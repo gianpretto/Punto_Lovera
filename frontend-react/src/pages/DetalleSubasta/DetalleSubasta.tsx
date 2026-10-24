@@ -185,8 +185,8 @@ export default function DetalleSubasta() {
 
                 <div className={styles.accion}>
                   {accion?.to && (
-                    <Boton variante="verde" to={accion.to} className={styles.botonAccion}>
-                      {`${accion.texto} →`}
+                    <Boton variante="verde" to={accion.to} flecha className={styles.botonAccion}>
+                      {accion.texto}
                     </Boton>
                   )}
                   {accion?.nota && <p className={styles.nota}>{accion.nota}</p>}
