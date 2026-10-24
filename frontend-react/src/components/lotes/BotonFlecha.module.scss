@@ -1,0 +1,29 @@
+@use '../../styles/tokens' as t;
+
+.flecha {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: t.$blanco;
+  color: t.$verde;
+  cursor: pointer;
+  transition: transform 0.15s ease;
+
+  &:hover {
+    transform: scale(1.08);
+  }
+
+  &:focus-visible {
+    outline: 2px solid t.$verde;
+    outline-offset: 2px;
+  }
+
+  svg {
+    display: block;
+  }
+}
