@@ -1,0 +1,193 @@
+@use '../../styles/tokens' as t;
+
+// Medidas del diseño (Figma, 1440 px): banda oscura de 470 px, tarjetas de
+// 413 x 425 a 178 px de la banda, título centrado a 120 px de las tarjetas
+// e ilustración de 624 px que se monta 139 px sobre la banda verde.
+
+.pagina {
+  font-family: t.$font-texto;
+  color: t.$gris-oscuro;
+  background: t.$blanco;
+}
+
+.contenedor {
+  @include t.contenedor;
+}
+
+// ---------- Banda oscura
+.cabecera {
+  background: t.$gris-oscuro;
+  color: t.$blanco;
+  padding: 60px 0 152px;
+
+  @include t.tablet {
+    padding: 56px 0 80px;
+  }
+}
+
+.cabeceraFila {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 458px;
+  align-items: end;
+
+  @include t.tablet {
+    grid-template-columns: 1fr;
+    row-gap: 32px;
+  }
+}
+
+.titulo {
+  @include t.titulo-display(96px, 1.104);
+  max-width: 6.3em; // corta en "Tu lote merece un / proceso claro."
+  margin-top: 19px;
+  color: t.$blanco;
+}
+
+.bajada {
+  box-sizing: border-box;
+  min-height: 90px;
+  max-width: 446px;
+  margin: 0 0 -9px;
+  padding: 23px 0 0 45px;
+  border-left: 1px solid t.$verde;
+  font-size: 16px;
+  line-height: 22px;
+  color: t.$blanco;
+
+  @include t.tablet {
+    margin: 0;
+    padding: 12px 0 12px 24px;
+    min-height: 0;
+  }
+}
+
+// ---------- Ventajas
+.ventajas {
+  padding-top: 178px;
+
+  @include t.tablet {
+    padding-top: 80px;
+  }
+}
+
+.tarjetas {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 21px;
+  margin-top: 0;
+  margin-bottom: 0;
+  list-style: none;
+
+  @include t.tablet {
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  }
+}
+
+.tarjeta {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  box-sizing: border-box;
+  min-height: 425px;
+  padding: 39px 20px 32px;
+  border: 1px solid t.$gris-oscuro;
+  text-align: center;
+
+  @include t.tablet {
+    min-height: 0;
+  }
+}
+
+.numero {
+  position: absolute;
+  top: 23px;
+  left: 20px;
+  font-weight: 900;
+  font-size: 12px;
+  line-height: 13px;
+  color: t.$verde;
+}
+
+.icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 113px;
+  height: 112px;
+  border: 1px solid t.$gris-oscuro;
+  border-radius: 50%;
+
+  img {
+    display: block;
+    margin-left: 2px;
+  }
+}
+
+.tarjetaTitulo {
+  max-width: 295px;
+  min-height: 62px; // dos renglones, así los textos quedan alineados
+  margin: 29px 0 0;
+  font-family: t.$font-titulo;
+  font-weight: 400;
+  font-size: 32px;
+  line-height: 31px;
+  color: t.$gris-oscuro;
+
+  @include t.tablet {
+    min-height: 0;
+  }
+}
+
+.tarjetaTexto {
+  max-width: 336px;
+  margin: 36px 0 0;
+  font-size: 16px;
+  line-height: 22px;
+  color: t.$gris-texto;
+
+  @include t.tablet {
+    margin-top: 20px;
+  }
+}
+
+// ---------- "Vos conocés tus bienes." + ilustración
+.conocer {
+  @include t.contenedor;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 120px;
+
+  @include t.tablet {
+    padding-top: 80px;
+  }
+}
+
+.tituloConocer {
+  @include t.titulo-display(72.66px, 1.101);
+  text-align: center;
+  font-style: normal;
+  color: t.$gris-oscuro;
+}
+
+.verde {
+  color: t.$verde;
+}
+
+// Se monta sobre la banda verde que sigue (SeccionVender)
+.ilustracion {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  max-width: 624px;
+  height: auto;
+  margin: -15px 0 -139px;
+
+  // En pantallas angostas no se monta: taparía la etiqueta "HABLEMOS"
+  @include t.tablet {
+    margin: 0;
+  }
+}

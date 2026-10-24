@@ -1,181 +1,179 @@
-@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap');
+@use '../../styles/tokens' as t;
 
-.contactanosPage {
-  font-family: 'Montserrat', sans-serif;
-  background: #fdfdfd;
-}
+// Medidas del diseño (Figma, 1440 px): título a 193 px del header, columna
+// de texto de 650 px y formulario de 542 px (campos de 245 px con 52 px
+// entre columnas); banner de redes a 123 px del formulario y 136 px del footer.
 
-.contactSection {
-  width: 100%;
-  margin-top: 60px;
-}
+.pagina {
+  @include t.fondo-patron(t.$blanco);
+  padding: 193px 0 136px;
+  font-family: t.$font-texto;
+  color: t.$gris-oscuro;
 
-.contactInner {
-  display: flex;
-  min-height: 600px;
+  @include t.tablet {
+    padding: 80px 0 96px;
+  }
 
-  @media (max-width: 900px) {
-    flex-direction: column;
-    min-height: auto;
+  @include t.mobile {
+    padding: 48px 0 64px;
   }
 }
 
-.contactFormWrapper {
-  flex: 1;
-  background: #4a4a4a;
-  color: white;
-  padding: 80px 60px 80px max(32px, calc(50vw - 620px));
+.contenedor {
+  @include t.contenedor;
+}
 
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+.contacto {
+  display: grid;
+  grid-template-columns: minmax(0, 650px) minmax(0, 542px);
+  align-items: start;
 
-  @media (max-width: 900px) {
-    padding: 60px 32px;
+  @include t.tablet {
+    grid-template-columns: 1fr;
+    row-gap: 48px;
   }
 }
 
-.formTitle {
-  font-size: 20px;
-  font-weight: 600;
-  margin-bottom: 40px;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+// "Hablemos" y, debajo y corrido, "Sin vueltas." en itálica verde
+.titulo {
+  @include t.titulo-display(96px, 1.104);
+  color: t.$gris-oscuro;
+
+  em {
+    display: block;
+    margin: -0.208em 0 0 0.51em; // en el diseño se pisan 20 px y entra 49 px
+    color: t.$verde;
+  }
 }
 
-.contactForm {
+.bajada {
+  box-sizing: border-box;
+  max-width: 446px;
+  min-height: 90px;
+  margin: 56px 0 0;
+  padding: 15px 0 0 45px;
+  border-left: 1px solid t.$verde;
+  font-size: 16px;
+  line-height: 22px;
+  color: t.$gris-oscuro;
+
+  @include t.mobile {
+    margin-top: 32px;
+    padding-left: 24px;
+  }
+}
+
+.formulario {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 245px));
+  justify-content: space-between;
+  row-gap: 32px;
+  padding-top: 35px;
+
+  @include t.tablet {
+    padding-top: 0;
+  }
+
+  @include t.mobile {
+    grid-template-columns: 1fr;
+    row-gap: 24px;
+  }
+}
+
+.campo {
   display: flex;
   flex-direction: column;
-  gap: 20px;
-  max-width: 500px;
-}
+  gap: 23px;
 
-.formGroup {
+  span {
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 22px;
+    color: t.$gris-oscuro;
+  }
+
   input,
   textarea {
     box-sizing: border-box;
     width: 100%;
+    min-height: 0;
+    padding: 0 0 13px;
     background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.4);
-    padding: 12px 16px;
-    color: white;
-    font-family: 'Montserrat', sans-serif;
+    border: none;
+    border-bottom: 1px solid t.$gris-oscuro;
+    border-radius: 0;
+    font-family: t.$font-texto;
     font-size: 16px;
-    outline: none;
-    transition: border-color 0.2s;
+    line-height: 22px;
+    color: t.$gris-oscuro;
+    resize: vertical;
 
     &::placeholder {
-      color: rgba(255, 255, 255, 0.6);
+      color: t.$gris-oscuro;
+      opacity: 1;
     }
 
     &:focus {
-      border-color: white;
+      outline: none;
+      border-bottom: 2px solid t.$verde;
+      padding-bottom: 12px;
     }
-  }
-
-  textarea {
-    resize: vertical;
-    min-height: 120px;
   }
 }
 
-.btnEnviar {
-  background: black;
-  color: white;
+.campoAncho {
+  grid-column: 1 / -1;
+
+  &:empty {
+    display: none;
+  }
+}
+
+.enviar {
+  height: 43px;
+  margin-top: 33px;
+  background: t.$verde;
+  color: t.$blanco;
   border: none;
-  padding: 12px 0;
-  font-size: 14px;
-  font-weight: 500;
-  text-transform: uppercase;
+  border-radius: 0;
+  font-family: t.$font-destacada;
+  font-size: 16px;
+  line-height: 22px;
   cursor: pointer;
-  margin-top: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  transition: background-color 0.2s;
-  width: 100%;
 
   &:hover {
-    background: #333;
+    filter: brightness(1.1);
+  }
+
+  &:focus-visible {
+    outline: 2px solid t.$gris-oscuro;
+    outline-offset: 2px;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: wait;
   }
 }
 
-.arrow {
-  font-size: 18px;
+.aviso {
+  margin: 0;
+  padding: 10px 14px;
+  background: t.$verde-claro;
+  color: t.$verde;
+  font-size: 15px;
+  line-height: 21px;
 }
 
-.contactImage {
-  flex: 1;
-  background: #ccc;
-  position: relative;
-  overflow: hidden;
+.avisoError {
+  background: #fbe9e9;
+  color: #8a1f1f;
 }
 
-.imagePlaceholder {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: #b0b0b0;
+.redes {
+  margin-top: 123px;
 
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    opacity: 0.8;
-  }
-}
-
-.srOnly {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border-width: 0;
-}
-
-.whatsappBtn {
-  position: fixed;
-  bottom: 40px;
-  right: 40px;
-  z-index: 1000;
-  background-color: #25D366;
-  color: white;
-  width: 60px;
-  height: 60px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-
-  svg {
-    width: 36px;
-    height: 36px;
-  }
-
-  &:hover {
-    transform: scale(1.1);
-    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
-    background-color: #20BA5C;
-  }
-
-  @media (max-width: 600px) {
-    bottom: 20px;
-    right: 20px;
-    width: 50px;
-    height: 50px;
-
-    svg {
-      width: 30px;
-      height: 30px;
-    }
+  @include t.tablet {
+    margin-top: 80px;
   }
 }
