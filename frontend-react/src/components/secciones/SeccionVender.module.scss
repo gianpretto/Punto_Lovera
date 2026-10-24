@@ -9,9 +9,33 @@
   color: t.$gris-claro;
   font-family: t.$font-texto;
   padding: 66px 0 74px;
+  box-sizing: border-box;
+  min-height: 506px; // alto de la banda en el diseño
+
+  @include t.tablet {
+    min-height: 0;
+  }
 
   @include t.mobile {
     padding: 48px 0;
+  }
+}
+
+// Con la etiqueta grande (Quiénes somos): etiqueta a 61 px del borde y
+// título 31 px debajo, así la banda mantiene el mismo alto.
+.conEtiquetaGrande {
+  padding-top: 61px;
+
+  .titulo {
+    margin-top: 31px;
+  }
+
+  .formulario {
+    padding-top: 45px; // el formulario no se mueve
+  }
+
+  @include t.mobile {
+    padding-top: 48px;
   }
 }
 

@@ -10,9 +10,11 @@ import styles from './SeccionVender.module.scss';
 interface Props {
   /** Desde qué página se manda (queda guardado con la consulta) */
   origen: string;
+  /** Etiqueta "HABLEMOS" en tamaño grande (24 px), como en Quiénes somos */
+  etiquetaGrande?: boolean;
 }
 
-export default function SeccionVender({ origen }: Props) {
+export default function SeccionVender({ origen, etiquetaGrande = false }: Props) {
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [mensaje, setMensaje] = useState('');
@@ -40,10 +42,12 @@ export default function SeccionVender({ origen }: Props) {
   };
 
   return (
-    <section className={styles.seccion}>
+    <section className={`${styles.seccion} ${etiquetaGrande ? styles.conEtiquetaGrande : ''}`}>
       <div className={styles.contenedor}>
         <div className={styles.columnaTexto}>
-          <Etiqueta tono="claro">Hablemos</Etiqueta>
+          <Etiqueta tono="claro" tamano={etiquetaGrande ? 'grande' : 'chica'}>
+            Hablemos
+          </Etiqueta>
           <h2 className={styles.titulo}>
             ¿Tenés bienes
             <br />

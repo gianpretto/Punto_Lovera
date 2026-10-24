@@ -40,7 +40,7 @@ export default function TarjetaSubasta({
 }: TarjetaSubastaProps) {
   const activa = estado === 'ACTIVA';
   const finalizada = estado === 'FINALIZADA';
-  const pastilla = activa ? 'ACTIVA' : finalizada ? 'FINALIZADA' : 'PRÓXIMAMENTE';
+  const pastilla = activa ? 'ACTIVA' : finalizada ? 'TERMINADA' : 'PRÓXIMAMENTE';
 
   return (
     <Link className={styles.tarjeta} to={`/subastas/${id}`}>
