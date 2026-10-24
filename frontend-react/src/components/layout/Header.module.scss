@@ -171,6 +171,11 @@
   gap: 14px;
   flex: none;
 
+  // sin el nav (tablet) nadie los empuja a la derecha
+  @include t.tablet {
+    margin-left: auto;
+  }
+
   @include t.mobile {
     display: none;
   }
@@ -213,6 +218,11 @@
 
   @include t.tablet {
     display: flex;
+  }
+
+  // en el celular tampoco están los botones
+  @include t.mobile {
+    margin-left: auto;
   }
 }
 
