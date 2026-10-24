@@ -1,42 +1,79 @@
-import { useState } from 'react';
+import { useId, useState } from 'react';
+import { Link } from 'react-router-dom';
 import type { Faq } from '../../content/participar';
+import Boton from '../ui/Boton';
+import Etiqueta from '../ui/Etiqueta';
 import styles from './PreguntasFrecuentes.module.scss';
 
-// Acordeón de preguntas frecuentes ("ventanitas desplegables" del diagrama).
-// Mismo diseño que tenía el bloque FAQ del Home; ahora lo comparten el Home
-// y la página /faq.
-
+// Bloque "—— PREGUNTAS FRECUENTES / Lo importante, explicado fácil." del
+// rediseño (Home y Próximas subastas; también lo usa /faq con todas las
+// preguntas). Título a la izquierda y acordeón numerado a la derecha (01.,
+// 02., ...) con un chevron verde; arranca con la primera abierta.
+//
+// El fondo lo pone la página (va sobre el fondo claro con patrón).
 interface Props {
   items: Faq[];
-  titulo?: string;
+  /** Cómo se muestra "¿Tenés otra duda? escribinos →": botón verde (Home) o link subrayado (Próximas) */
+  enlace?: 'boton' | 'link';
+  className?: string;
 }
 
-export default function PreguntasFrecuentes({ items, titulo = 'PREGUNTAS FRECUENTES' }: Props) {
+export default function PreguntasFrecuentes({ items, enlace = 'boton', className }: Props) {
   const [abierta, setAbierta] = useState<number | null>(0);
+  const id = useId();
 
   return (
-    <section className={styles.faq}>
-      <div className={styles.faq__inner}>
-        <h2 className={styles.faq__titulo}>{titulo}</h2>
+    <section className={`${styles.faq} ${className ?? ''}`}>
+      <div className={styles.contenedor}>
+        <div className={styles.columnaTitulo}>
+          <Etiqueta tamano="grande">Preguntas frecuentes</Etiqueta>
+          <h2 className={styles.titulo}>
+            Lo importante, <br />
+            <em>explicado fácil.</em>
+          </h2>
+          {enlace === 'boton' ? (
+            <Boton variante="verde" to="/contactanos" flecha className={styles.boton}>
+              ¿Tenés otra duda? escribinos
+            </Boton>
+          ) : (
+            <Link className={styles.link} to="/contactanos">
+              ¿Tenés otra duda? escribinos <span aria-hidden="true">→</span>
+            </Link>
+          )}
+        </div>
 
-        <div className={styles.faq__lista}>
-          {items.map((f, i) => (
-            <div className={`${styles.faq__item} ${abierta === i ? styles.activa : ''}`} key={i}>
-              <button className={styles.faq__pregunta} onClick={() => setAbierta((a) => (a === i ? null : i))}>
-                <span>
-                  {i + 1}. {f.pregunta}
-                </span>
-                <span className={styles.faq__icono}>+</span>
-              </button>
+        <ol className={styles.lista}>
+          {items.map((f, i) => {
+            const abiertaEsta = abierta === i;
+            return (
+              <li className={styles.item} key={f.pregunta}>
+                <button
+                  type="button"
+                  className={styles.pregunta}
+                  aria-expanded={abiertaEsta}
+                  aria-controls={`${id}-${i}`}
+                  onClick={() => setAbierta((a) => (a === i ? null : i))}
+                >
+                  <span className={styles.numero}>{String(i + 1).padStart(2, '0')}.</span>
+                  <span className={styles.textoPregunta}>{f.pregunta}</span>
+                  <svg
+                    className={`${styles.chevron} ${abiertaEsta ? styles.chevronAbierto : ''}`}
+                    width="22"
+                    height="12"
+                    viewBox="0 0 22 12"
+                    aria-hidden="true"
+                  >
+                    <path d="M1 1l10 9.5L21 1" fill="none" stroke="currentColor" strokeWidth="3" />
+                  </svg>
+                </button>
 
-              {abierta === i && (
-                <div className={styles.faq__respuesta}>
+                <div id={`${id}-${i}`} className={styles.respuesta} hidden={!abiertaEsta}>
                   <p>{f.respuesta}</p>
                 </div>
-              )}
-            </div>
-          ))}
-        </div>
+              </li>
+            );
+          })}
+        </ol>
       </div>
     </section>
   );

@@ -1,144 +1,154 @@
 import { useEffect, useMemo, useState } from 'react';
-import SubastaEnVivo from '../../components/secciones/SubastaEnVivo';
+import Etiqueta from '../../components/ui/Etiqueta';
 import TarjetaSubasta from '../../components/tarjetas/TarjetaSubasta';
-import Redes from '../../components/secciones/Redes';
-import SubastasAnteriores from '../../components/secciones/SubastasAnteriores';
+import SubastaDestacada from '../../components/secciones/SubastaDestacada';
+import BannerRedes from '../../components/secciones/BannerRedes';
+import PreguntasFrecuentes from '../../components/secciones/PreguntasFrecuentes';
+import { preguntasDestacadas } from '../../content/participar';
+import { uploadUrl } from '../../services/api';
 import { toSubasta, useAuctions, useNow } from '../../services/auctions';
+import { ordenarSubastas } from '../../utils/ordenarSubastas';
 import styles from './ProximasSubastas.module.scss';
+
+// "Todas las subastas" del rediseño (Figma "Proximas subastas"): subasta en
+// vivo (o la próxima) arriba, grilla de 4 x 3 con paginación (en vivo,
+// próximas y terminadas), redes y preguntas frecuentes.
+
+const FOTOS_EJEMPLO = [
+  '/assets/figma/subasta-cocina-2.webp',
+  '/assets/figma/subasta-cocina-1.webp',
+  '/assets/figma/subasta-cafeteria.webp',
+  '/assets/figma/subasta-cocina-3.webp',
+];
+
+const porPagina = () => (typeof window !== 'undefined' && window.innerWidth <= 425 ? 4 : 12);
 
 export default function ProximasSubastas() {
   const now = useNow();
-  const proximas = useAuctions(['ACTIVA', 'PROXIMA']);
-  const allSubastas = useMemo(() => (proximas ?? []).map((a) => toSubasta(a, now)), [proximas, now]);
-  const [itemsPerPage, setItemsPerPage] = useState(() =>
-    typeof window !== 'undefined' && window.innerWidth <= 425 ? 4 : 12
-  );
-  const [currentPage, setCurrentPage] = useState(1);
+  const subastas = useAuctions(['ACTIVA', 'PROXIMA', 'FINALIZADA']);
+  const ordenadas = useMemo(() => ordenarSubastas(subastas ?? []), [subastas]);
+  const destacada = ordenadas.find((a) => a.status !== 'FINALIZADA');
 
-  const totalPages = Math.max(1, Math.ceil(allSubastas.length / itemsPerPage));
+  const [itemsPerPage, setItemsPerPage] = useState(porPagina);
+  const [paginaElegida, setCurrentPage] = useState(1);
+  const totalPages = Math.max(1, Math.ceil(ordenadas.length / itemsPerPage));
+  // Si cambia la cantidad por página (resize) y la elegida ya no existe, vuelve a la 1
+  const currentPage = paginaElegida > totalPages ? 1 : paginaElegida;
 
   useEffect(() => {
-    const checkScreenSize = () => {
-      setItemsPerPage(window.innerWidth <= 425 ? 4 : 12);
-    };
+    const checkScreenSize = () => setItemsPerPage(porPagina());
     window.addEventListener('resize', checkScreenSize);
     return () => window.removeEventListener('resize', checkScreenSize);
   }, []);
 
-  useEffect(() => {
-    setCurrentPage((p) => (p > totalPages ? 1 : p));
-  }, [totalPages]);
-
-  const paginatedSubastas = useMemo(() => {
-    const start = (currentPage - 1) * itemsPerPage;
-    return allSubastas.slice(start, start + itemsPerPage);
-  }, [currentPage, itemsPerPage, allSubastas]);
+  const inicio = (currentPage - 1) * itemsPerPage;
+  const pagina = ordenadas.slice(inicio, inicio + itemsPerPage);
 
   const visiblePages = useMemo((): (number | string)[] => {
-    const total = totalPages;
-    const current = currentPage;
     const delta = 2;
     const range: number[] = [];
-    const rangeWithDots: (number | string)[] = [];
-    let l: number | undefined;
-
-    for (let i = 1; i <= total; i++) {
-      if (i === 1 || i === total || (i >= current - delta && i <= current + delta) || i <= 3) {
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === 1 || i === totalPages || (i >= currentPage - delta && i <= currentPage + delta) || i <= 3) {
         range.push(i);
       }
     }
-
-    const uniqueRange = [...new Set(range)].sort((a, b) => a - b);
-
-    for (const i of uniqueRange) {
+    const conPuntos: (number | string)[] = [];
+    let l: number | undefined;
+    for (const i of range) {
       if (l) {
-        if (i - l === 2) {
-          rangeWithDots.push(l + 1);
-        } else if (i - l !== 1) {
-          rangeWithDots.push('...');
-        }
+        if (i - l === 2) conPuntos.push(l + 1);
+        else if (i - l !== 1) conPuntos.push('...');
       }
-      rangeWithDots.push(i);
+      conPuntos.push(i);
       l = i;
     }
-
-    return rangeWithDots;
+    return conPuntos;
   }, [currentPage, totalPages]);
 
-  const setPage = (page: number | string) => {
-    if (typeof page === 'string') return;
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-      const titleElement = document.getElementById('titulo-proximas');
-      if (titleElement) {
-        titleElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      } else {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      }
-    }
-  };
-
-  const nextPage = () => {
-    if (currentPage < totalPages) setPage(currentPage + 1);
+  const setPage = (page: number) => {
+    if (page < 1 || page > totalPages) return;
+    setCurrentPage(page);
+    document.getElementById('titulo-proximas')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
   return (
-    <>
-      <SubastaEnVivo />
-
-      <section className={styles.prox}>
-        <div className={styles.proxInner}>
-          <h2 className={styles.proxTitulo} id="titulo-proximas">PRÓXIMAS SUBASTAS</h2>
-
-          <div className={styles.proxGrid}>
-            {paginatedSubastas.map((subasta) => (
-              <TarjetaSubasta
-                key={subasta.id}
-                id={subasta.id}
-                estado={subasta.estado}
-                titulo={subasta.titulo}
-                ubicacion={subasta.ubicacion}
-                descripcion={subasta.descripcion}
-                fecha={subasta.fecha}
-                hora={subasta.hora}
-                mostrarCuentaRegresiva={subasta.estado === 'PRÓXIMA'}
-                countdown={subasta.countdown}
-              />
-            ))}
+    <div className={styles.pagina}>
+      <div className={styles.contenedor}>
+        {destacada && (
+          <div className={styles.destacada}>
+            <SubastaDestacada subasta={destacada} />
           </div>
-          {proximas && allSubastas.length === 0 && (
-            <p className={styles.sinSubastas}>Pronto vamos a publicar nuevas subastas.</p>
-          )}
+        )}
 
-          {totalPages > 1 && (
-            <div className={styles.paginationWrapper}>
-              <div className={styles.pagination}>
-                {visiblePages.map((p, i) => (
-                  <button
-                    key={`${p}-${i}`}
-                    className={`${styles.paginationPage} ${p === currentPage ? styles.active : ''} ${p === '...' ? styles.disabledDots : ''}`}
-                    onClick={() => setPage(p)}
-                  >
-                    {p}
-                  </button>
-                ))}
-
-                <button
-                  className={`${styles.paginationNext} ${currentPage === totalPages ? styles.disabled : ''}`}
-                  onClick={nextPage}
-                  disabled={currentPage === totalPages}
-                >
-                  Siguiente →
-                </button>
-              </div>
-            </div>
-          )}
+        <div className={styles.cabecera}>
+          <div>
+            <Etiqueta tamano="grande">Agenda</Etiqueta>
+            <h1 className={styles.titulo} id="titulo-proximas">
+              Todas las subastas
+            </h1>
+          </div>
+          {subastas && <p className={styles.total}>Total subastas ({ordenadas.length})</p>}
         </div>
-      </section>
 
-      <Redes />
+        <div className={styles.grilla}>
+          {pagina.map((a, i) => {
+            const s = toSubasta(a, now);
+            return (
+              <TarjetaSubasta
+                key={a.id}
+                id={a.id}
+                estado={s.estado}
+                titulo={s.titulo}
+                ubicacion={s.ubicacion}
+                descripcion={s.descripcion}
+                fecha={s.fecha}
+                hora={s.hora}
+                imagen={a.coverImageUrl ? uploadUrl(a.coverImageUrl) : FOTOS_EJEMPLO[(inicio + i) % FOTOS_EJEMPLO.length]}
+                countdown={s.countdown}
+              />
+            );
+          })}
+        </div>
+        {subastas && ordenadas.length === 0 && (
+          <p className={styles.sinSubastas}>Pronto vamos a publicar nuevas subastas.</p>
+        )}
 
-      <SubastasAnteriores />
-    </>
+        {totalPages > 1 && (
+          <nav className={styles.paginacion} aria-label="Páginas de subastas">
+            {visiblePages.map((p, i) =>
+              typeof p === 'number' ? (
+                <button
+                  key={p}
+                  type="button"
+                  className={p === currentPage ? styles.actual : undefined}
+                  aria-current={p === currentPage ? 'page' : undefined}
+                  onClick={() => setPage(p)}
+                >
+                  {p}
+                </button>
+              ) : (
+                <span key={`puntos-${i}`} className={styles.puntos}>
+                  …
+                </span>
+              ),
+            )}
+            <button
+              type="button"
+              className={styles.siguiente}
+              onClick={() => setPage(currentPage + 1)}
+              disabled={currentPage === totalPages}
+            >
+              Siguiente →
+            </button>
+          </nav>
+        )}
+
+        <div className={styles.redes}>
+          <BannerRedes />
+        </div>
+      </div>
+
+      <PreguntasFrecuentes items={preguntasDestacadas} enlace="link" className={styles.faq} />
+    </div>
   );
 }

@@ -32,7 +32,8 @@ export default function Boton({ variante = 'claro', flecha, bloque, className, c
   const contenido = (
     <>
       {children}
-      {flecha && <span aria-hidden="true"> →</span>}
+      {/* Espacio duro: en un inline-flex el espacio común al inicio del span se pierde */}
+      {flecha && <span aria-hidden="true">{' →'}</span>}
     </>
   );
 

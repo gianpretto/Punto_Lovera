@@ -1,0 +1,10 @@
+@use '../styles/tokens' as t;
+
+.pagina {
+  @include t.fondo-patron(t.$fondo);
+  padding: 78px 0 160px;
+
+  @include t.mobile {
+    padding: 48px 0 80px;
+  }
+}

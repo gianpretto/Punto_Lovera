@@ -46,6 +46,33 @@ export const preguntasFrecuentes: Faq[] = [
   },
 ];
 
+// Las 4 preguntas del bloque "Lo importante, explicado fácil." del rediseño
+// (Home y Próximas subastas). Las preguntas y la primera respuesta son las
+// del diseño; las otras respuestas son BORRADOR hasta que lleguen los textos
+// de la diseñadora.
+export const preguntasDestacadas: Faq[] = [
+  {
+    pregunta: '¿Qué necesito para participar de una subasta?',
+    respuesta:
+      'Creá tu perfil, validá tus datos y cargá crédito solicitado como garantía. Desde ese momento podés ofertar en cualquier subasta habilitada.',
+  },
+  {
+    pregunta: '¿Puedo revisar los lotes antes de ofertar?',
+    respuesta:
+      'Sí. Cada subasta tiene su catálogo con fotos y la descripción de cada lote, disponible desde que se publica hasta el día del remate.',
+  },
+  {
+    pregunta: '¿Qué pasa si gano un lote?',
+    respuesta:
+      'El monto de tu oferta se descuenta de tu crédito y la compra aparece en "Mis compras". Nuestro equipo se contacta con vos para coordinar el retiro.',
+  },
+  {
+    pregunta: '¿Cómo puedo vender mis bienes con Punto Lovera?',
+    respuesta:
+      'Escribinos desde "Quiero vender" contándonos qué querés subastar y nuestro equipo se pondrá en contacto a la brevedad.',
+  },
+];
+
 export interface Paso {
   titulo: string;
   desc: string;

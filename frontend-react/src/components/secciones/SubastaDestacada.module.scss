@@ -1,0 +1,190 @@
+@use '../../styles/tokens' as t;
+
+// Medidas del diseño: tarjeta 1280 x 502 blanca con sombra (0 4 4 25 %);
+// foto de 847 px, cámara del martillero 206 x 145; panel con 57 px a los
+// lados: pastilla 29 px, título 23/26 verde, ubicación 15.3/17, texto 16/22
+// (párrafos a 10 px), línea verde, martillero y botón verde de 43 px.
+
+.tarjeta {
+  display: grid;
+  grid-template-columns: minmax(0, 847fr) minmax(0, 433fr);
+  width: 100%;
+  min-height: 502px;
+  background: t.$blanco;
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
+  font-family: t.$font-texto;
+
+  @include t.tablet {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+}
+
+.media {
+  position: relative;
+  min-height: 100%;
+  background: t.$gris-medio;
+  overflow: hidden;
+
+  @include t.tablet {
+    aspect-ratio: 847 / 502;
+  }
+}
+
+.foto {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.camara {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  display: block;
+  width: 206px;
+  height: 145px;
+  object-fit: cover;
+
+  @include t.mobile {
+    width: 112px;
+    height: 79px;
+  }
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 22px 57px 25px;
+  min-width: 0;
+
+  @include t.tablet {
+    padding: 24px 32px 28px;
+  }
+
+  @include t.mobile {
+    padding: 20px 16px 24px;
+  }
+}
+
+.pastilla {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  height: 29px;
+  padding: 0 15px 0 16px;
+  background: t.$verde-claro;
+  color: t.$verde;
+  font-weight: 800;
+  font-size: 16px;
+  line-height: 22px;
+  text-transform: uppercase;
+
+  svg,
+  img {
+    flex: none;
+  }
+}
+
+.titulo {
+  margin: 26px 0 0;
+  max-width: 335px;
+  font-weight: 700;
+  font-size: 23px;
+  line-height: 26px;
+  color: t.$verde;
+
+  @include t.tablet {
+    max-width: none;
+  }
+}
+
+.ubicacion {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 15px 0 0;
+  font-size: 15.3px;
+  line-height: 17px;
+  color: t.$gris-texto;
+}
+
+.descripcion {
+  margin-top: 14px;
+  max-width: 319px;
+
+  p {
+    margin: 0 0 10px;
+    font-size: 16px;
+    line-height: 22px;
+    color: t.$gris-texto;
+  }
+
+  @include t.tablet {
+    max-width: none;
+  }
+}
+
+.pie {
+  width: 100%;
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid t.$verde;
+
+  @include t.tablet {
+    margin-top: 24px;
+  }
+}
+
+.martillero {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  column-gap: 4px;
+  margin: 0;
+  color: t.$verde;
+  font-size: 16px;
+  line-height: 22px;
+
+  img {
+    margin-right: 0;
+  }
+
+  strong {
+    font-weight: 700;
+    text-transform: uppercase;
+  }
+
+  span {
+    font-size: 10px;
+  }
+}
+
+.boton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  min-height: 43px;
+  margin-top: 14px;
+  background: t.$verde;
+  color: t.$blanco;
+  font-size: 20px;
+  line-height: 27px;
+  text-decoration: none;
+  transition: filter 0.15s ease;
+
+  &:hover {
+    filter: brightness(1.1);
+  }
+
+  &:focus-visible {
+    outline: 2px solid t.$gris-oscuro;
+    outline-offset: 2px;
+  }
+}
