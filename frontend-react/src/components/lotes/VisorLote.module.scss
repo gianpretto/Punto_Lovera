@@ -1,0 +1,224 @@
+@use '../../styles/tokens' as t;
+
+// Medidas del diseño (1440): panel blanco de 1353 x 546 a 43 px del borde,
+// foto de 780 x 546, detalle a 29 px de los bordes, "CERRAR ✕" (24/27 bold)
+// alineado a la derecha 48 px por encima del panel.
+
+.fondo {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  // En el diseño (1440 x 1029) "CERRAR" queda a 92 px del borde superior
+  padding: clamp(24px, 9vh, 92px) 43px 24px;
+  background: rgba(0, 0, 0, 0.85);
+  overflow-y: auto;
+  box-sizing: border-box;
+
+  @include t.mobile {
+    padding: 16px;
+  }
+}
+
+.dialogo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 48px;
+  width: 100%;
+  max-width: 1353px;
+  font-family: t.$font-texto;
+
+  @include t.tablet {
+    gap: 20px;
+  }
+}
+
+.cerrar {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  margin-right: 3px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: t.$blanco;
+  font-family: t.$font-texto;
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 27px;
+  cursor: pointer;
+
+  svg {
+    display: block;
+  }
+
+  &:focus-visible {
+    outline: 2px solid t.$blanco;
+    outline-offset: 4px;
+  }
+
+  @include t.mobile {
+    font-size: 18px;
+  }
+}
+
+.panel {
+  display: grid;
+  grid-template-columns: 780fr 573fr;
+  width: 100%;
+  height: 546px;
+  background: t.$blanco;
+
+  @include t.tablet {
+    grid-template-columns: 1fr;
+    height: auto;
+  }
+}
+
+.media {
+  position: relative;
+  min-width: 0;
+  height: 546px;
+  background: t.$gris-medio;
+
+  @include t.tablet {
+    height: auto;
+    aspect-ratio: 780 / 546;
+  }
+}
+
+.foto {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sinFotos {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: t.$blanco;
+}
+
+.flechaIzq,
+.flechaDer {
+  position: absolute;
+  top: 50%;
+  margin-top: -17px;
+}
+
+.flechaIzq {
+  left: 27px;
+
+  @include t.mobile {
+    left: 16px;
+  }
+}
+
+.flechaDer {
+  right: 28px;
+
+  @include t.mobile {
+    right: 16px;
+  }
+}
+
+.puntos {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 22px;
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+}
+
+.punto {
+  width: 13px;
+  height: 13px;
+  padding: 0;
+  border: 1px solid t.$blanco;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  box-sizing: border-box;
+
+  &:focus-visible {
+    outline: 2px solid t.$blanco;
+    outline-offset: 2px;
+  }
+}
+
+.puntoActivo {
+  background: t.$blanco;
+}
+
+.oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.detalle {
+  min-width: 0;
+  padding: 29px 28px 29px 29px;
+  overflow-y: auto;
+  box-sizing: border-box;
+
+  @include t.mobile {
+    padding: 22px 20px 26px;
+  }
+}
+
+.etiquetas {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  font-weight: 700;
+  font-size: 12px;
+  line-height: 13px;
+  color: t.$verde;
+  text-transform: uppercase;
+}
+
+.titulo {
+  margin: 18px 0 0;
+  font-family: t.$font-titulo;
+  font-weight: 400;
+  font-size: 32px;
+  line-height: 36px;
+  color: t.$gris-oscuro;
+}
+
+.resumen {
+  margin: 17px 0 0;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 22px;
+  color: t.$gris-texto;
+}
+
+.texto {
+  margin-top: 43px;
+  font-size: 16px;
+  line-height: 22px;
+  color: t.$gris-texto;
+
+  p {
+    margin: 0 0 22px;
+  }
+
+  p:last-child {
+    margin-bottom: 0;
+  }
+}

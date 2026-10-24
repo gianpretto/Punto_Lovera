@@ -1,0 +1,135 @@
+@use '../../styles/tokens' as t;
+
+// Medidas del diseño: tarjeta 413 x 576 blanca con sombra (0 4 4 25 %),
+// foto de 289 px, texto a 30 px de los bordes y "Ver fotos" sobre una
+// línea #d5d9d8 a 24 px de los bordes.
+
+.tarjeta {
+  display: flex;
+  flex-direction: column;
+  min-height: 576px;
+  background: t.$blanco;
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
+  font-family: t.$font-texto;
+
+  @include t.mobile {
+    min-height: 0;
+  }
+}
+
+.media {
+  position: relative;
+  height: 289px;
+  background: t.$gris-medio;
+  flex: none;
+}
+
+.fotoBoton {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+
+  &:focus-visible {
+    outline: 3px solid t.$verde;
+    outline-offset: -3px;
+  }
+}
+
+.foto {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.sinFotos {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: t.$blanco;
+  font-size: 14px;
+}
+
+.flechaIzq,
+.flechaDer {
+  position: absolute;
+  top: 50%;
+  margin-top: -17px;
+}
+
+.flechaIzq {
+  left: 30px;
+}
+
+.flechaDer {
+  right: 29px;
+}
+
+.cuerpo {
+  flex: 1;
+  padding: 21px 29px 16px 30px;
+}
+
+.etiquetas {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  font-weight: 700;
+  font-size: 12px;
+  line-height: 13px;
+  color: t.$verde;
+  text-transform: uppercase;
+}
+
+.titulo {
+  margin: 18px 0 0;
+  font-family: t.$font-titulo;
+  font-weight: 400;
+  font-size: 32px;
+  line-height: 36px;
+  color: t.$gris-oscuro;
+}
+
+.resumen {
+  margin: 17px 0 0;
+  font-size: 16px;
+  line-height: 22px;
+  color: t.$gris-texto;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.verFotos {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0 29px 20px 24px;
+  padding: 17px 0 0;
+  border: 0;
+  border-top: 1px solid t.$gris-claro;
+  background: none;
+  font-family: t.$font-texto;
+  font-weight: 500;
+  font-size: 12.6px;
+  line-height: 17px;
+  color: t.$gris-texto;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    color: t.$verde;
+  }
+
+  &:focus-visible {
+    outline: 2px solid t.$verde;
+    outline-offset: 2px;
+  }
+}

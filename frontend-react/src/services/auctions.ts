@@ -22,6 +22,7 @@ export interface LotApi {
   number: number;
   title: string;
   description: string;
+  startingPrice?: string;
   currentPrice: string;
   sold: boolean;
   images: { url: string; position: number }[];
