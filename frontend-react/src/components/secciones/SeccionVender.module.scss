@@ -1,0 +1,140 @@
+@use '../../styles/tokens' as t;
+
+// Medidas del diseño (Home): banda de 506 px; etiqueta a 66 px del borde,
+// título 96/106; formulario desde x 730 (650 px del contenido), campos de
+// 233 px con 76 px entre columnas y mensaje de 542 px.
+
+.seccion {
+  background: t.$verde;
+  color: t.$gris-claro;
+  font-family: t.$font-texto;
+  padding: 66px 0 74px;
+
+  @include t.mobile {
+    padding: 48px 0;
+  }
+}
+
+.contenedor {
+  @include t.contenedor;
+  display: grid;
+  grid-template-columns: minmax(0, 650px) minmax(0, 542px);
+  align-items: start;
+
+  @include t.tablet {
+    grid-template-columns: 1fr;
+    row-gap: 40px;
+  }
+}
+
+.columnaTexto {
+  display: flex;
+  flex-direction: column;
+}
+
+.titulo {
+  @include t.titulo-display(96px, 1.104);
+  color: t.$gris-claro;
+  margin-top: 41px;
+}
+
+.bajada {
+  max-width: 434px;
+  margin: 40px 0 0;
+  font-size: 16px;
+  line-height: 22px;
+  color: t.$fondo;
+}
+
+.formulario {
+  display: grid;
+  grid-template-columns: 233px 233px;
+  column-gap: 76px;
+  row-gap: 32px;
+  padding-top: 40px;
+
+  @include t.mobile {
+    grid-template-columns: 1fr;
+    row-gap: 24px;
+    padding-top: 0;
+  }
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 23px;
+
+  span {
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 22px;
+    color: t.$gris-claro;
+  }
+
+  input,
+  textarea {
+    width: 100%;
+    padding: 0 0 13px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid t.$blanco;
+    border-radius: 0;
+    font-family: t.$font-texto;
+    font-size: 16px;
+    line-height: 22px;
+    color: t.$blanco;
+    resize: vertical;
+    min-height: 0;
+
+    &::placeholder {
+      color: t.$gris-claro;
+      opacity: 1;
+    }
+
+    &:focus {
+      outline: none;
+      border-bottom-width: 2px;
+      padding-bottom: 12px;
+    }
+  }
+}
+
+.campoAncho {
+  grid-column: 1 / -1;
+}
+
+.enviar {
+  height: 43px;
+  margin-top: 33px;
+  background: t.$gris-claro;
+  color: t.$gris-oscuro;
+  border: none;
+  border-radius: 0;
+  font-family: t.$font-destacada;
+  font-size: 16px;
+  line-height: 22px;
+  cursor: pointer;
+
+  &:hover {
+    filter: brightness(0.94);
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: wait;
+  }
+}
+
+.aviso {
+  margin: 0;
+  padding: 10px 14px;
+  background: rgba(t.$blanco, 0.12);
+  color: t.$blanco;
+  font-size: 15px;
+  line-height: 21px;
+}
+
+.avisoError {
+  background: rgba(#5a0000, 0.35);
+}

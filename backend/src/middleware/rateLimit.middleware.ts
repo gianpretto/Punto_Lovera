@@ -96,3 +96,8 @@ export const apiLimiter = limiter(1 * MIN, 600, 'Demasiadas solicitudes. Esperá
     (req.method === 'GET' && /^\/subastas\/[^/]+\/vivo\//.test(req.path)) ||
     (req.method === 'POST' && req.path === '/live/rtmp/publish'),
 });
+
+/** Formulario de contacto: 5 consultas por hora por IP (cada una manda un mail al equipo). */
+export const contactLimiter = limiter(60 * MIN, 5, 'Ya recibimos varias consultas tuyas. Esperá un rato y probá de nuevo.', {
+  keyGenerator: ipKey,
+});

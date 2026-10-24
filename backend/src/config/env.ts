@@ -42,6 +42,9 @@ export const env = {
     from: process.env.MAIL_FROM ?? 'Punto Lovera <no-responder@puntolovera.com>',
   },
 
+  // Casilla del equipo que recibe las consultas del formulario de contacto
+  contactEmail: process.env.CONTACT_EMAIL ?? 'lovera@lovera.com.ar',
+
   transfer: {
     alias: process.env.TRANSFER_ALIAS ?? '',
     cbu: process.env.TRANSFER_CBU ?? '',

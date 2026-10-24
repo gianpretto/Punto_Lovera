@@ -1,0 +1,88 @@
+// Sistema de diseño del rediseño en Figma ("Punto Lovera (Copy)", página Web).
+// Valores sacados del archivo con la API de Figma (colores, tipografías y
+// medidas reales); usar estas variables en vez de valores sueltos.
+//
+// Uso en un .module.scss:  @use '../../styles/tokens' as t;
+
+@use 'sass:math';
+
+// ---------- Colores
+$verde: #3e6d72; // principal (botones, acentos, números)
+$verde-claro: #e3f3f0; // pastilla "ACTIVA"
+$gris-texto: #5a5655; // texto secundario
+$gris-oscuro: #2e2d2b; // títulos y texto principal, botón oscuro
+$gris-claro: #d5d9d8; // barra del header, botón claro, texto sobre oscuro
+$gris-medio: #919191; // fondo de imágenes mientras cargan
+$negro: #111111; // secciones oscuras, barra superior, footer
+$fondo: #f6f8f9; // fondo general claro
+$blanco: #ffffff;
+
+// ---------- Tipografías
+// Nugros es comercial: hasta tener los archivos (pedidos a la diseñadora)
+// cae en Akatab, que es la más parecida de las que ya se cargan.
+$font-texto: 'Akatab', system-ui, sans-serif;
+$font-titulo: 'Instrument Serif', Georgia, serif;
+$font-destacada: 'Nugros', 'Akatab', system-ui, sans-serif;
+
+// ---------- Layout
+// Contenido de 1280 px centrado (80 px a cada lado en el diseño de 1440)
+$ancho-contenido: 1280px;
+$margen-lateral: clamp(16px, 5.5vw, 80px);
+
+// Breakpoints (el diseño es solo de escritorio: el resto es adaptación)
+$bp-tablet: 1024px;
+$bp-mobile: 640px;
+
+@mixin contenedor {
+  width: 100%;
+  max-width: calc(#{$ancho-contenido} + 2 * #{$margen-lateral});
+  margin: 0 auto;
+  padding: 0 $margen-lateral;
+  box-sizing: border-box;
+}
+
+@mixin tablet {
+  @media (max-width: $bp-tablet) {
+    @content;
+  }
+}
+
+@mixin mobile {
+  @media (max-width: $bp-mobile) {
+    @content;
+  }
+}
+
+// Títulos grandes en Instrument Serif (96/106 en el diseño), escalan en
+// pantallas chicas. La parte en itálica va en <em>.
+@mixin titulo-display($size: 96px, $line: 1.104) {
+  font-family: $font-titulo;
+  font-weight: 400;
+  font-size: clamp(#{$size * 0.5}, #{math.div($size, 14.4px) * 1vw}, #{$size});
+  line-height: $line;
+  margin: 0;
+
+  em {
+    font-style: italic;
+  }
+}
+
+// Fondo con el patrón de logos (baldosa de 444 px cada 458 px, color
+// #5a5655 al 15 %). El contenido de la sección queda por encima.
+@mixin fondo-patron($color-fondo: $negro) {
+  position: relative;
+  background-color: $color-fondo;
+  isolation: isolate;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url('/assets/figma/patron-baldosa.svg');
+    background-size: 458px 458px;
+    background-position: -417px -101px;
+    opacity: 0.15;
+    pointer-events: none;
+    z-index: -1;
+  }
+}

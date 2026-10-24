@@ -1,0 +1,102 @@
+@use '../../styles/tokens' as t;
+
+.banner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  width: 100%;
+  max-width: 1064px;
+  min-height: 179px;
+  margin: 0 auto;
+  padding: 0 41px 0 72px;
+  box-sizing: border-box;
+  background: t.$gris-oscuro;
+  border-radius: 20px;
+  overflow: hidden;
+  font-family: t.$font-texto;
+  color: t.$blanco;
+
+  @include t.tablet {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 32px;
+  }
+}
+
+.texto {
+  position: relative;
+  z-index: 1;
+}
+
+.titulo {
+  margin: 0;
+  font-family: t.$font-destacada;
+  font-weight: 700;
+  font-size: 26.6px;
+  line-height: 22px;
+
+  @include t.mobile {
+    font-size: 20px;
+    line-height: 24px;
+  }
+}
+
+.subtitulo {
+  margin: 6px 0 0;
+  font-size: 16px;
+  line-height: 22px;
+}
+
+.redes {
+  position: relative;
+  display: flex;
+  gap: 22px; // círculos de 96 px cada 118 px
+  z-index: 1;
+
+  @include t.mobile {
+    gap: 14px;
+  }
+}
+
+// Líneas decorativas: ocupan los 412 px de la derecha del banner
+.lineas {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 412px;
+  height: 179px;
+  pointer-events: none;
+  z-index: 0;
+
+  @include t.tablet {
+    display: none;
+  }
+}
+
+.circulo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+  background: t.$verde;
+  color: t.$blanco;
+  transition: filter 0.15s ease;
+
+  &:hover {
+    filter: brightness(1.12);
+  }
+
+  @include t.mobile {
+    width: 64px;
+    height: 64px;
+
+    svg {
+      width: 32px;
+      height: 32px;
+    }
+  }
+}

@@ -3,7 +3,12 @@ import { truncate } from '../../utils/truncate';
 import type { Countdown } from '../../interfaces/subasta';
 import styles from './TarjetaSubasta.module.scss';
 
-export type EstadoSubasta = 'ACTIVA' | 'PROXIMA' | 'FINALIZADA' | string;
+// Tarjeta de subasta del rediseño (Figma, 305 x 431). Tres variantes según
+// el estado:
+//  - PRÓXIMA:    pastilla gris + cuenta regresiva (D : H : M : S)
+//  - ACTIVA:     pastilla verde clara + recuadro verde "SUBASTA ACTIVA"
+//  - FINALIZADA: recuadro oscuro "LOTE VENDIDO"
+export type EstadoSubasta = 'ACTIVA' | 'PRÓXIMA' | 'PROXIMA' | 'FINALIZADA' | string;
 
 interface TarjetaSubastaProps {
   id?: string | number;
@@ -13,9 +18,13 @@ interface TarjetaSubastaProps {
   descripcion?: string;
   fecha?: string;
   hora?: string;
+  /** Portada de la subasta; si no hay, se usa una foto de ejemplo del diseño */
+  imagen?: string | null;
   mostrarCuentaRegresiva?: boolean;
   countdown?: Countdown;
 }
+
+const IMAGEN_DEFAULT = '/assets/figma/subasta-cocina-1.webp';
 
 export default function TarjetaSubasta({
   id,
@@ -25,59 +34,71 @@ export default function TarjetaSubasta({
   descripcion = '',
   fecha = '',
   hora = '',
+  imagen,
   mostrarCuentaRegresiva = true,
   countdown = { d: '00', h: '00', m: '00', s: '00' },
 }: TarjetaSubastaProps) {
+  const activa = estado === 'ACTIVA';
+  const finalizada = estado === 'FINALIZADA';
+  const pastilla = activa ? 'ACTIVA' : finalizada ? 'FINALIZADA' : 'PRÓXIMAMENTE';
+
   return (
-    <div className={styles['tarjeta-subasta']}>
-      <Link className={styles['sub-card']} to={`/subastas/${id}`}>
-        <div className={styles['sub-card__media']}>
-          <span className={`${styles.pill} ${estado === 'ACTIVA' ? styles['pill--activa'] : ''}`}>{estado}</span>
+    <Link className={styles.tarjeta} to={`/subastas/${id}`}>
+      <div className={styles.media}>
+        <img className={styles.foto} src={imagen || IMAGEN_DEFAULT} alt="" loading="lazy" />
 
-          {estado === 'FINALIZADA' && <div className={styles['sold-badge']}>LOTE VENDIDO</div>}
+        <span className={`${styles.pastilla} ${activa ? styles.pastillaActiva : ''}`}>
+          <img src="/assets/figma/icono-martillo.svg" alt="" width={13} height={13} />
+          {pastilla}
+        </span>
 
-          {estado !== 'FINALIZADA' && mostrarCuentaRegresiva && countdown && (
-            <div className={styles.countdown}>
-              <div className={styles['countdown__units']}>
-                <div className={styles['countdown__unit']}>
-                  <span className={styles['countdown__num']}>{countdown.d}</span>
-                  <span className={styles['countdown__label']}>D</span>
-                </div>
-                <div className={styles['countdown__unit']}>
-                  <span className={styles['countdown__num']}>{countdown.h}</span>
-                  <span className={styles['countdown__label']}>H</span>
-                </div>
-                <div className={styles['countdown__unit']}>
-                  <span className={styles['countdown__num']}>{countdown.m}</span>
-                  <span className={styles['countdown__label']}>M</span>
-                </div>
-                <div className={styles['countdown__unit']}>
-                  <span className={styles['countdown__num']}>{countdown.s}</span>
-                  <span className={styles['countdown__label']}>S</span>
-                </div>
+        {activa && <div className={`${styles.recuadro} ${styles.recuadroActiva}`}>SUBASTA ACTIVA</div>}
+        {finalizada && <div className={`${styles.recuadro} ${styles.recuadroVendido}`}>LOTE VENDIDO</div>}
+        {!activa && !finalizada && mostrarCuentaRegresiva && (
+          <div className={styles.cuenta} aria-label="Tiempo restante">
+            {(
+              [
+                ['d', 'D'],
+                ['h', 'H'],
+                ['m', 'M'],
+                ['s', 'S'],
+              ] as const
+            ).map(([k, label], i) => (
+              <div key={k} className={styles.cuentaGrupo}>
+                {i > 0 && <span className={styles.cuentaSeparador}>:</span>}
+                <span className={styles.cuentaUnidad}>
+                  <span className={styles.cuentaNumero}>{countdown[k]}</span>
+                  <span className={styles.cuentaLabel}>{label}</span>
+                </span>
               </div>
-            </div>
-          )}
-        </div>
-
-        <div className={styles['sub-card__body']}>
-          <h3 className={styles['sub-card__titulo']} title={titulo}>
-            {truncate(titulo, 30)}
-          </h3>
-          <p className={styles['sub-card__loc']} title={ubicacion}>
-            📍 {truncate(ubicacion, 30)}
-          </p>
-
-          <p className={styles['sub-card__desc']} title={descripcion}>
-            {truncate(descripcion, 200)}
-          </p>
-
-          <div className={styles['sub-card__footer']}>
-            <span>📅 {fecha}</span>
-            <span>🕒 {hora}</span>
+            ))}
           </div>
+        )}
+      </div>
+
+      <div className={styles.cuerpo}>
+        <h3 className={styles.titulo} title={titulo}>
+          {truncate(titulo, 40)}
+        </h3>
+        <p className={styles.ubicacion} title={ubicacion}>
+          <img src="/assets/figma/icono-ubicacion.svg" alt="" width={11} height={11} />
+          {truncate(ubicacion, 40)}
+        </p>
+        <p className={styles.descripcion} title={descripcion}>
+          {truncate(descripcion, 140)}
+        </p>
+
+        <div className={styles.pie}>
+          <span>
+            <img src="/assets/figma/icono-calendario.svg" alt="" width={14} height={14} />
+            {fecha}
+          </span>
+          <span>
+            <img src="/assets/figma/icono-reloj.svg" alt="" width={13} height={13} />
+            {hora}
+          </span>
         </div>
-      </Link>
-    </div>
+      </div>
+    </Link>
   );
 }

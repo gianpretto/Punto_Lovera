@@ -138,6 +138,21 @@ export const auctionPasses = pgTable('auction_passes', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
+// ---------- Consultas del formulario de contacto ----------
+// "¿Tenés bienes para vender?" (Home, Quiénes somos, Quiero vender) y la
+// página Contactanos. Se guardan siempre (aunque falle el mail al equipo).
+
+export const contactMessages = pgTable('contact_messages', {
+  id: id(),
+  name: text('name').notNull(),
+  email: text('email').notNull(),
+  phone: text('phone'),
+  message: text('message').notNull(),
+  // Desde dónde se mandó (ej: "home", "quiero-vender", "contactanos")
+  source: text('source'),
+  createdAt: timestamp('created_at').notNull().defaultNow(),
+});
+
 // ---------- Pujas ----------
 
 export const bids = pgTable('bids', {

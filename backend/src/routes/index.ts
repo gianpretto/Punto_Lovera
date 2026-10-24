@@ -4,6 +4,7 @@ import auctionRoutes from './auction.routes';
 import voucherRoutes from './voucher.routes';
 import purchaseRoutes from './purchase.routes';
 import liveRoutes from './live.routes';
+import contactRoutes from './contact.routes';
 
 const router = Router();
 
@@ -12,6 +13,7 @@ router.use('/subastas', auctionRoutes);
 router.use('/creditos', voucherRoutes);
 router.use('/compras', purchaseRoutes);
 router.use('/live', liveRoutes);
+router.use('/contacto', contactRoutes);
 
 router.get('/health', (_req, res) => res.json({ ok: true }));
 

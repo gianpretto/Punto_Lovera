@@ -1,220 +1,149 @@
-/* FOOTER */
+@use '../../styles/tokens' as t;
+
+// Medidas del diseño (1440): logo en (80, 95), links en x 730, redes y mail
+// en x 1163, ubicación y sellos abajo; alto 427 + barra de 40.
+
 .footer {
-  background: #111;
-  color: #fff;
+  font-family: t.$font-texto;
+  color: t.$gris-claro;
 }
 
-.footer__inner {
-  width: min(1240px, calc(100% - 64px));
-  margin: 0 auto;
-  padding: 90px 0 40px;
+.principal {
+  background: t.$negro;
+  padding: 95px 0 36px;
 
-  /* Desktop Grid Layout */
-  display: grid;
-  grid-template-columns: 1.2fr 1fr 1.2fr;
-  grid-template-areas:
-    "logo links social"
-    ".... links mail"
-    "loc  links badges";
-  gap: 40px;
-  align-items: start;
-}
-
-/* GRID AREAS & STYLES */
-
-.footer__logo {
-  grid-area: logo;
-
-  img {
-    height: 22px;
-    width: auto;
-    display: block;
-    color: #fff;
+  @include t.mobile {
+    padding: 48px 0 32px;
   }
 }
 
-.footer__ubicacion {
-  grid-area: loc;
-  margin: 20px 0 0;
-  /* logic from original margin-top approx */
-  font-size: 14px;
-  line-height: 1.6;
-  opacity: .9;
-  align-self: end;
-  /* push to bottom of grid area if needed */
+.contenedor {
+  @include t.contenedor;
+  display: grid;
+  // logo | links (arranca en x 730 → 650 px desde el borde del contenido) | redes
+  grid-template-columns: minmax(0, 650px) 1fr auto;
+  grid-template-rows: auto auto;
+  row-gap: 39px; // los links terminan en y 276 y la fila de abajo arranca en 328 (medido)
+
+  @include t.tablet {
+    grid-template-columns: 1fr 1fr;
+    row-gap: 40px;
+  }
+
+  @include t.mobile {
+    grid-template-columns: 1fr;
+    row-gap: 32px;
+  }
 }
 
-.footer__links {
-  grid-area: links;
+.logo {
+  display: block;
+  align-self: start;
+
+  img {
+    display: block;
+    width: 424px;
+    max-width: 100%;
+    height: auto;
+  }
+
+  @include t.tablet {
+    grid-column: 1 / -1;
+  }
+}
+
+.links {
   display: flex;
   flex-direction: column;
-  gap: 18px;
   align-items: flex-start;
-}
 
-.footer__links a {
-  color: #fff;
-  text-decoration: none;
-  font-size: 18px;
-  opacity: .95;
-}
+  a {
+    font-size: 20px;
+    line-height: 27px;
+    color: t.$gris-claro;
+    text-decoration: none;
+    margin-bottom: 17px;
 
-.footer__links a:hover {
-  text-decoration: underline;
-}
-
-.nav__link_qv {
-  margin-top: 26px;
-  font-weight: 700;
-}
-
-.footer__social {
-  grid-area: social;
-  justify-self: end;
-  display: flex;
-  gap: 40px;
-
-  img {
-    height: 29px;
-    width: auto;
-    object-fit: contain;
-    filter: brightness(0) invert(1);
-  }
-}
-
-.footer__mail {
-  grid-area: mail;
-  justify-self: end;
-  color: #fff;
-  text-decoration: none;
-  font-size: 16px;
-  opacity: .95;
-}
-
-.footer__mail:hover {
-  text-decoration: underline;
-}
-
-.footer__badges {
-  grid-area: badges;
-  justify-self: end;
-  margin-top: auto;
-  /* Push to bottom */
-  display: flex;
-  gap: 28px;
-  align-items: center;
-
-  img {
-    height: 60px;
-    /* kept large per original */
-    width: auto;
-    object-fit: contain;
-  }
-}
-
-/* Bottom bar */
-.footer__bottom {
-  background: #bdbdbd;
-  color: #111;
-  text-align: center;
-  padding: 14px 0;
-  font-size: 12px;
-}
-
-.btn-negro {
-  background: #000000;
-  color: #ffffff;
-  border: none;
-  padding: 12px 80px;
-  border-radius: 0;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.35);
-  cursor: pointer;
-  font-size: 18px;
-  margin-top: 2.5rem;
-}
-
-.btn-negro:hover {
-  filter: brightness(1.05);
-}
-
-/* Tablet Responsive (max-width: 900px) */
-@media (max-width: 900px) {
-  .footer__inner {
-    display: flex;
-    flex-direction: column;
-    gap: 34px;
-    padding: 54px 0 30px;
-  }
-
-  /* Reset alignment for tablet stack */
-  .footer__social,
-  .footer__mail,
-  .footer__badges {
-    justify-self: start;
-    /* Flex items usually stretch or start */
-    align-self: flex-start;
-    /* reset from grid logic */
-  }
-
-  .footer__logo {
-    margin-bottom: 10px;
-  }
-
-  .footer__ubicacion {
-    margin-top: 10px;
-  }
-}
-
-/* Mobile/Tablet Responsive (max-width: 768px) */
-@media (max-width: 768px) {
-  .footer__inner {
-    align-items: center;
-    /* Center everything */
-    text-align: center;
-    gap: 30px;
-  }
-
-  /* ORDER RE-ARRANGEMENT */
-  .footer__logo {
-    order: 1;
-  }
-
-  .footer__social {
-    order: 2;
-    align-self: center;
-    /* Center flex item */
-    gap: 30px;
-    /* Reduced gap for mobile */
-  }
-
-  .footer__mail {
-    order: 3;
-    align-self: center;
-  }
-
-  .footer__links {
-    order: 4;
-    align-items: center;
-    /* Center links list */
-    width: 100%;
-  }
-
-  .footer__badges {
-    order: 5;
-    margin-top: 20px;
-    align-self: center;
-    gap: 20px;
-
-    img {
-      height: 50px;
+    &:hover {
+      color: t.$blanco;
     }
-
-    /* Slightly smaller badges */
   }
 
-  .footer__ubicacion {
-    order: 6;
-    margin-top: 20px;
-    align-self: center;
+  // "Quiero vender" va separado del resto y en negrita
+  .destacado {
+    font-weight: 700;
+    margin-top: 21px;
   }
+}
+
+.contacto {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding-top: 8px;
+}
+
+.redes {
+  display: flex;
+  gap: 55px; // 29 px de ícono cada 84 px
+
+  a {
+    display: flex;
+    color: t.$gris-claro;
+
+    &:hover {
+      color: t.$blanco;
+    }
+  }
+}
+
+.mail {
+  margin-top: 33px;
+  font-size: 18px;
+  line-height: 25px;
+  color: t.$gris-claro;
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.ubicacion {
+  grid-column: 1 / 3;
+  align-self: end;
+  margin: 0;
+  font-size: 16px;
+  line-height: 22px;
+
+  @include t.tablet {
+    grid-column: 1;
+  }
+}
+
+.sellos {
+  display: flex;
+  align-items: center;
+  gap: 44px;
+  justify-self: end;
+
+  img {
+    display: block;
+    height: auto;
+  }
+
+  @include t.mobile {
+    justify-self: start;
+  }
+}
+
+.copyright {
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: t.$gris-texto;
+  color: t.$blanco;
+  font-size: 12px;
+  line-height: 16px;
 }

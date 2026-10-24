@@ -10,3 +10,6 @@ secretos-railway.txt
 *.env
 .env.*
 !.env.example
+
+# Token personal de la API de Figma (nunca subir)
+figma-token.txt

@@ -1,7 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../services/AuthContext';
+import Boton from '../ui/Boton';
 import styles from './Header.module.scss';
+
+// Header del rediseño (Figma): barra superior negra de 35 px (aviso + sesión)
+// y barra principal gris clara de 80 px (logo, navegación y los dos botones).
+const NAV = [
+  { to: '/subastas', label: 'Próximas subastas' },
+  { to: '/quienes-somos', label: 'Quiénes somos' },
+  { to: '/contactanos', label: 'Contactanos' },
+];
 
 export default function Header() {
   const { currentUser, user, logout } = useAuth();
@@ -27,8 +36,11 @@ export default function Header() {
       : []),
   ];
 
-  // Se cierra al navegar o al hacer click afuera
-  useEffect(() => setUserMenuOpen(false), [location.pathname]);
+  // Se cierran al navegar o al hacer click afuera
+  useEffect(() => {
+    setUserMenuOpen(false);
+    setMobileMenuOpen(false);
+  }, [location.pathname]);
   useEffect(() => {
     if (!userMenuOpen) return;
     const onClick = (e: MouseEvent) => {
@@ -38,51 +50,45 @@ export default function Header() {
     return () => document.removeEventListener('mousedown', onClick);
   }, [userMenuOpen]);
 
-  const toggleMobileMenu = () => setMobileMenuOpen((v) => !v);
-  const closeMobileMenu = () => setMobileMenuOpen(false);
-
   return (
-    <header className={styles.encabezado}>
+    <header className={styles.header}>
       {/* Barra superior */}
-      <div className={styles['barra-top']}>
-        <div className={`${styles['contenedor-header']} ${styles['barra-top__contenido']}`}>
-          <div className={styles['barra-top__texto']}>Novedades asd asd asd</div>
+      <div className={styles.barraTop}>
+        <div className={styles.contenedor}>
+          <Link className={styles.aviso} to="/faq">
+            Resolvé tus dudas en nuestra sección de Preguntas Frecuentes
+          </Link>
 
-          <div className={styles['barra-top__acciones']}>
+          <div className={styles.sesion}>
             {currentUser ? (
-              <>
-                <div className={styles['user-menu']} ref={userMenuRef}>
-                  <button
-                    type="button"
-                    className={`${styles['link-top']} ${styles['welcome-msg']} ${styles['user-menu__toggle']}`}
-                    onClick={() => setUserMenuOpen((v) => !v)}
-                    aria-expanded={userMenuOpen}
-                  >
-                    Bienvenido, <strong>{currentUser}</strong> ▾
-                  </button>
-                  {userMenuOpen && (
-                    <div className={styles['user-menu__list']}>
-                      {userLinks.map((l) => (
-                        <Link key={l.to} className={styles['user-menu__item']} to={l.to}>
-                          {l.label}
-                        </Link>
-                      ))}
-                      <button type="button" className={styles['user-menu__item']} onClick={logout}>
-                        Log Out
-                      </button>
-                    </div>
-                  )}
-                </div>
-                <button className={`${styles['link-top']} ${styles['btn-logout']}`} onClick={logout}>
-                  SALIR
+              <div className={styles.userMenu} ref={userMenuRef}>
+                <button
+                  type="button"
+                  className={styles.linkTop}
+                  onClick={() => setUserMenuOpen((v) => !v)}
+                  aria-expanded={userMenuOpen}
+                >
+                  Bienvenido, <strong>{currentUser}</strong> ▾
                 </button>
-              </>
+                {userMenuOpen && (
+                  <div className={styles.userMenuLista}>
+                    {userLinks.map((l) => (
+                      <Link key={l.to} className={styles.userMenuItem} to={l.to}>
+                        {l.label}
+                      </Link>
+                    ))}
+                    <button type="button" className={styles.userMenuItem} onClick={logout}>
+                      Cerrar sesión
+                    </button>
+                  </div>
+                )}
+              </div>
             ) : (
               <>
-                <Link className={styles['link-top']} to="/registro">
+                <Link className={styles.linkTop} to="/registro">
                   REGISTRARSE
                 </Link>
-                <Link className={styles['link-top']} to="/login">
+                <Link className={styles.linkTop} to="/login">
                   INICIAR SESIÓN
                 </Link>
               </>
@@ -92,110 +98,89 @@ export default function Header() {
       </div>
 
       {/* Barra principal */}
-      <div className={styles['barra-main']}>
-        <div className={`${styles['contenedor-header']} ${styles['barra-main__contenido']}`}>
-          {/* Hamburger button (mobile only) */}
-          <button
-            className={`${styles['hamburger-btn']} ${mobileMenuOpen ? styles.active : ''}`}
-            onClick={toggleMobileMenu}
-          >
-            <span></span>
-            <span></span>
-            <span></span>
-          </button>
-
-          {/* Logo */}
-          <Link className={styles.logo} to="/">
-            <img className={styles.logo__img} src="/assets/img/logo.svg" alt="Punto Lovera" />
+      <div className={styles.barraMain}>
+        <div className={styles.contenedor}>
+          <Link className={styles.logo} to="/" aria-label="Punto Lovera, ir al inicio">
+            <img src="/assets/figma/logo-oscuro.svg" alt="Punto Lovera" width={217} height={22} />
           </Link>
 
-          {/* Navegación */}
-          <nav className={styles.nav}>
-            <Link className={styles.nav__link} to="/subastas">
-              Próximas subastas
-            </Link>
-            <Link className={styles.nav__link} to="/quienes-somos">
-              Quiénes somos
-            </Link>
-            <Link className={styles.nav__link} to="/contactanos">
-              Contactanos
-            </Link>
+          <nav className={styles.nav} aria-label="Principal">
+            {NAV.map((n) => (
+              <NavLink key={n.to} to={n.to} className={({ isActive }) => `${styles.navLink} ${isActive ? styles.activo : ''}`}>
+                {n.label}
+              </NavLink>
+            ))}
           </nav>
 
-          {/* Botones derecha */}
           <div className={styles.cta}>
-            <Link className={styles['btn-negro']} to="/quiero-comprar">
+            <Boton variante="contorno" to="/quiero-comprar">
               Quiero comprar
-            </Link>
-            <Link className={styles['btn-negro']} to="/quiero-vender">
+            </Boton>
+            <Boton variante="oscuro" to="/quiero-vender">
               Quiero vender
-            </Link>
+            </Boton>
           </div>
+
+          <button
+            type="button"
+            className={`${styles.hamburguesa} ${mobileMenuOpen ? styles.abierto : ''}`}
+            onClick={() => setMobileMenuOpen((v) => !v)}
+            aria-label={mobileMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
+            aria-expanded={mobileMenuOpen}
+          >
+            <span />
+            <span />
+            <span />
+          </button>
         </div>
       </div>
 
-      {/* Mobile Menu Overlay */}
-      <div
-        className={`${styles['mobile-menu-overlay']} ${mobileMenuOpen ? styles.active : ''}`}
-        onClick={closeMobileMenu}
-      >
-        <div className={styles['mobile-menu']} onClick={(e) => e.stopPropagation()}>
-          <nav className={styles['mobile-nav']}>
-            <Link className={styles['mobile-nav__link']} to="/subastas" onClick={closeMobileMenu}>
-              Próximas subastas
-            </Link>
-            <Link className={styles['mobile-nav__link']} to="/quienes-somos" onClick={closeMobileMenu}>
-              Quiénes somos
-            </Link>
-            <Link className={styles['mobile-nav__link']} to="/contactanos" onClick={closeMobileMenu}>
-              Contactános
-            </Link>
+      {/* Menú del celular */}
+      {mobileMenuOpen && (
+        <div className={styles.menuMovil}>
+          <nav className={styles.menuMovilNav} aria-label="Principal (móvil)">
+            {NAV.map((n) => (
+              <Link key={n.to} to={n.to} className={styles.menuMovilLink}>
+                {n.label}
+              </Link>
+            ))}
           </nav>
-
-          <div className={styles['mobile-cta']}>
-            <Link className={styles['btn-negro']} to="/quiero-comprar" onClick={closeMobileMenu}>
+          <div className={styles.menuMovilCta}>
+            <Boton variante="contorno" to="/quiero-comprar" bloque>
               Quiero comprar
-            </Link>
-            <Link className={styles['btn-negro']} to="/quiero-vender" onClick={closeMobileMenu}>
+            </Boton>
+            <Boton variante="oscuro" to="/quiero-vender" bloque>
               Quiero vender
-            </Link>
-
-            <div className={styles['mobile-auth-section']}>
-              {currentUser ? (
-                <>
-                  <Link className={styles['welcome-msg-mobile']} to="/perfil" onClick={closeMobileMenu}>
-                    Bienvenido, <strong>{currentUser}</strong>
+            </Boton>
+          </div>
+          <div className={styles.menuMovilSesion}>
+            {currentUser ? (
+              <>
+                <p className={styles.menuMovilHola}>
+                  Bienvenido, <strong>{currentUser}</strong>
+                </p>
+                {userLinks.map((l) => (
+                  <Link key={l.to} to={l.to} className={styles.menuMovilSecundario}>
+                    {l.label}
                   </Link>
-                  {userLinks.slice(1).map((l) => (
-                    <Link key={l.to} className={styles['mobile-auth__link']} to={l.to} onClick={closeMobileMenu}>
-                      {l.label}
-                    </Link>
-                  ))}
-                  <button
-                    className={styles['btn-logout-mobile']}
-                    onClick={() => {
-                      logout();
-                      closeMobileMenu();
-                    }}
-                  >
-                    SALIR
-                  </button>
-                </>
-              ) : (
-                <div className={styles['guest-actions']}>
-                  <Link className={styles['mobile-auth__link']} to="/registro" onClick={closeMobileMenu}>
-                    REGISTRARSE
-                  </Link>
-                  <span className={styles.separator}>|</span>
-                  <Link className={styles['mobile-auth__link']} to="/login" onClick={closeMobileMenu}>
-                    INICIAR SESIÓN
-                  </Link>
-                </div>
-              )}
-            </div>
+                ))}
+                <button type="button" className={styles.menuMovilSecundario} onClick={logout}>
+                  Cerrar sesión
+                </button>
+              </>
+            ) : (
+              <>
+                <Link to="/registro" className={styles.menuMovilSecundario}>
+                  REGISTRARSE
+                </Link>
+                <Link to="/login" className={styles.menuMovilSecundario}>
+                  INICIAR SESIÓN
+                </Link>
+              </>
+            )}
           </div>
         </div>
-      </div>
+      )}
     </header>
   );
 }

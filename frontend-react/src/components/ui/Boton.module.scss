@@ -1,0 +1,80 @@
+@use '../../styles/tokens' as t;
+
+.boton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 43px;
+  padding: 0 18px;
+  border: 1px solid transparent;
+  border-radius: 0;
+  font-family: t.$font-texto;
+  font-size: 18px;
+  line-height: 25px;
+  font-weight: 400;
+  text-decoration: none;
+  white-space: nowrap;
+  cursor: pointer;
+  box-sizing: border-box;
+  transition:
+    filter 0.15s ease,
+    background-color 0.15s ease,
+    color 0.15s ease;
+
+  &:hover {
+    filter: brightness(0.94);
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  @include t.mobile {
+    font-size: 16px;
+    white-space: normal;
+    text-align: center;
+  }
+}
+
+.claro {
+  background: t.$gris-claro;
+  color: t.$gris-oscuro;
+}
+
+.oscuro {
+  background: t.$gris-oscuro;
+  color: t.$gris-claro;
+}
+
+.verde {
+  background: t.$verde;
+  color: t.$blanco;
+}
+
+.contorno {
+  background: transparent;
+  border-color: t.$gris-oscuro;
+  color: t.$gris-oscuro;
+
+  &:hover {
+    filter: none;
+    background: rgba(t.$gris-oscuro, 0.06);
+  }
+}
+
+.contorno-claro {
+  background: transparent;
+  border-color: t.$blanco;
+  color: t.$blanco;
+
+  &:hover {
+    filter: none;
+    background: rgba(t.$blanco, 0.1);
+  }
+}
+
+.bloque {
+  display: flex;
+  width: 100%;
+}

@@ -84,3 +84,16 @@ export async function sendWithdrawalRejectedEmail(to: string, amount: number, re
     `<p>No pudimos procesar tu pedido de reintegro por ${pesos(amount)}. El monto vuelve a estar disponible en tu crédito.</p><p>Motivo: ${escapeHtml(reason)}</p><p>Podés volver a pedirlo en <a href="${link}">${link}</a>.</p>`
   );
 }
+
+export async function sendContactNotification(
+  to: string,
+  data: { name: string; email: string; phone?: string | null; message: string; source?: string | null }
+) {
+  const fila = (k: string, v?: string | null) => (v ? `<p><strong>${k}:</strong> ${escapeHtml(v)}</p>` : '');
+  await send(
+    to,
+    `Nueva consulta de ${data.name} — Punto Lovera`,
+    `${fila('Nombre', data.name)}${fila('E-mail', data.email)}${fila('Teléfono', data.phone)}${fila('Desde', data.source)}` +
+      `<p><strong>Mensaje:</strong></p><p>${escapeHtml(data.message).replace(/\n/g, '<br>')}</p>`
+  );
+}
