@@ -78,3 +78,8 @@
   display: flex;
   width: 100%;
 }
+
+// El espacio antes de la flecha se pierde en un inline-flex: va como margen
+.flecha {
+  margin-left: 0.3em;
+}

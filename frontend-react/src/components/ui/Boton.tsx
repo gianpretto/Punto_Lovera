@@ -32,7 +32,7 @@ export default function Boton({ variante = 'claro', flecha, bloque, className, c
   const contenido = (
     <>
       {children}
-      {flecha && <span aria-hidden="true"> →</span>}
+      {flecha && <span className={styles.flecha} aria-hidden="true">→</span>}
     </>
   );
 

@@ -8,8 +8,6 @@ import styles from './QuieroComprar.module.scss';
 // línea de tiempo oscura "Cómo comprar" con los seis pasos.
 // Los textos son los del diseño (las tarjetas todavía son de relleno: los
 // define la diseñadora, no reescribirlos).
-// La flecha de los botones va dentro del texto (y no con la prop `flecha`)
-// porque el flex del botón se come el espacio antes del span " →".
 
 interface Razon {
   icono: string;
@@ -112,8 +110,8 @@ export default function QuieroComprar() {
               Te acompañamos desde el registro hasta la entrega. Seis pasos claros, toda la información a mano y
               asistencia cuando la necesites.
             </p>
-            <Boton variante="claro" to="/registro" className={styles.botonClaro}>
-              Registrarme para ofertar →
+            <Boton variante="claro" to="/registro" flecha className={styles.botonClaro}>
+              Registrarme para ofertar
             </Boton>
           </div>
         </div>
@@ -172,8 +170,8 @@ export default function QuieroComprar() {
                   <h3 className={styles.pasoTitulo}>{p.titulo}</h3>
                   <p className={styles.pasoDescripcion}>{p.texto}</p>
                   {p.boton && (
-                    <Boton variante="verde" to={p.boton.to} className={styles.botonPaso}>
-                      {`${p.boton.texto} →`}
+                    <Boton variante="verde" to={p.boton.to} flecha className={styles.botonPaso}>
+                      {p.boton.texto}
                     </Boton>
                   )}
                 </div>
@@ -189,8 +187,8 @@ export default function QuieroComprar() {
             <h2 className={styles.cierreTitulo}>
               <em>Registrate y empezá a participar.</em>
             </h2>
-            <Boton variante="claro" to="/registro" className={styles.botonClaro}>
-              Registrarme para ofertar →
+            <Boton variante="claro" to="/registro" flecha className={styles.botonClaro}>
+              Registrarme para ofertar
             </Boton>
           </div>
         </div>
