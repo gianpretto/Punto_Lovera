@@ -205,38 +205,44 @@ Angular (estilos scoped por componente) y evitar colisiones de clases
 globales entre secciones que reutilizan nombres como `.btn-negro`,
 `.sub-card`, `.pill`, etc.
 
-**Objetivo: fidelidad pixel a pixel con el diseño Angular original**
-(está diseñado uno a uno por la diseñadora, no debe "aflojarse" el diseño
-al portar). Metodología usada: correr ambos front (Angular y React) en
-paralelo y comparar screenshots con Playwright en los mismos viewports —
-así se detectó y corrigió, por ejemplo, un bug de subrayado en
-`TarjetaSubasta` (el original usaba un `<article>` con click, el port usa
-un `<Link>` real que trae `text-decoration` por defecto).
+### Rediseño de Figma (oct 2026, implementado)
 
-### Estado de la migración (todas las vistas reales ya están portadas)
+La diseñadora rehízo la web en Figma (archivo `hrHkuqxusvk9KpuzY8bUhM`,
+página "Web", 8 pantallas de escritorio a 1440 px; no hay diseño mobile ni
+de login/registro/perfil/créditos/sala, esas mantienen el estilo anterior).
+**Objetivo: fidelidad al Figma** (ya no al Angular, que queda solo como
+referencia histórica). Se verificó comparando capturas de Playwright contra
+los renders de Figma sección por sección (2–10 % de píxeles distintos,
+casi todo por datos reales y la fuente Nugros).
 
-Portadas y verificadas (`tsc --noEmit`, `vite build`, smoke test con
-Playwright sobre las 19 rutas, sin errores de consola/React):
-
-- Layout: Header, Footer
-- Home + secciones compartidas: Hero, SubastaEnVivo, SubastasAnteriores,
-  TarjetaSubasta, Redes, BannerAccion, TarjetaProductoCatalogo
-- Institucionales: QuienesSomos, QuieroComprar, QuieroVender (comparten
-  layout vía `pages/QuieroComprar/AccionPage.tsx`), Contactanos
-- Subastas: ProximasSubastas (con paginación), DetalleSubasta,
-  SubastaActiva (sala de puja: lightbox, chat, contador — conectada al
-  WebSocket real, ver abajo)
-- Auth/usuario: Login, Registro, ForgotPassword, ValidarMail,
-  DatosUsuario, PanelUsuario, Creditos, ComprobanteExitoso, Reintegro
-
-**Sin portar a propósito** (`/como-participar` y `/faq`): en el Angular
-original son componentes stub sin implementar (`<p>works!</p>`, el
-boilerplate default de Angular CLI). No hay nada real ahí todavía — quedan
-como placeholder "en construcción" en React hasta que Gian defina el
-contenido.
-
-**Se descartaron sin portar** (dead code en Angular, confirmado que no los
-usa ninguna vista real): `TituloConCards`, `BannerSaldo`, `TextoImagen`.
+- Base compartida: `src/styles/_tokens.scss` (colores, fuentes Akatab /
+  Instrument Serif / Nugros, mixins `contenedor`, `tablet`, `mobile`,
+  `titulo-display`, `fondo-patron`), `components/ui/` (`Boton` con
+  variantes y prop `flecha`, `Etiqueta`, `Iconos` + `REDES`),
+  `components/secciones/` (`BannerRedes`, `SeccionVender` → `POST
+  /api/contacto`, `SubastaDestacada`, `PreguntasFrecuentes`),
+  `TarjetaSubasta`, `components/lotes/` (`TarjetaLote`, `VisorLote` =
+  pop-up de fotos accesible). Assets en `public/assets/figma/`.
+- Header: barra gris solo en `/`, `/quiero-comprar`, `/quiero-vender`; en
+  el resto, fondo claro con línea abajo (`RUTAS_BARRA_GRIS`).
+- Pantallas: Home, Todas las subastas (`/subastas`: activa → próximas →
+  terminadas), Catálogo (DetalleSubasta), Quiénes somos, Quiero comprar,
+  Quiero vender, Contactanos (formulario → `POST /api/contacto`, guarda en
+  `contact_messages` y avisa a `CONTACT_EMAIL`).
+- Pendiente de la diseñadora / cliente: archivos y licencia web de
+  **Nugros** (hoy cae en Akatab); nombre y matrícula reales del martillero
+  (constante con TODO en Home); si los lotes llevan categoría (hoy la
+  tarjeta muestra el precio base); formato del ID de subasta; respuestas de
+  3 de las 4 preguntas de Home (borradores en `content/participar.ts`);
+  textos de relleno de las tarjetas de Quiero comprar.
+- Assets sacados del render (la API de Figma devolvió 429 por días):
+  `ornamento.webp`, `icono-home-comprar.webp`, `icono-home-vender.webp`
+  (reemplazar por los SVG de los nodos 712:20358, 712:10533, 712:10541) y
+  `hero-lineas.svg` (reconstruido).
+- Herramientas de comparación: token de Figma en `figma-token.txt`
+  (gitignored, nunca imprimirlo), API REST `/v1/files/:key/nodes` y
+  `/v1/images/:key`; el conector MCP de Figma tiene una cuota mensual muy
+  baja en el plan Starter.
 
 ### `AuthContext` (`src/services/AuthContext.tsx`) y `api.ts`
 
@@ -318,7 +324,8 @@ había Docker.
 2. Probar el video con el rtsp-manager real de Francis (solo se probó con
    uno falso) y la cámara chica del martillero en la sala (sigue siendo
    placeholder: hoy hay una sola cámara por subasta).
-3. Revisión y pulido visual conjunto (comparación final pixel a pixel).
+3. Revisión conjunta del rediseño de Figma con la diseñadora (ver
+   pendientes en "Rediseño de Figma").
 4. Decidir contenido real para `/como-participar` y `/faq` (hoy vacíos en
    ambos frontends).
 5. Opcional: si Gian consigue acceso de escritura al repo `rtsp-manager`,
