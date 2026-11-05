@@ -1,13 +1,19 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import PantallaAuth from '../../components/auth/PantallaAuth';
+import estilos from '../../components/auth/PantallaAuth.module.scss';
+import Aviso from '../../components/ui/Aviso';
+import Boton from '../../components/ui/Boton';
+import Campo from '../../components/ui/Campo';
 import { useAuth } from '../../services/AuthContext';
 import { ApiError } from '../../services/api';
-import styles from './Login.module.scss';
 
 function validarEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
+// Login (wireframes "Log in" 620:12755 / 620:14958) con el layout común
+// de PantallaAuth.
 export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
@@ -34,6 +40,21 @@ export default function Login() {
   const formInvalid =
     emailErrors.required || emailErrors.email || passwordErrors.required || passwordErrors.minlength;
 
+  const errorEmail = !submitted
+    ? undefined
+    : emailErrors.required
+      ? 'El correo es obligatorio'
+      : emailErrors.email
+        ? 'Ingrese un correo válido'
+        : undefined;
+  const errorPassword = !submitted
+    ? undefined
+    : passwordErrors.required
+      ? 'La contraseña es obligatoria'
+      : passwordErrors.minlength
+        ? 'Mínimo 6 caracteres'
+        : undefined;
+
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setSubmitted(true);
@@ -53,78 +74,56 @@ export default function Login() {
   };
 
   return (
-    <div className={styles.loginWrapper}>
-      <div className={styles.loginImage}>
-        <div className={styles.imagePlaceholder}>
-          <img src="/assets/img/default.png" alt="Login Image" />
+    <PantallaAuth
+      etiqueta="Mi cuenta"
+      titulo={
+        <>
+          Iniciar <em>sesión</em>
+        </>
+      }
+      origen="login"
+    >
+      <form className={estilos.formulario} onSubmit={onSubmit} noValidate>
+        {loginError && <Aviso tipo="error">{loginError}</Aviso>}
+
+        <Campo
+          etiqueta="Correo"
+          type="email"
+          placeholder="tu@correo.com"
+          autoComplete="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          error={errorEmail}
+        />
+
+        <Campo
+          etiqueta="Contraseña"
+          type="password"
+          placeholder="Tu contraseña"
+          autoComplete="current-password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          error={errorPassword}
+        />
+
+        <label className={estilos.recordarme}>
+          <input type="checkbox" checked={rememberMe} onChange={(e) => setRememberMe(e.target.checked)} />
+          Recordarme
+        </label>
+
+        <div className={estilos.acciones}>
+          <Boton variante="verde" type="submit" bloque disabled={sending}>
+            {sending ? 'Ingresando...' : 'Iniciar sesión'}
+          </Boton>
+          <Boton variante="claro" bloque to={volver ? `/registro?volver=${encodeURIComponent(volver)}` : '/registro'}>
+            O creá una cuenta
+          </Boton>
         </div>
-      </div>
 
-      <div className={styles.loginContent}>
-        <h1 className={styles.loginTitle}>INICIAR SESIÓN</h1>
-
-        <form className={styles.loginForm} onSubmit={onSubmit} noValidate>
-          {loginError && <div className={styles.alertDanger}>{loginError}</div>}
-
-          <div className={styles.formGroup}>
-            <input
-              type="email"
-              className={`${styles.formControl} ${submitted && (emailErrors.required || emailErrors.email) ? styles.isInvalid : ''}`}
-              placeholder="Correo"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            {submitted && emailErrors.required && (
-              <div className={styles.invalidFeedback}>El correo es obligatorio</div>
-            )}
-            {submitted && !emailErrors.required && emailErrors.email && (
-              <div className={styles.invalidFeedback}>Ingrese un correo válido</div>
-            )}
-          </div>
-
-          <div className={styles.formGroup}>
-            <input
-              type="password"
-              className={`${styles.formControl} ${submitted && (passwordErrors.required || passwordErrors.minlength) ? styles.isInvalid : ''}`}
-              placeholder="Contraseña"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-            />
-            {submitted && passwordErrors.required && (
-              <div className={styles.invalidFeedback}>La contraseña es obligatoria</div>
-            )}
-            {submitted && !passwordErrors.required && passwordErrors.minlength && (
-              <div className={styles.invalidFeedback}>Mínimo 6 caracteres</div>
-            )}
-          </div>
-
-          <div className={styles.formCheck}>
-            <input
-              type="checkbox"
-              id="rememberMe"
-              checked={rememberMe}
-              onChange={(e) => setRememberMe(e.target.checked)}
-            />
-            <label htmlFor="rememberMe">Recordarme</label>
-          </div>
-
-          <div className={styles.formActions}>
-            <button type="submit" className={`${styles.btn} ${styles.btnBlack}`} disabled={sending}>
-              Iniciar Sesión
-            </button>
-            <Link
-              to={volver ? `/registro?volver=${encodeURIComponent(volver)}` : '/registro'}
-              className={`${styles.btn} ${styles.btnGray}`}
-            >
-              O creá una cuenta
-            </Link>
-          </div>
-
-          <div className={styles.formFooter}>
-            <Link to="/forgot-password" className={styles.forgotLink}>Olvidé la contraseña</Link>
-          </div>
-        </form>
-      </div>
-    </div>
+        <Link to="/forgot-password" className={estilos.enlace}>
+          Olvidé la contraseña
+        </Link>
+      </form>
+    </PantallaAuth>
   );
 }

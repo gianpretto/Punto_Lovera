@@ -1,13 +1,17 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
+import PantallaAuth from '../../components/auth/PantallaAuth';
+import estilos from '../../components/auth/PantallaAuth.module.scss';
+import Aviso from '../../components/ui/Aviso';
+import Boton from '../../components/ui/Boton';
+import Campo from '../../components/ui/Campo';
 import { api, ApiError } from '../../services/api';
-import styles from './ForgotPassword.module.scss';
 
 function validarEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 }
 
-// Dos usos:
+// Dos usos (sin wireframe: usan el mismo layout que Login):
 //  - /forgot-password            → pide el mail y el backend manda el link
 //  - /forgot-password?token=...  → link del mail: elegir contraseña nueva
 export default function ForgotPassword() {
@@ -28,6 +32,14 @@ function PedirLink() {
     email: email.trim() !== '' && !validarEmail(email),
   };
   const formInvalid = errors.required || errors.email;
+
+  const errorEmail = !submitted
+    ? undefined
+    : errors.required
+      ? 'El correo es obligatorio'
+      : errors.email
+        ? 'Ingrese un correo válido'
+        : undefined;
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -50,47 +62,44 @@ function PedirLink() {
   };
 
   return (
-    <div className={styles.forgotWrapper}>
-      <div className={styles.forgotContent}>
-        <h1 className={styles.forgotTitle}>RECUPERAR CONTRASEÑA</h1>
-        <p className={styles.forgotDesc}>
-          Ingresá tu correo electrónico y te enviaremos las instrucciones para restablecer tu contraseña.
-        </p>
+    <PantallaAuth
+      etiqueta="Mi cuenta"
+      titulo={
+        <>
+          Recuperar <em>contraseña</em>
+        </>
+      }
+      bajada="Ingresá tu correo electrónico y te enviaremos las instrucciones para restablecer tu contraseña."
+      origen="forgot-password"
+    >
+      <form className={estilos.formulario} onSubmit={onSubmit} noValidate>
+        <Campo
+          etiqueta="Correo electrónico"
+          type="email"
+          placeholder="tu@correo.com"
+          autoComplete="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          error={errorEmail}
+        />
 
-        <form className={styles.forgotForm} onSubmit={onSubmit} noValidate>
-          <div className={styles.formGroup}>
-            <input
-              type="email"
-              className={`${styles.formControl} ${submitted && formInvalid ? styles.isInvalid : ''}`}
-              placeholder="Correo electrónico"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-            />
-            {submitted && errors.required && (
-              <div className={styles.invalidFeedback}>El correo es obligatorio</div>
-            )}
-            {submitted && !errors.required && errors.email && (
-              <div className={styles.invalidFeedback}>Ingrese un correo válido</div>
-            )}
-          </div>
+        {successMessage && <Aviso tipo="ok">{successMessage}</Aviso>}
+        {errorMessage && <Aviso tipo="error">{errorMessage}</Aviso>}
 
-          {successMessage && <div className={styles.alertSuccess}>{successMessage}</div>}
-          {errorMessage && <div className={styles.alertDanger}>{errorMessage}</div>}
+        <div className={estilos.acciones}>
+          <Boton variante="verde" type="submit" bloque disabled={sending}>
+            {sending ? 'Enviando...' : 'Enviar instrucciones'}
+          </Boton>
+        </div>
 
-          <div className={styles.formActions}>
-            <button type="submit" className={`${styles.btn} ${styles.btnBlack}`} disabled={sending}>
-              Enviar instrucciones
-            </button>
-            <Link to="/login" className={`${styles.btn} ${styles.btnLink}`}>Volver al inicio de sesión</Link>
-          </div>
-        </form>
-      </div>
-    </div>
+        <Link to="/login" className={estilos.enlace}>
+          Volver al inicio de sesión
+        </Link>
+      </form>
+    </PantallaAuth>
   );
 }
 
-// Pantalla nueva (no existe en el diseño Angular): reutiliza los mismos
-// estilos que el formulario de recuperar para no inventar diseño.
 function NuevaPassword({ token }: { token: string }) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -123,54 +132,58 @@ function NuevaPassword({ token }: { token: string }) {
   };
 
   return (
-    <div className={styles.forgotWrapper}>
-      <div className={styles.forgotContent}>
-        <h1 className={styles.forgotTitle}>NUEVA CONTRASEÑA</h1>
+    <PantallaAuth
+      etiqueta="Mi cuenta"
+      titulo={
+        <>
+          Nueva <em>contraseña</em>
+        </>
+      }
+      origen="forgot-password"
+    >
+      {done ? (
+        <div className={estilos.formulario}>
+          <Aviso tipo="ok">Contraseña actualizada. Ya podés iniciar sesión.</Aviso>
+          <div className={estilos.acciones}>
+            <Boton variante="verde" bloque to="/login">
+              Iniciar sesión
+            </Boton>
+          </div>
+        </div>
+      ) : (
+        <form className={estilos.formulario} onSubmit={onSubmit} noValidate>
+          <Campo
+            etiqueta="Contraseña nueva"
+            type="password"
+            placeholder="Mínimo 8 caracteres"
+            autoComplete="new-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            error={submitted && errors.minlength ? 'Mínimo 8 caracteres' : undefined}
+          />
 
-        {done ? (
-          <>
-            <div className={styles.alertSuccess}>Contraseña actualizada. Ya podés iniciar sesión.</div>
-            <div className={styles.formActions}>
-              <Link to="/login" className={`${styles.btn} ${styles.btnBlack}`}>Iniciar sesión</Link>
-            </div>
-          </>
-        ) : (
-          <form className={styles.forgotForm} onSubmit={onSubmit} noValidate>
-            <div className={styles.formGroup}>
-              <input
-                type="password"
-                className={`${styles.formControl} ${submitted && errors.minlength ? styles.isInvalid : ''}`}
-                placeholder="Contraseña nueva"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
-              {submitted && errors.minlength && <div className={styles.invalidFeedback}>Mínimo 8 caracteres</div>}
-            </div>
+          <Campo
+            etiqueta="Repite la contraseña"
+            type="password"
+            autoComplete="new-password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            error={submitted && errors.mismatch ? 'Las contraseñas no coinciden' : undefined}
+          />
 
-            <div className={styles.formGroup}>
-              <input
-                type="password"
-                className={`${styles.formControl} ${submitted && errors.mismatch ? styles.isInvalid : ''}`}
-                placeholder="Repite la contraseña"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-              />
-              {submitted && errors.mismatch && (
-                <div className={styles.invalidFeedback}>Las contraseñas no coinciden</div>
-              )}
-            </div>
+          {errorMessage && <Aviso tipo="error">{errorMessage}</Aviso>}
 
-            {errorMessage && <div className={styles.alertDanger}>{errorMessage}</div>}
+          <div className={estilos.acciones}>
+            <Boton variante="verde" type="submit" bloque disabled={sending}>
+              {sending ? 'Guardando...' : 'Guardar contraseña'}
+            </Boton>
+          </div>
 
-            <div className={styles.formActions}>
-              <button type="submit" className={`${styles.btn} ${styles.btnBlack}`} disabled={sending}>
-                Guardar contraseña
-              </button>
-              <Link to="/login" className={`${styles.btn} ${styles.btnLink}`}>Volver al inicio de sesión</Link>
-            </div>
-          </form>
-        )}
-      </div>
-    </div>
+          <Link to="/login" className={estilos.enlace}>
+            Volver al inicio de sesión
+          </Link>
+        </form>
+      )}
+    </PantallaAuth>
   );
 }

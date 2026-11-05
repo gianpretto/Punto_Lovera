@@ -1,0 +1,77 @@
+@use '../../styles/tokens' as t;
+
+// Mismo lenguaje que los campos de Contactanos (etiqueta 16/22 bold, texto
+// 16/22, línea de 1 px que pasa a 2 px verde con el foco).
+
+$rojo-error: #a32727;
+
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  font-family: t.$font-texto;
+
+  label {
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 22px;
+  }
+
+  input {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 0;
+    padding: 0 0 13px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid currentColor;
+    border-radius: 0;
+    font-family: t.$font-texto;
+    font-size: 16px;
+    line-height: 22px;
+    color: inherit;
+
+    &::placeholder {
+      color: inherit;
+      opacity: 0.55;
+    }
+
+    &:focus {
+      outline: none;
+      padding-bottom: 12px;
+      border-bottom-width: 2px;
+    }
+  }
+}
+
+.claro {
+  color: t.$gris-oscuro;
+
+  input:focus {
+    border-bottom-color: t.$verde;
+  }
+}
+
+.oscuro {
+  color: t.$gris-claro;
+
+  input:focus {
+    border-bottom-color: t.$blanco;
+  }
+}
+
+.invalido input,
+.invalido input:focus {
+  border-bottom-color: $rojo-error;
+}
+
+.error {
+  margin: -8px 0 0;
+  font-size: 14px;
+  line-height: 19px;
+  color: $rojo-error;
+}
+
+.oscuro .error {
+  color: #ffd6d6;
+}

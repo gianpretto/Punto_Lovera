@@ -1,0 +1,200 @@
+@use '../../styles/tokens' as t;
+
+// Medidas del wireframe (1440 px): la foto ocupa 838 px de ancho y llega
+// hasta y 812 (697 px debajo del header); el formulario mide 433 px y va
+// centrado en la columna derecha.
+
+.pantalla {
+  display: grid;
+  grid-template-columns: minmax(0, 58.2fr) minmax(0, 41.8fr);
+  min-height: 697px;
+  font-family: t.$font-texto;
+  color: t.$gris-oscuro;
+
+  @include t.tablet {
+    grid-template-columns: 1fr;
+    min-height: 0;
+  }
+}
+
+/* ---------- Foto ---------- */
+.foto {
+  position: relative;
+  overflow: hidden;
+  background: t.$gris-medio;
+  isolation: isolate;
+
+  @include t.tablet {
+    order: 2;
+    height: 346px; // banda de la foto en el wireframe de celular
+  }
+}
+
+.fotoImagen {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 40% 50%;
+  filter: grayscale(1) brightness(0.64);
+  z-index: -2;
+}
+
+.fotoTinte {
+  position: absolute;
+  inset: 0;
+  background: t.$verde;
+  mix-blend-mode: multiply;
+  z-index: -1;
+}
+
+/* ---------- Formulario ---------- */
+.columna {
+  @include t.fondo-patron(t.$fondo);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 96px t.$margen-lateral;
+  box-sizing: border-box;
+
+  @include t.tablet {
+    padding: 72px t.$margen-lateral 80px;
+  }
+
+  @include t.mobile {
+    padding: 48px 16px 56px;
+  }
+}
+
+.contenido {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 433px;
+}
+
+.titulo {
+  @include t.titulo-display(72px, 1.05);
+  margin-top: 20px;
+  color: t.$gris-oscuro;
+  overflow-wrap: anywhere;
+
+  em {
+    color: t.$verde;
+  }
+
+  @include t.tablet {
+    font-size: 56px;
+  }
+
+  @include t.mobile {
+    font-size: 44px;
+  }
+}
+
+.bajada {
+  margin: 24px 0 0;
+  padding-left: 20px;
+  border-left: 1px solid t.$verde;
+  font-size: 16px;
+  line-height: 22px;
+  color: t.$gris-texto;
+}
+
+/* ---------- Piezas comunes de los formularios (se exportan como estilosAuth) ---------- */
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  margin-top: 40px;
+
+  @include t.mobile {
+    gap: 24px;
+    margin-top: 32px;
+  }
+}
+
+.acciones {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+// Enlaces de texto ("Olvidé la contraseña", "Volver al inicio de sesión")
+.enlace {
+  align-self: flex-start;
+  font-family: t.$font-texto;
+  font-size: 16px;
+  line-height: 22px;
+  color: t.$gris-texto;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+
+  &:hover {
+    color: t.$verde;
+  }
+}
+
+// Foco visible en todo lo que se puede tocar (botones y enlaces)
+.contenido :is(a, button):focus-visible {
+  outline: 2px solid t.$verde;
+  outline-offset: 3px;
+}
+
+.recordarme {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: -8px;
+  font-size: 16px;
+  line-height: 22px;
+  color: t.$gris-texto;
+  cursor: pointer;
+
+  input {
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    accent-color: t.$verde;
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 2px solid t.$verde;
+      outline-offset: 2px;
+    }
+  }
+}
+
+// Ícono del sobre de Validar mail (recuadro con borde verde)
+.icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  margin-top: 32px;
+  border: 1px solid t.$verde;
+  color: t.$verde;
+
+  svg {
+    width: 34px;
+    height: 34px;
+  }
+}
+
+.texto {
+  margin: 24px 0 0;
+  font-size: 16px;
+  line-height: 22px;
+  color: t.$gris-oscuro;
+
+  & + & {
+    margin-top: 12px;
+  }
+}
+
+.textoSecundario {
+  color: t.$gris-texto;
+}
