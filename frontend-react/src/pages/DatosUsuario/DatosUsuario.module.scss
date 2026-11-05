@@ -1,179 +1,173 @@
-.editWrapper {
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 120px 20px;
-  font-family: 'Montserrat', sans-serif;
-  min-height: calc(100vh - 400px);
-}
+@use '../../styles/tokens' as t;
 
-.editTitle {
-  font-size: 42px;
-  font-weight: 700;
-  text-align: center;
-  margin-bottom: 60px;
-  color: #111;
-  text-transform: uppercase;
-  letter-spacing: -0.5px;
-}
+// Misma grilla que Contactanos (columna de 650 px + formulario de 542 px con
+// campos de 245 px y 52 px entre columnas), sobre el fondo claro con patrón.
 
-.avatarContainer {
-  position: relative;
-  width: 140px;
-  height: 140px;
-  margin: 0 auto 60px;
-  cursor: pointer;
-}
+.pagina {
+  @include t.fondo-patron(t.$blanco);
+  padding: 140px 0 136px;
+  font-family: t.$font-texto;
+  color: t.$gris-oscuro;
 
-.avatarCircle {
-  width: 100%;
-  height: 100%;
-  background: #f0f0f0;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  border: 2px solid #eee;
-  transition: border-color 0.2s;
+  @include t.tablet {
+    padding: 80px 0 96px;
+  }
 
-  &:hover {
-    border-color: #3e6d6d;
+  @include t.mobile {
+    padding: 48px 0 64px;
   }
 }
 
-.avatarImage {
+.contenedor {
+  @include t.contenedor;
+  display: grid;
+  grid-template-columns: minmax(0, 650px) minmax(0, 542px);
+  justify-content: space-between;
+  align-items: start;
+
+  @include t.tablet {
+    grid-template-columns: 1fr;
+    row-gap: 48px;
+  }
+}
+
+.columnaTitulo {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+
+  @include t.tablet {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-areas:
+      'etiqueta avatar'
+      'titulo avatar';
+    align-items: end;
+    column-gap: 24px;
+  }
+
+  @include t.mobile {
+    display: flex;
+    align-items: center;
+    text-align: center;
+  }
+}
+
+.titulo {
+  @include t.titulo-display(96px, 1.104);
+  grid-area: titulo;
+  margin-top: 40px;
+  color: t.$gris-oscuro;
+
+  em {
+    color: t.$verde;
+  }
+
+  @include t.tablet {
+    margin-top: 24px;
+  }
+}
+
+// Avatar (local al navegador): círculo de 160 px con el botón de cámara
+.avatar {
+  grid-area: avatar;
+  position: relative;
+  width: 160px;
+  height: 160px;
+  margin-top: 56px;
+  padding: 0;
+  border: 0;
+  background: none;
+  border-radius: 50%;
+  cursor: pointer;
+
+  &:hover .avatarCirculo {
+    border-color: t.$verde;
+  }
+
+  &:focus-visible {
+    outline: 2px solid t.$verde;
+    outline-offset: 4px;
+  }
+
+  @include t.tablet {
+    width: 128px;
+    height: 128px;
+    margin-top: 0;
+  }
+
+  @include t.mobile {
+    margin-top: 32px;
+  }
+}
+
+.avatarCirculo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+  border-radius: 50%;
+  border: 1px solid t.$gris-claro;
+  background: t.$fondo;
+  color: t.$gris-claro;
+  transition: border-color 0.15s ease;
+}
+
+.avatarImagen {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
-.cameraIcon {
+.avatarCamara {
   position: absolute;
-  bottom: 5px;
-  right: 5px;
-  background: #111;
-  width: 38px;
-  height: 38px;
-  border-radius: 50%;
+  right: 0;
+  bottom: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 3px solid #fff;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: t.$verde;
+  color: t.$blanco;
+  border: 3px solid t.$blanco;
 }
 
-.editForm {
-  display: flex;
-  flex-direction: column;
-  gap: 24px;
+.archivo {
+  display: none;
 }
 
-.formRow {
-  display: flex;
-  gap: 24px;
+.formulario {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 245px));
+  justify-content: space-between;
+  row-gap: 32px;
+  padding-top: 35px;
 
-  @media (max-width: 500px) {
-    flex-direction: column;
-    gap: 24px;
+  @include t.tablet {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    column-gap: 40px;
+    padding-top: 0;
+  }
+
+  @include t.mobile {
+    grid-template-columns: 1fr;
+    row-gap: 24px;
   }
 }
 
-.formGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}
+.ancho {
+  grid-column: 1 / -1;
 
-.half {
-  flex: 1;
-}
-
-.full {
-  width: 100%;
-}
-
-.formLabel {
-  font-size: 11px;
-  font-weight: 700;
-  color: #999;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.formControl {
-  width: 100%;
-  padding: 16px 20px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 15px;
-  font-family: inherit;
-  box-sizing: border-box;
-  transition: all 0.2s;
-  background: #f9f9f9;
-
-  &:focus {
-    outline: none;
-    border-color: #111;
-    background: #fff;
-    box-shadow: 0 0 0 4px rgba(0, 0, 0, 0.02);
+  &:empty {
+    display: none;
   }
 }
 
-.isInvalid {
-  border-color: #dc3545;
-}
-
-.btnBlack {
-  background: #111;
-  color: #fff;
-  border: none;
-  padding: 20px;
-  font-size: 16px;
-  font-weight: 700;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-top: 30px;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  transition: all 0.2s;
-
-  &:hover:not(:disabled) {
-    background: #333;
-    transform: translateY(-2px);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-  }
-
-  &:active:not(:disabled) {
-    transform: translateY(0);
-  }
-
-  &:disabled {
-    background: #eee;
-    color: #999;
-    cursor: not-allowed;
-  }
-}
-
-.alert {
-  padding: 15px;
-  border-radius: 4px;
-  font-size: 14px;
-  text-align: center;
-  font-weight: 500;
-}
-
-.alertSuccess {
-  background: #e7f4e4;
-  color: #2e7d32;
-  border: 1px solid #c8e6c9;
-}
-
-// Error devuelto por el backend (mismo estilo que en Login)
-.alertDanger {
-  color: #dc3545;
-  background: #f8d7da;
-  border: 1px solid #f5c2c7;
-  border-radius: 4px;
-  padding: 12px 16px;
-  font-size: 14px;
+.acciones {
+  margin-top: 17px;
 }
