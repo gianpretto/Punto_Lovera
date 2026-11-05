@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import { api, ApiError } from '../../services/api';
 import Etiqueta from '../ui/Etiqueta';
 import styles from './SeccionVender.module.scss';
+import { registrarEvento } from '../../services/analytics';
 
 // Sección "¿Tenés bienes para vender?" del rediseño (Figma: banda verde
 // #3e6d72 de 506 px con el título a la izquierda y el formulario a la
@@ -30,6 +31,7 @@ export default function SeccionVender({ origen, etiquetaGrande = false }: Props)
     setEnviando(true);
     try {
       const res = await api.post<{ message: string }>('/contacto', { name: nombre, email, message: mensaje, source: origen });
+      registrarEvento('generate_lead', { origen });
       setOk(res.message);
       setNombre('');
       setEmail('');

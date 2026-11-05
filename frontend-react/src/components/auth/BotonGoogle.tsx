@@ -3,6 +3,7 @@ import { api, ApiError } from '../../services/api';
 import { useAuth, type User } from '../../services/AuthContext';
 import Aviso from '../ui/Aviso';
 import styles from './BotonGoogle.module.scss';
+import { registrarEvento } from '../../services/analytics';
 
 // "Continuar con Google" con el botón oficial de Google Identity Services.
 // Google nos devuelve un ID token, el backend lo verifica (POST /auth/google)
@@ -91,6 +92,7 @@ export default function BotonGoogle({ texto = 'continue_with', onIngreso }: Prop
               { credential }
             );
             setSession(token, user);
+            registrarEvento(isNew ? 'sign_up' : 'login', { method: 'google' });
             alIngresar.current(user, isNew);
           } catch (err) {
             setError(err instanceof ApiError ? err.message : 'No se pudo ingresar con Google. Probá de nuevo.');

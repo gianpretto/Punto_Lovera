@@ -1,0 +1,14 @@
+# Si cambia el dominio, actualizar la URL del sitemap
+User-agent: *
+Disallow: /admin/
+Disallow: /perfil
+Disallow: /datos
+Disallow: /creditos
+Disallow: /reintegro
+Disallow: /comprobante-exitoso
+Disallow: /validar-mail
+Disallow: /forgot-password
+Disallow: /subastas/*/martillero
+Disallow: /subastas/*/activa
+
+Sitemap: https://punto-lovera.vercel.app/sitemap.xml

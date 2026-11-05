@@ -9,6 +9,7 @@ import Campo from '../../components/ui/Campo';
 import { useAuth } from '../../services/AuthContext';
 import { ApiError } from '../../services/api';
 import styles from './Registro.module.scss';
+import { registrarEvento } from '../../services/analytics';
 
 function validarEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -97,6 +98,7 @@ export default function Registro() {
     setSending(true);
     try {
       await register(email, password, nombre, apellido);
+      registrarEvento('sign_up', { method: 'email' });
       // El mail viaja a /validar-mail para poder ofrecer "Reenviar correo"
       navigate('/validar-mail', { state: { email } });
     } catch (err) {

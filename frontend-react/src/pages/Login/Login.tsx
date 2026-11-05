@@ -8,6 +8,7 @@ import Boton from '../../components/ui/Boton';
 import Campo from '../../components/ui/Campo';
 import { useAuth } from '../../services/AuthContext';
 import { ApiError } from '../../services/api';
+import { registrarEvento } from '../../services/analytics';
 
 function validarEmail(email: string) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -66,6 +67,7 @@ export default function Login() {
     setSending(true);
     try {
       await login(email, password);
+      registrarEvento('login', { method: 'email' });
       navigate(destino);
     } catch (err) {
       setLoginError(err instanceof ApiError ? err.message : 'Credenciales inválidas o usuario no registrado.');

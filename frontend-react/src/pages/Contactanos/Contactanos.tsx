@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react';
 import BannerRedes from '../../components/secciones/BannerRedes';
 import { api, ApiError } from '../../services/api';
 import styles from './Contactanos.module.scss';
+import { registrarEvento } from '../../services/analytics';
 
 // Contactanos (Figma "Contactanos 1440x1029", frame 721:73903): fondo claro
 // con patrón, "Hablemos / Sin vueltas." a la izquierda, formulario a la
@@ -28,6 +29,7 @@ export default function Contactanos() {
         message: mensaje,
         source: 'contactanos',
       });
+      registrarEvento('generate_lead', { origen: 'contactanos' });
       setOk(res.message);
       setNombre('');
       setEmail('');

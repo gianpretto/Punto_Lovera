@@ -1,4 +1,5 @@
 import { Routes, Route } from 'react-router-dom';
+import Medicion from './components/layout/Medicion';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import { AuthProvider } from './services/AuthContext';
@@ -31,6 +32,7 @@ import PreguntasFrecuentesPage from './pages/PreguntasFrecuentesPage';
 export default function App() {
   return (
     <AuthProvider>
+      <Medicion />
       <Header />
 
       <main className="container my-4">

@@ -25,6 +25,7 @@ import { useAuth } from "../../services/AuthContext";
 import { api, ApiError, getToken, uploadUrl } from "../../services/api";
 import { useAuctionRoom } from "../../services/useAuctionRoom";
 import styles from "./SubastaActiva.module.scss";
+import { registrarEvento } from '../../services/analytics';
 
 // Sala en vivo (wireframes 620:14277 escritorio y 620:16312 / 620:16356
 // celular, con el lenguaje visual del rediseño): video con el precio
@@ -280,6 +281,7 @@ export default function SubastaActiva() {
 
     // La confirmación llega por el socket (bid:new + mensaje en el chat)
     placeBid(lot.id, amount);
+    registrarEvento('oferta');
   };
 
   const sendMessage = () => {
