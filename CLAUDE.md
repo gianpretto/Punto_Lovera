@@ -208,8 +208,13 @@ globales entre secciones que reutilizan nombres como `.btn-negro`,
 ### Rediseño de Figma (oct 2026, implementado)
 
 La diseñadora rehízo la web en Figma (archivo `hrHkuqxusvk9KpuzY8bUhM`,
-página "Web", 8 pantallas de escritorio a 1440 px; no hay diseño mobile ni
-de login/registro/perfil/créditos/sala, esas mantienen el estilo anterior).
+página "Web", 8 pantallas de escritorio a 1440 px; no hay diseño mobile
+final). Las pantallas sin diseño final (login, registro, recuperar
+contraseña, validar mail, datos, perfil, créditos, comprobante, reintegro,
+sala en vivo, cómo participar y las internas de admin/martillero) se
+rediseñaron en la misma línea visual usando los wireframes de la página
+"Wireframe" del Figma solo como guía de contenido (nov 2026); revisarlas
+con la diseñadora.
 **Objetivo: fidelidad al Figma** (ya no al Angular, que queda solo como
 referencia histórica). Se verificó comparando capturas de Playwright contra
 los renders de Figma sección por sección (2–10 % de píxeles distintos,
@@ -222,16 +227,24 @@ casi todo por datos reales y la fuente Nugros).
   `components/secciones/` (`BannerRedes`, `SeccionVender` → `POST
   /api/contacto`, `SubastaDestacada`, `PreguntasFrecuentes`),
   `TarjetaSubasta`, `components/lotes/` (`TarjetaLote`, `VisorLote` =
-  pop-up de fotos accesible). Assets en `public/assets/figma/`.
+  pop-up de fotos accesible), `components/ui/Campo` (input subrayado con
+  etiqueta y error), `Aviso` (ok/error), `EstadoPastilla`,
+  `components/auth/PantallaAuth` (layout de login/registro/etc.). Assets
+  en `public/assets/figma/`.
+- "Confían en nosotros" (Home) es un carrusel CSS automático (pausa con
+  hover, quieto con `prefers-reduced-motion`).
+- Martilleros: Gonzalo Lovera y Emiliano Lovera (`SubastaDestacada`);
+  matrículas pendientes (todavía no las tienen), vacías no se muestran.
+- Fuente: solo Google Fonts (pedido del cliente: nada pago). Nugros no se
+  usa; si la diseñadora elige otra de Google, cambiar `$font-destacada`.
+- Créditos: no hay QR de pago (el backend solo da alias/CBU/titular).
 - Header: barra gris solo en `/`, `/quiero-comprar`, `/quiero-vender`; en
   el resto, fondo claro con línea abajo (`RUTAS_BARRA_GRIS`).
 - Pantallas: Home, Todas las subastas (`/subastas`: activa → próximas →
   terminadas), Catálogo (DetalleSubasta), Quiénes somos, Quiero comprar,
   Quiero vender, Contactanos (formulario → `POST /api/contacto`, guarda en
   `contact_messages` y avisa a `CONTACT_EMAIL`).
-- Pendiente de la diseñadora / cliente: archivos y licencia web de
-  **Nugros** (hoy cae en Akatab); nombre y matrícula reales del martillero
-  (constante con TODO en Home); si los lotes llevan categoría (hoy la
+- Pendiente de la diseñadora / cliente: matrícula de los martilleros; si los lotes llevan categoría (hoy la
   tarjeta muestra el precio base); formato del ID de subasta; respuestas de
   3 de las 4 preguntas de Home (borradores en `content/participar.ts`);
   textos de relleno de las tarjetas de Quiero comprar.
@@ -261,7 +274,9 @@ En dev, Vite proxea `/api`, `/uploads` y `/socket.io` a `localhost:4000`
 ### Sala en vivo (`SubastaActiva` + `src/services/useAuctionRoom.ts`)
 
 Conectada al Socket.io del backend. Con sesión se puja y chatea; sin
-sesión se mira como espectador. Eventos (documentados también en
+sesión solo se entra con pase de invitado (`?pase=`), si no redirige a
+`/registro`. Lo que le falta al usuario para pujar (datos, crédito, mail
+verificado) se muestra en el panel antes de ofertar. Eventos (documentados también en
 `backend/src/sockets/bidding.socket.ts`):
 
 - cliente → `auction:join`, `auction:leave`, `bid:place`, `chat:message`
@@ -315,10 +330,8 @@ había Docker.
 
 ## Pendiente / próximos pasos
 
-1. **Conectar el resto del frontend React al backend real** (auth y perfil
-   ya están; faltan subastas/lotes — Home, ProximasSubastas,
-   DetalleSubasta — y Creditos/comprobantes, que hoy usan datos
-   hardcodeados).
+1. Probar todo de punta a punta en producción (Vercel + Railway) con
+   subastas reales cargadas y una transmisión real de OBS.
 2. Probar el video con el rtsp-manager real de Francis (solo se probó con
    uno falso) y la cámara chica del martillero en la sala (sigue siendo
    placeholder: hoy hay una sola cámara por subasta).
