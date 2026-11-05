@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import PantallaAuth from '../../components/auth/PantallaAuth';
+import BotonGoogle from '../../components/auth/BotonGoogle';
 import estilos from '../../components/auth/PantallaAuth.module.scss';
 import Aviso from '../../components/ui/Aviso';
 import Boton from '../../components/ui/Boton';
@@ -83,6 +84,12 @@ export default function Login() {
       }
       origen="login"
     >
+      {/* Cuenta nueva con Google: primero que complete sus datos */}
+      <BotonGoogle
+        onIngreso={(u, nuevo) =>
+          navigate(nuevo && !u.profileComplete ? `/datos?volver=${encodeURIComponent(destino)}` : destino)
+        }
+      />
       <form className={estilos.formulario} onSubmit={onSubmit} noValidate>
         {loginError && <Aviso tipo="error">{loginError}</Aviso>}
 

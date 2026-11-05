@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import PantallaAuth from '../../components/auth/PantallaAuth';
+import BotonGoogle from '../../components/auth/BotonGoogle';
 import estilos from '../../components/auth/PantallaAuth.module.scss';
 import Aviso from '../../components/ui/Aviso';
 import Boton from '../../components/ui/Boton';
@@ -111,6 +112,15 @@ export default function Registro() {
       titulo={<em>Registrarse</em>}
       origen="registro"
     >
+      {/* Con Google la cuenta queda creada y con el mail verificado: solo
+          falta que complete sus datos para poder ofertar */}
+      <BotonGoogle
+        texto="signup_with"
+        onIngreso={(u) => {
+          const destino = volver && volver.startsWith('/') && !volver.startsWith('//') ? volver : '/';
+          navigate(u.profileComplete ? destino : `/datos?volver=${encodeURIComponent(destino)}`);
+        }}
+      />
       <form className={estilos.formulario} onSubmit={onSubmit} noValidate>
         {registerError && <Aviso tipo="error">{registerError}</Aviso>}
 

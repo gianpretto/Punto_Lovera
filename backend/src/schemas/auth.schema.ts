@@ -61,3 +61,8 @@ export const updateProfileSchema = z.object({
   province: z.string().trim().optional(),
   zipCode: z.string().trim().optional(),
 });
+
+// ID token que devuelve el botón de Google (JWT, ~1-2 KB)
+export const googleLoginSchema = z.object({
+  credential: z.string().min(1).max(4096),
+});

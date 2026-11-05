@@ -42,6 +42,9 @@ export const env = {
     from: process.env.MAIL_FROM ?? 'Punto Lovera <no-responder@puntolovera.com>',
   },
 
+  // "Continuar con Google": Client ID web de Google Cloud (vacío = sin botón)
+  googleClientId: process.env.GOOGLE_CLIENT_ID?.trim() ?? '',
+
   // Casilla del equipo que recibe las consultas del formulario de contacto
   contactEmail: process.env.CONTACT_EMAIL ?? 'lovera@lovera.com.ar',
 

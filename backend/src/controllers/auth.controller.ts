@@ -1,8 +1,11 @@
 import { Request, Response } from 'express';
 import { asyncHandler } from '../utils/asyncHandler';
 import * as authService from '../services/auth.service';
+import { verifyGoogleCredential } from '../services/google.service';
+import { env } from '../config/env';
 import {
   forgotPasswordSchema,
+  googleLoginSchema,
   loginSchema,
   registerSchema,
   resendVerificationSchema,
@@ -22,6 +25,19 @@ export const login = asyncHandler(async (req: Request, res: Response) => {
   const result = await authService.login(email, password);
   res.json(result);
 });
+
+export const google = asyncHandler(async (req: Request, res: Response) => {
+  const { credential } = googleLoginSchema.parse(req.body);
+  const profile = await verifyGoogleCredential(credential);
+  const result = await authService.loginWithGoogle(profile);
+  res.status(result.isNew ? 201 : 200).json(result);
+});
+
+// El front pregunta si mostrar el botón de Google y con qué Client ID (es
+// público: va en el HTML de cualquier sitio con "Continuar con Google")
+export const googleConfig = (_req: Request, res: Response) => {
+  res.json({ clientId: env.googleClientId || null });
+};
 
 export const verifyEmail = asyncHandler(async (req: Request, res: Response) => {
   const { token } = verifyEmailSchema.parse(req.body);

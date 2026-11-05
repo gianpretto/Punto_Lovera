@@ -16,6 +16,8 @@ const router = Router();
 // Límites de intentos estrictos: valores y motivos en rateLimit.middleware.ts
 router.post('/register', registerLimiter, authController.register);
 router.post('/login', loginIpLimiter, loginLimiter, authController.login);
+router.post('/google', loginIpLimiter, authController.google);
+router.get('/google/config', authController.googleConfig);
 router.post('/verify-email', verifyEmailLimiter, authController.verifyEmail);
 router.post('/resend-verification', resendVerificationLimiter, authController.resendVerification);
 router.post('/forgot-password', forgotPasswordLimiter, authController.forgotPassword);

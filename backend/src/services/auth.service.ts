@@ -7,6 +7,7 @@ import { hashToken, randomToken } from '../utils/tokens';
 import { Errors } from '../utils/AppError';
 import { sendPasswordResetEmail, sendVerificationEmail } from './mail.service';
 import { getHeldCredit } from './credit.service';
+import type { GoogleProfile } from './google.service';
 
 const SALT_ROUNDS = 10;
 
@@ -104,6 +105,47 @@ export async function login(email: string, password: string) {
 
   const token = signToken({ userId: user.id, role: user.role });
   return { token, user: await publicUserWithCredit(user) };
+}
+
+/**
+ * "Continuar con Google" (el perfil ya viene verificado por google.service).
+ * - Cuenta ya vinculada a ese Google → entra.
+ * - Cuenta con el mismo mail (registrada con contraseña) → se vincula y queda
+ *   con el mail verificado: Google ya probó que el mail es suyo.
+ * - Si no existe → se crea sin contraseña y con el mail verificado; los datos
+ *   que faltan para pujar los completa en /datos, como cualquier usuario.
+ */
+export async function loginWithGoogle(profile: GoogleProfile) {
+  let [user] = await db.select().from(users).where(eq(users.googleId, profile.sub));
+  let isNew = false;
+
+  if (!user) {
+    const [byEmail] = await db.select().from(users).where(eq(users.email, profile.email));
+    if (byEmail) {
+      // Otra cuenta de Google ya vinculada a este mail: no se pisa
+      if (byEmail.googleId) throw Errors.conflict('Ese mail ya está vinculado a otra cuenta de Google');
+      [user] = await db
+        .update(users)
+        .set({ googleId: profile.sub, emailVerified: true, verificationToken: null, verificationSentAt: null })
+        .where(eq(users.id, byEmail.id))
+        .returning();
+    } else {
+      [user] = await db
+        .insert(users)
+        .values({
+          email: profile.email,
+          googleId: profile.sub,
+          firstName: profile.firstName,
+          lastName: profile.lastName,
+          emailVerified: true,
+        })
+        .returning();
+      isNew = true;
+    }
+  }
+
+  const token = signToken({ userId: user.id, role: user.role });
+  return { token, user: await publicUserWithCredit(user), isNew };
 }
 
 export async function verifyEmail(token: string) {

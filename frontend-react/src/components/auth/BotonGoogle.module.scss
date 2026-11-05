@@ -1,0 +1,40 @@
+@use '../../styles/tokens' as t;
+
+.google {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-top: 40px;
+}
+
+// Mientras no hay Client ID (o Google no cargó) no ocupa lugar, pero el
+// contenedor existe para que Google pueda dibujar el botón adentro
+.oculto {
+  display: none;
+}
+
+.boton {
+  display: flex;
+  justify-content: center;
+  min-height: 44px;
+}
+
+// "—— o con tu correo ——"
+.separador {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 8px 0 0;
+  font-family: t.$font-texto;
+  font-size: 14px;
+  line-height: 19px;
+  color: t.$gris-texto;
+
+  &::before,
+  &::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: t.$gris-claro;
+  }
+}

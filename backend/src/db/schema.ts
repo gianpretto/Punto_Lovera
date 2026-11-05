@@ -28,7 +28,11 @@ const id = () => uuid('id').primaryKey().$defaultFn(() => randomUUID());
 export const users = pgTable('users', {
   id: id(),
   email: text('email').notNull().unique(),
-  passwordHash: text('password_hash').notNull(),
+  // Null en las cuentas creadas con "Continuar con Google" (pueden ponerse
+  // una contraseña después con "Olvidé mi contraseña")
+  passwordHash: text('password_hash'),
+  // "sub" de Google: identifica la cuenta de Google vinculada (login con Google)
+  googleId: text('google_id').unique(),
   firstName: text('first_name').notNull(),
   lastName: text('last_name').notNull(),
   phone: text('phone'),

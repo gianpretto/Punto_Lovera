@@ -27,6 +27,7 @@
     "drizzle-orm": "^0.45.2",
     "express": "^4.21.0",
     "express-rate-limit": "^8.7.0",
+    "google-auth-library": "^11.3.3",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",

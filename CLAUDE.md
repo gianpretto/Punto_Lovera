@@ -162,6 +162,23 @@ vivo de YouTube embebido (lo ve cualquiera con el link).
   avisa en el registro ("Ya existe una cuenta con ese email"). Los mails
   se normalizan a minúsculas sin espacios (migración 0007).
 
+## Ingreso con Google (nov 2026)
+
+"Continuar con Google" en Login y Registro (`components/auth/BotonGoogle`,
+botón oficial de Google Identity Services, modo popup). El front pide el
+Client ID a `GET /api/auth/google/config` (si `GOOGLE_CLIENT_ID` está
+vacío en Railway, el botón no aparece) y manda el ID token a
+`POST /api/auth/google`, que lo verifica con `google-auth-library`
+(firma, audiencia y `email_verified`). Cuenta vinculada por `users.google_id`
+(migración 0009); si ya existía una cuenta con ese mail, se vincula y queda
+con el mail verificado; si no, se crea sin contraseña (`password_hash`
+null; puede ponerse una con "Olvidé mi contraseña") y se manda a `/datos`.
+Las cuentas de Google no necesitan el mail de validación (sirve aunque no
+haya SMTP). CSP de Vercel permite `accounts.google.com/gsi`. Para
+configurarlo: Google Cloud Console → ID de cliente de OAuth tipo
+"Aplicación web" con orígenes autorizados `https://punto-lovera.vercel.app`
+y `http://localhost:5173`.
+
 ## Pendiente de seguridad antes de producción
 
 La contraseña de Neon (`neondb_owner`, ramas dev y production), el
