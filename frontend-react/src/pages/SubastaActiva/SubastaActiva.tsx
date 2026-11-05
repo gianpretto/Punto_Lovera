@@ -1,12 +1,43 @@
-import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
-import LivePlayer from '../../components/LivePlayer/LivePlayer';
-import { useAuth } from '../../services/AuthContext';
-import { api, ApiError, getToken, uploadUrl } from '../../services/api';
-import { useAuctionRoom } from '../../services/useAuctionRoom';
-import styles from './SubastaActiva.module.scss';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from "react";
+import {
+  Link,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router-dom";
+import LivePlayer from "../../components/LivePlayer/LivePlayer";
+import Boton from "../../components/ui/Boton";
+import Etiqueta from "../../components/ui/Etiqueta";
+import Aviso from "../../components/ui/Aviso";
+import VisorLote from "../../components/lotes/VisorLote";
+import {
+  partirDescripcion,
+  type LoteCatalogo,
+} from "../../components/lotes/lote";
+import { useAuth } from "../../services/AuthContext";
+import { api, ApiError, getToken, uploadUrl } from "../../services/api";
+import { useAuctionRoom } from "../../services/useAuctionRoom";
+import styles from "./SubastaActiva.module.scss";
 
-const IMAGEN_DEFAULT = '/assets/img/default.png';
+// Sala en vivo (wireframes 620:14277 escritorio y 620:16312 / 620:16356
+// celular, con el lenguaje visual del rediseño): video con el precio
+// actual, panel para ofertar, lote en remate (abre el visor de fotos del
+// catálogo), historial de ofertas y chat. Toda la lógica de la sala vive en
+// useAuctionRoom; acá solo se presenta.
+
+const pesos = (n: number) => `$ ${n.toLocaleString("es-AR")}`;
+
+/** Cuánto tiempo queda visible el aviso de "¡Adjudicado!" */
+const AVISO_ADJUDICADO_MS = 10_000;
+
+type AvisoSala = { texto: string; donde: "puja" | "chat" };
 
 export default function SubastaActiva() {
   const { id } = useParams<{ id: string }>();
@@ -14,37 +45,42 @@ export default function SubastaActiva() {
   const { user, loading, refreshUser } = useAuth();
   const [searchParams] = useSearchParams();
   // Pase de invitado (link temporal del martillero): mirar sin cuenta
-  const pase = user ? null : searchParams.get('pase');
+  const pase = user ? null : searchParams.get("pase");
   const invitado = !user && Boolean(pase);
   const aquiMismo = `/subastas/${id}/activa`;
 
+  // Errores de puja y de chat: se muestran junto a lo último que se usó
+  const [aviso, setAviso] = useState<AvisoSala | null>(null);
+  const ultimaAccion = useRef<"puja" | "chat">("puja");
+
   // Con sesión se puja/chatea; sin sesión se mira como espectador
-  const { state, messages, error, authRequired, placeBid, sendMessage: emitMessage } = useAuctionRoom(
+  const {
+    state,
+    messages,
+    error,
+    authRequired,
+    placeBid,
+    sendMessage: emitMessage,
+  } = useAuctionRoom(
     id,
     user ? getToken() : null,
-    { onError: (message) => alert(message) },
-    pase
+    {
+      onError: (message) =>
+        setAviso({ texto: message, donde: ultimaAccion.current }),
+    },
+    pase,
   );
 
   // Ingresar al remate (diagrama): sin cuenta ni pase → registrarse
   useEffect(() => {
-    if (!loading && !user && !pase) navigate(`/registro?volver=${encodeURIComponent(aquiMismo)}`);
+    if (!loading && !user && !pase)
+      navigate(`/registro?volver=${encodeURIComponent(aquiMismo)}`);
   }, [loading, user, pase, navigate, aquiMismo]);
 
   const lot = state?.lot ?? null;
-  const esMartillero = user?.role === 'MARTILLERO' || user?.role === 'ADMIN';
-  const loteInfo = {
-    nombre:
-      invitado && authRequired
-        ? 'Este link de invitado venció o fue revocado'
-        : lot
-          ? lot.title
-          : (error ?? (state ? 'No quedan lotes en remate' : 'Conectando con la sala...')),
-    ubicacion: state?.auction.location ?? '',
-    descripcion: lot?.description ?? '',
-    martillero: state?.auction.martillero?.toUpperCase() ?? '',
-    imagenes: lot && lot.images.length > 0 ? lot.images.map(uploadUrl) : [IMAGEN_DEFAULT],
-  };
+  const auction = state?.auction ?? null;
+  const esMartillero = user?.role === "MARTILLERO" || user?.role === "ADMIN";
+  const paseVencido = invitado && authRequired;
   const minNextBid = lot?.minNextBid ?? 0;
   const increment = lot?.bidIncrement ?? 0;
 
@@ -54,11 +90,38 @@ export default function SubastaActiva() {
   // que también cuenta para la validación.
   const userCredits = user?.availableCredit ?? 0;
   const vaGanando = Boolean(user && lot?.leaderId === user.id);
-  const creditoParaEsteLote = userCredits + (vaGanando && lot ? lot.currentPrice : 0);
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
-  const [isChatExpanded, setIsChatExpanded] = useState(false);
-  const [newMessage, setNewMessage] = useState('');
+  const creditoParaEsteLote =
+    userCredits + (vaGanando && lot ? lot.currentPrice : 0);
+  const [visorAbierto, setVisorAbierto] = useState(false);
+  const cerrarVisor = useCallback(() => setVisorAbierto(false), []);
+  const [newMessage, setNewMessage] = useState("");
+  const [reenvio, setReenvio] = useState<"idle" | "enviando" | "enviado">(
+    "idle",
+  );
+
+  // "Te superaron": iba ganando este lote y otro ofertó más
+  const [superado, setSuperado] = useState(false);
+  const liderAnterior = useRef<{
+    lotId: string | null;
+    leaderId: string | null;
+  }>({ lotId: null, leaderId: null });
+  useEffect(() => {
+    const previo = liderAnterior.current;
+    const mismoLote = previo.lotId === (lot?.id ?? null);
+    if (!mismoLote) setSuperado(false);
+    else if (
+      user &&
+      previo.leaderId === user.id &&
+      lot?.leaderId &&
+      lot.leaderId !== user.id
+    )
+      setSuperado(true);
+    else if (vaGanando) setSuperado(false);
+    liderAnterior.current = {
+      lotId: lot?.id ?? null,
+      leaderId: lot?.leaderId ?? null,
+    };
+  }, [lot?.id, lot?.leaderId, user, vaGanando]);
 
   // Cada puja o cambio de lote puede reservar/liberar crédito: refrescamos
   // el saldo disponible del usuario
@@ -67,9 +130,10 @@ export default function SubastaActiva() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lot?.id, lot?.currentPrice]);
 
-  // Cambió el lote en remate: volver a la primera foto
+  // Cambió el lote en remate: cerrar el visor y limpiar el aviso de puja
   useEffect(() => {
-    setCurrentIndex(0);
+    setVisorAbierto(false);
+    setAviso((a) => (a?.donde === "puja" ? null : a));
   }, [lot?.id]);
 
   // Si alguien pujó y la oferta que estaba armando quedó por debajo del
@@ -78,117 +142,139 @@ export default function SubastaActiva() {
     setCurrentBid((v) => (v < minNextBid ? minNextBid : v));
   }, [minNextBid]);
 
-  const scrollRef = useRef<HTMLDivElement>(null);
+  // Cambió el precio: el error de puja anterior (p. ej. "la oferta mínima
+  // es ...") ya no aplica
+  useEffect(() => {
+    setAviso((a) => (a?.donde === "puja" ? null : a));
+  }, [lot?.currentPrice]);
 
-  const scrollToBottom = () => {
+  // Último "¡Adjudicado!" (lo agrega useAuctionRoom al recibir lot:sold)
+  const adjudicacion = useMemo(() => {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const m = messages[i];
+      if (!m.id && m.user === "Martillero" && m.text.startsWith("¡Adjudicado"))
+        return { clave: i, texto: m.text };
+    }
+    return null;
+  }, [messages]);
+  const [adjudicacionVisible, setAdjudicacionVisible] = useState<number | null>(
+    null,
+  );
+  useEffect(() => {
+    if (!adjudicacion) return;
+    setAdjudicacionVisible(adjudicacion.clave);
+    const t = setTimeout(
+      () => setAdjudicacionVisible(null),
+      AVISO_ADJUDICADO_MS,
+    );
+    return () => clearTimeout(t);
+  }, [adjudicacion]);
+
+  // Historial de ofertas: los mensajes de oferta del chat, el más nuevo arriba
+  const ofertas = useMemo(
+    () =>
+      messages
+        .filter((m) => m.isOffer)
+        .slice(-8)
+        .reverse(),
+    [messages],
+  );
+  const miNombre = user ? `${user.firstName} ${user.lastName}` : null;
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
     const el = scrollRef.current;
     if (el) el.scrollTop = el.scrollHeight;
-  };
-
-  useEffect(() => {
-    scrollToBottom();
   }, [messages]);
 
-  const toggleChat = () => {
-    setIsChatExpanded((v) => {
-      const next = !v;
-      if (next) setTimeout(scrollToBottom, 100);
-      return next;
-    });
-  };
-
-  const openLightbox = () => setIsLightboxOpen(true);
-  const closeLightbox = () => setIsLightboxOpen(false);
-  const nextImage = () => setCurrentIndex((i) => (i + 1) % loteInfo.imagenes.length);
-  const prevImage = () => setCurrentIndex((i) => (i - 1 + loteInfo.imagenes.length) % loteInfo.imagenes.length);
-
-  useEffect(() => {
-    const handler = (event: KeyboardEvent) => {
-      if (!isLightboxOpen) return;
-      if (event.key === 'Escape') closeLightbox();
-      if (event.key === 'ArrowRight') nextImage();
-      if (event.key === 'ArrowLeft') prevImage();
-    };
-    document.addEventListener('keydown', handler);
-    return () => document.removeEventListener('keydown', handler);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLightboxOpen]);
-
-  const formattedBid = currentBid.toLocaleString('es-AR');
+  const formattedBid = currentBid.toLocaleString("es-AR");
 
   const onBidInputChange = (value: string) => {
-    const numericValue = value.replace(/[^0-9]/g, '');
+    const numericValue = value.replace(/[^0-9]/g, "");
     setCurrentBid(numericValue ? parseInt(numericValue, 10) : 0);
   };
 
   const increaseBid = () => setCurrentBid((v) => v + increment);
-  const decreaseBid = () => setCurrentBid((v) => (v - increment >= minNextBid ? v - increment : v));
+  const decreaseBid = () =>
+    setCurrentBid((v) => (v - increment >= minNextBid ? v - increment : v));
 
   const onlyNumbers = (event: ReactKeyboardEvent<HTMLInputElement>) => {
-    if (!/[0-9]/.test(event.key)) {
+    if (
+      event.key.length === 1 &&
+      !event.ctrlKey &&
+      !event.metaKey &&
+      !/[0-9]/.test(event.key)
+    ) {
       event.preventDefault();
     }
   };
 
+  const errorPuja = (texto: string) => setAviso({ texto, donde: "puja" });
+
+  const reenviarVerificacion = () => {
+    if (!user) return;
+    setReenvio("enviando");
+    api
+      .post("/auth/resend-verification", { email: user.email })
+      .then(() => setReenvio("enviado"))
+      .catch((err) => {
+        setReenvio("idle");
+        errorPuja(
+          err instanceof ApiError
+            ? err.message
+            : "No se pudo reenviar el mail.",
+        );
+      });
+    // Por si ya lo verificó en otra pestaña: el próximo click ya lo toma
+    refreshUser();
+  };
+
   const placeOffer = () => {
     const amount = currentBid;
+    ultimaAccion.current = "puja";
+    setAviso(null);
 
+    // Las reglas de ingreso (sesión, mail verificado, datos y crédito) se
+    // muestran antes en el panel; acá se vuelven a validar por las dudas.
     if (!user) {
-      alert(
-        invitado
-          ? 'Estás viendo como invitado. Para ofertar necesitás crear una cuenta.'
-          : 'Tenés que iniciar sesión para ofertar.'
-      );
       navigate(`/registro?volver=${encodeURIComponent(aquiMismo)}`);
       return;
     }
-
-    // Para ofertar hace falta el mail verificado (el login no lo exige)
     if (!user.emailVerified) {
-      const reenviar = window.confirm(
-        'Verificá tu mail para poder ofertar: revisá tu casilla (y la carpeta de spam).\n\n¿Querés que te reenviemos el mail de verificación?'
+      errorPuja(
+        "Verificá tu mail para poder ofertar: revisá tu casilla (y la carpeta de spam).",
       );
-      if (reenviar) {
-        api
-          .post('/auth/resend-verification', { email: user.email })
-          .then(() => alert('Listo, te reenviamos el mail. Cuando confirmes tu cuenta vas a poder ofertar.'))
-          .catch((err) => alert(err instanceof ApiError ? err.message : 'No se pudo reenviar el mail.'));
-      }
-      // Por si ya lo verificó en otra pestaña: el próximo click ya lo toma
       refreshUser();
       return;
     }
-
-    // Diagrama: si no cargó sus datos → Perfil; si no tiene crédito → Cargar crédito
     if (!user.profileComplete) {
-      alert('Antes de ofertar completá tus datos personales.');
       navigate(`/datos?volver=${encodeURIComponent(aquiMismo)}`);
       return;
     }
-
     if (creditoParaEsteLote <= 0) {
-      alert('No tenés crédito disponible. Cargá crédito para poder ofertar.');
-      navigate('/creditos');
+      navigate("/creditos");
       return;
     }
 
     if (!lot) {
-      alert('No hay ningún lote en remate en este momento.');
+      errorPuja("No hay ningún lote en remate en este momento.");
       return;
     }
 
     if (!amount || amount <= 0) {
-      alert('Por favor, ingresa un monto válido.');
+      errorPuja("Ingresá un monto válido.");
       return;
     }
 
     if (amount > creditoParaEsteLote) {
-      alert('No tienes crédito suficiente para esta oferta.');
+      errorPuja(
+        `No tenés crédito suficiente para esta oferta (disponible: ${pesos(creditoParaEsteLote)}).`,
+      );
       return;
     }
 
     if (amount < minNextBid) {
-      alert(`La oferta mínima es $${minNextBid.toLocaleString('es-AR')}.`);
+      errorPuja(`La oferta mínima es ${pesos(minNextBid)}.`);
       return;
     }
 
@@ -197,178 +283,606 @@ export default function SubastaActiva() {
   };
 
   const sendMessage = () => {
+    ultimaAccion.current = "chat";
     if (!newMessage.trim()) return;
     if (!user) {
-      alert(invitado ? 'Como invitado podés leer el chat, pero no escribir.' : 'Tenés que iniciar sesión para chatear.');
+      setAviso({
+        texto: "Como invitado podés leer el chat, pero no escribir.",
+        donde: "chat",
+      });
       return;
     }
+    setAviso((a) => (a?.donde === "chat" ? null : a));
     // El mensaje vuelve por el socket a toda la sala (incluido uno mismo)
     emitMessage(newMessage);
-    setNewMessage('');
+    setNewMessage("");
   };
 
-  const onChatKeyUp = (e: ReactKeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Enter') sendMessage();
+  const onChatKeyDown = (e: ReactKeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      sendMessage();
+    }
   };
+
+  // ---------- Datos para mostrar
+
+  const imagenes = lot ? lot.images.map(uploadUrl) : [];
+  const loteVisor: LoteCatalogo | null = lot
+    ? {
+        id: lot.id,
+        numero: lot.number,
+        titulo: lot.title,
+        ...partirDescripcion(lot.description),
+        etiqueta: `PRECIO ACTUAL ${pesos(lot.currentPrice)}`,
+        imagenes,
+      }
+    : null;
+  const descripcion = lot ? partirDescripcion(lot.description) : null;
+
+  /** Texto del estado de la sala cuando no hay lote para mostrar */
+  const mensajeSala = paseVencido
+    ? "Este link de invitado venció o fue revocado."
+    : !state
+      ? (error ?? "Conectando con la sala…")
+      : auction?.status === "FINALIZADA"
+        ? "La subasta finalizó. ¡Gracias por participar!"
+        : auction?.status === "CANCELADA"
+          ? "La subasta fue cancelada."
+          : "No quedan lotes en remate.";
+
+  const pastilla =
+    auction?.status === "ACTIVA" || !auction
+      ? { texto: "En vivo", activa: true }
+      : auction.status === "PROXIMA"
+        ? { texto: "Próximamente", activa: false }
+        : {
+            texto: auction.status === "FINALIZADA" ? "Finalizada" : "Cancelada",
+            activa: false,
+          };
+
+  /** Qué le falta al usuario para poder ofertar (reglas de ingreso) */
+  const renderRequisito = () => {
+    if (paseVencido) {
+      return (
+        <Requisito
+          titulo="El link de invitado ya no es válido"
+          texto="Pedile un link nuevo al martillero o creá tu cuenta para participar."
+        >
+          <Boton
+            variante="verde"
+            flecha
+            to={`/registro?volver=${encodeURIComponent(aquiMismo)}`}
+          >
+            Crear mi cuenta
+          </Boton>
+        </Requisito>
+      );
+    }
+    if (!user) {
+      return (
+        <Requisito
+          titulo="Estás mirando como invitado"
+          texto="Podés ver la transmisión y leer el chat. Para ofertar necesitás una cuenta."
+        >
+          <Boton
+            variante="verde"
+            flecha
+            to={`/registro?volver=${encodeURIComponent(aquiMismo)}`}
+          >
+            Crear cuenta para ofertar
+          </Boton>
+        </Requisito>
+      );
+    }
+    if (!user.emailVerified) {
+      return (
+        <Requisito
+          titulo="Verificá tu mail para ofertar"
+          texto="Te mandamos un link de confirmación: revisá tu casilla (y la carpeta de spam)."
+        >
+          {reenvio === "enviado" ? (
+            <p className={styles.requisitoOk} role="status">
+              Listo, te reenviamos el mail. Cuando confirmes tu cuenta vas a
+              poder ofertar.
+            </p>
+          ) : (
+            <Boton
+              variante="verde"
+              onClick={reenviarVerificacion}
+              disabled={reenvio === "enviando"}
+            >
+              {reenvio === "enviando" ? "Reenviando…" : "Reenviar el mail"}
+            </Boton>
+          )}
+        </Requisito>
+      );
+    }
+    if (!user.profileComplete) {
+      return (
+        <Requisito
+          titulo="Completá tus datos para ofertar"
+          texto="Antes de tu primera oferta necesitamos tus datos personales."
+        >
+          <Boton
+            variante="verde"
+            flecha
+            to={`/datos?volver=${encodeURIComponent(aquiMismo)}`}
+          >
+            Completar mis datos
+          </Boton>
+        </Requisito>
+      );
+    }
+    if (creditoParaEsteLote <= 0) {
+      return (
+        <Requisito
+          titulo="No tenés crédito disponible"
+          texto="Cargá crédito para poder ofertar en este remate."
+        >
+          <Boton variante="verde" flecha to="/creditos">
+            Cargar crédito
+          </Boton>
+        </Requisito>
+      );
+    }
+    return null;
+  };
+
+  const requisito = renderRequisito();
+  const puedeOfertar = !requisito && Boolean(lot);
 
   return (
-    <div className={styles.activeAuctionContainer}>
-      <div className={styles.auctionHeader}>
-        <h1>SUBASTA ACTIVA · EN VIVO</h1>
-        {esMartillero && (
-          <Link to={`/subastas/${id}/martillero`} className={styles.panelLink}>
-            Panel del martillero
-          </Link>
-        )}
-      </div>
-
-      <div className={styles.auctionGrid}>
-        <div className={styles.mainContent}>
-          <div className={styles.streamContainer}>
+    <div className={styles.pagina}>
+      <div className={styles.contenedor}>
+        {/* ---------- Cabecera */}
+        <header className={styles.cabecera}>
+          <nav className={styles.migas} aria-label="Ubicación">
+            <Link to="/">Inicio</Link> / <Link to="/subastas">Subastas</Link> /{" "}
             {id && (
-              <LivePlayer
-                auctionId={id}
-                cameraId={state?.auction.cameraId ?? null}
-                token={user ? getToken() : null}
-                pase={pase}
-                placeholder={
-                  <div className={styles.videoPlaceholder}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={1}>
-                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                      <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                      <polyline points="21 15 16 10 5 21"></polyline>
-                    </svg>
-                  </div>
-                }
-              />
+              <Link to={`/subastas/${id}`}>{auction?.title ?? "Catálogo"}</Link>
             )}
-            <div className={styles.streamBanner}>
-              <span className={styles.bannerText}>SE VENDE EN ${(lot?.currentPrice ?? 0).toLocaleString('es-AR')}</span>
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth={2}>
-                <circle cx="12" cy="12" r="10"></circle>
-                <polyline points="12 6 12 12 16 14"></polyline>
-              </svg>
-            </div>
-          </div>
+          </nav>
 
-          <div className={styles.biddingSection}>
-            <div className={styles.bidSelector}>
-              <button className={styles.bidBtn} onClick={decreaseBid}>-</button>
-              <div className={styles.bidDisplay}>
-                <div className={styles.bidFieldWrapper}>
-                  <span className={styles.currencySymbol}>$</span>
-                  <input
-                    type="text"
-                    className={styles.bidInput}
-                    value={formattedBid}
-                    onChange={(e) => onBidInputChange(e.target.value)}
-                    onKeyPress={onlyNumbers}
+          <div className={styles.cabeceraFila}>
+            <div className={styles.cabeceraTexto}>
+              <div className={styles.filaEstado}>
+                <Etiqueta tamano="grande" className={styles.etiquetaVerde}>
+                  Subasta activa
+                </Etiqueta>
+                <span
+                  className={`${styles.pastilla} ${pastilla.activa ? styles.pastillaVivo : ""}`}
+                >
+                  {pastilla.activa && (
+                    <span className={styles.puntoVivo} aria-hidden="true" />
+                  )}
+                  {pastilla.texto}
+                </span>
+              </div>
+              <h1 className={styles.titulo}>
+                {auction?.title ?? "Sala en vivo"}
+              </h1>
+              {auction?.location && (
+                <p className={styles.ubicacion}>
+                  <img
+                    src="/assets/figma/icono-ubicacion.svg"
+                    alt=""
+                    width={14}
+                    height={14}
                   />
-                </div>
-                <span className={styles.userCredits}>{invitado ? (
-                    'MODO INVITADO · SOLO VER'
-                  ) : (
-                    <>
-                      TUS CRÉDITOS: ${userCredits.toLocaleString('es-AR')}
-                      {vaGanando && ' · VAS GANANDO'}
-                    </>
-                  )}</span>
-              </div>
-              <button className={styles.bidBtn} onClick={increaseBid}>+</button>
-            </div>
-            <button className={styles.offerBtn} onClick={placeOffer} disabled={!lot}>OFERTAR</button>
-          </div>
-        </div>
-
-        <aside className={styles.sidebar}>
-          <div className={styles.sidebarCard}>
-            <div className={styles.martilleroVideoBlock}>
-              <div className={styles.cameraPlaceholder}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth={1}>
-                  <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-                  <circle cx="8.5" cy="8.5" r="1.5"></circle>
-                  <polyline points="21 15 16 10 5 21"></polyline>
-                </svg>
-              </div>
-            </div>
-
-            <div className={styles.martilleroBanner}>
-              <span className={styles.label}>MARTILLERO</span>
-              <span className={styles.name}>{loteInfo.martillero}</span>
-            </div>
-
-            <button className={styles.toggleChatBtn} onClick={toggleChat}>
-              {isChatExpanded ? '^ Ocultar chat y descripción' : 'v Mostrar chat y descripción'}
-            </button>
-
-            <div className={`${styles.sidebarBody} ${!isChatExpanded ? styles.collapsed : ''}`}>
-              <div className={styles.loteInfoCompact}>
-                <div className={styles.titleRow}>
-                  <h3>{loteInfo.nombre}</h3>
-                  <button className={styles.btnNegroExtraSmall} onClick={openLightbox}>VER LOTE</button>
-                </div>
-                <p className={styles.location}>
-                  <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                    <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                    <circle cx="12" cy="10" r="3"></circle>
-                  </svg>
-                  {loteInfo.ubicacion}
+                  {auction.location}
                 </p>
-                <p className={styles.descriptionShort}>{loteInfo.descripcion}</p>
+              )}
+            </div>
+
+            <div className={styles.cabeceraAcciones}>
+              {esMartillero && (
+                <Boton
+                  variante="oscuro"
+                  to={`/subastas/${id}/martillero`}
+                  flecha
+                >
+                  Panel del martillero
+                </Boton>
+              )}
+              {id && (
+                <Boton variante="contorno" to={`/subastas/${id}`}>
+                  Ver catálogo
+                </Boton>
+              )}
+            </div>
+          </div>
+        </header>
+
+        <div className={styles.grilla}>
+          {/* ---------- Columna principal: video, ofertar e historial */}
+          <div className={styles.principal}>
+            <section className={styles.video} aria-label="Transmisión en vivo">
+              {id && (
+                <LivePlayer
+                  auctionId={id}
+                  cameraId={auction?.cameraId ?? null}
+                  token={user ? getToken() : null}
+                  pase={pase}
+                  placeholder={
+                    <div className={styles.sinVideo}>
+                      <svg
+                        width="56"
+                        height="56"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={1.2}
+                        aria-hidden="true"
+                      >
+                        <path d="M15 10l4.55-2.28A1 1 0 0 1 21 8.62v6.76a1 1 0 0 1-1.45.9L15 14" />
+                        <rect x="3" y="6" width="12" height="12" rx="1" />
+                      </svg>
+                      <p className={styles.sinVideoTitulo}>
+                        La cámara está apagada
+                      </p>
+                      <p className={styles.sinVideoTexto}>
+                        El video aparece solo cuando el martillero empiece a
+                        transmitir.
+                      </p>
+                    </div>
+                  }
+                />
+              )}
+              {lot && (
+                <p className={styles.seVende}>
+                  <span className={styles.seVendeLote}>Lote {lot.number}</span>
+                  <span>
+                    Se vende en <strong>{pesos(lot.currentPrice)}</strong>
+                  </span>
+                </p>
+              )}
+            </section>
+
+            {adjudicacion && adjudicacionVisible === adjudicacion.clave && (
+              <p className={styles.adjudicado} role="status">
+                <img
+                  src="/assets/figma/icono-martillo.svg"
+                  alt=""
+                  width={18}
+                  height={18}
+                />
+                {adjudicacion.texto}
+              </p>
+            )}
+
+            {/* ---------- Panel para ofertar */}
+            <section
+              className={styles.ofertar}
+              aria-labelledby="titulo-ofertar"
+            >
+              <div className={styles.ofertarCabecera}>
+                <h2 id="titulo-ofertar" className={styles.ofertarTitulo}>
+                  {lot ? `Lote ${lot.number} · ${lot.title}` : "Lote en remate"}
+                </h2>
+                {vaGanando && (
+                  <span
+                    className={`${styles.estadoPuja} ${styles.ganando}`}
+                    role="status"
+                  >
+                    ✓ Vas ganando
+                  </span>
+                )}
+                {!vaGanando && superado && (
+                  <span
+                    className={`${styles.estadoPuja} ${styles.superado}`}
+                    role="status"
+                  >
+                    Te superaron · ofertá de nuevo
+                  </span>
+                )}
               </div>
 
-              <hr className={styles.sidebarDivider} />
+              {lot ? (
+                <dl className={styles.precios}>
+                  <div>
+                    <dt>Precio actual</dt>
+                    <dd className={styles.precioActual}>
+                      {pesos(lot.currentPrice)}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Oferta mínima</dt>
+                    <dd>{pesos(minNextBid)}</dd>
+                  </div>
+                  <div>
+                    <dt>Incremento</dt>
+                    <dd>{pesos(increment)}</dd>
+                  </div>
+                </dl>
+              ) : (
+                <p className={styles.salaMensaje} role="status">
+                  {mensajeSala}
+                </p>
+              )}
 
-              <div className={styles.chatContainerInner}>
-                <div className={styles.chatHeaderMinimal}>CHAT EN VIVO ·</div>
-                <div className={styles.chatMessagesScroll} ref={scrollRef}>
-                  {messages.map((msg, i) => (
-                    <div className={`${styles.message} ${msg.isOffer ? styles.isOffer : ''}`} key={msg.id ?? `local-${i}`}>
-                      <span className={styles.messageUser}>{msg.user}:</span>
-                      <span className={styles.messageText}>{msg.text}</span>
-                      <span className={styles.messageTime}>{msg.time}</span>
+              {requisito}
+
+              {!requisito && lot && (
+                <div className={styles.pujaFila}>
+                  <div className={styles.selector}>
+                    <button
+                      type="button"
+                      className={styles.paso}
+                      onClick={decreaseBid}
+                      disabled={
+                        !puedeOfertar || currentBid - increment < minNextBid
+                      }
+                      aria-label={`Bajar ${pesos(increment)}`}
+                    >
+                      −
+                    </button>
+                    <div className={styles.monto}>
+                      <label
+                        htmlFor="monto-oferta"
+                        className={styles.montoLabel}
+                      >
+                        Tu oferta
+                      </label>
+                      <div className={styles.montoCampo}>
+                        <span aria-hidden="true">$</span>
+                        <input
+                          id="monto-oferta"
+                          type="text"
+                          inputMode="numeric"
+                          autoComplete="off"
+                          className={styles.montoInput}
+                          value={formattedBid}
+                          style={{
+                            width: `${Math.max(formattedBid.length, 1) + 0.5}ch`,
+                          }}
+                          onChange={(e) => onBidInputChange(e.target.value)}
+                          onKeyDown={onlyNumbers}
+                          disabled={!puedeOfertar}
+                        />
+                      </div>
                     </div>
-                  ))}
-                </div>
-                <div className={styles.chatInputRow}>
-                  <input
-                    type="text"
-                    placeholder="Tu mensaje..."
-                    value={newMessage}
-                    onChange={(e) => setNewMessage(e.target.value)}
-                    onKeyUp={onChatKeyUp}
-                  />
-                  <button className={styles.sendBtn} onClick={sendMessage}>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2}>
-                      <line x1="22" y1="2" x2="11" y2="13"></line>
-                      <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                    </svg>
+                    <button
+                      type="button"
+                      className={styles.paso}
+                      onClick={increaseBid}
+                      disabled={!puedeOfertar}
+                      aria-label={`Subir ${pesos(increment)}`}
+                    >
+                      +
+                    </button>
+                  </div>
+                  <button
+                    type="button"
+                    className={styles.botonOfertar}
+                    onClick={placeOffer}
+                    disabled={!puedeOfertar}
+                  >
+                    Ofertar
+                    <span aria-hidden="true">→</span>
                   </button>
                 </div>
-              </div>
-            </div>
+              )}
+
+              {user && (
+                <p className={styles.creditos}>
+                  Tus créditos: <strong>{pesos(userCredits)}</strong>
+                  {vaGanando && lot && (
+                    <span>
+                      {" "}
+                      · {pesos(lot.currentPrice)} reservados en este lote
+                    </span>
+                  )}
+                </p>
+              )}
+
+              {aviso?.donde === "puja" && (
+                <Aviso tipo="error" className={styles.aviso}>
+                  {aviso.texto}
+                </Aviso>
+              )}
+            </section>
+
+            {/* ---------- Historial de ofertas */}
+            <section
+              className={styles.historial}
+              aria-labelledby="titulo-historial"
+            >
+              <Etiqueta className={styles.etiquetaSeccion}>
+                Últimas ofertas
+              </Etiqueta>
+              <h2 id="titulo-historial" className={styles.oculto}>
+                Últimas ofertas
+              </h2>
+              {ofertas.length === 0 ? (
+                <p className={styles.vacio}>
+                  Todavía no hay ofertas. ¡Podés ser el primero!
+                </p>
+              ) : (
+                <ol className={styles.historialLista}>
+                  {ofertas.map((o, i) => (
+                    <li
+                      key={o.id ?? `o-${i}`}
+                      className={`${styles.historialItem} ${i === 0 ? styles.historialPrimero : ""}`}
+                    >
+                      <span className={styles.historialQuien}>
+                        {o.user}
+                        {miNombre === o.user && (
+                          <span className={styles.vos}> (vos)</span>
+                        )}
+                      </span>
+                      <span className={styles.historialMonto}>
+                        {o.text.replace(/^ofreció\s*/, "")}
+                      </span>
+                      <span className={styles.historialHora}>{o.time}</span>
+                    </li>
+                  ))}
+                </ol>
+              )}
+            </section>
           </div>
-        </aside>
+
+          {/* ---------- Columna lateral: martillero, lote y chat */}
+          <aside className={styles.lateral}>
+            <div className={styles.martillero}>
+              <span className={styles.martilleroLabel}>Martillero</span>
+              <span className={styles.martilleroNombre}>
+                {auction?.martillero ?? "—"}
+              </span>
+            </div>
+
+            {lot && (
+              <section className={styles.lote} aria-labelledby="titulo-lote">
+                <div className={styles.loteMedia}>
+                  {imagenes.length > 0 ? (
+                    <button
+                      type="button"
+                      className={styles.loteFotoBoton}
+                      onClick={() => setVisorAbierto(true)}
+                      aria-label={`Ampliar fotos de ${lot?.title}`}
+                    >
+                      <img
+                        className={styles.loteFoto}
+                        src={imagenes[0]}
+                        alt=""
+                      />
+                      {imagenes.length > 1 && (
+                        <span className={styles.loteCantidad}>
+                          {imagenes.length} fotos
+                        </span>
+                      )}
+                    </button>
+                  ) : (
+                    <span className={styles.sinFotos}>
+                      {lot ? "Sin fotos todavía" : "Sin lote en remate"}
+                    </span>
+                  )}
+                </div>
+                <div className={styles.loteCuerpo}>
+                  <p className={styles.loteEtiquetas}>
+                    <span>{lot ? `Lote ${lot.number}` : "Lote en remate"}</span>
+                    {lot && <span>Base {pesos(lot.startingPrice)}</span>}
+                  </p>
+                  <h2 id="titulo-lote" className={styles.loteTitulo}>
+                    {lot?.title ?? mensajeSala}
+                  </h2>
+                  {descripcion?.resumen && (
+                    <p className={styles.loteResumen}>{descripcion.resumen}</p>
+                  )}
+                </div>
+                {lot && (
+                  <button
+                    type="button"
+                    className={styles.verFotos}
+                    onClick={() => setVisorAbierto(true)}
+                  >
+                    <span>
+                      {imagenes.length > 0
+                        ? "Ver fotos y detalle"
+                        : "Ver detalle"}
+                    </span>
+                    <span aria-hidden="true">→</span>
+                  </button>
+                )}
+              </section>
+            )}
+
+            <section className={styles.chat} aria-labelledby="titulo-chat">
+              <h2 id="titulo-chat" className={styles.chatTitulo}>
+                Chat en vivo{" "}
+                <span className={styles.puntoVivo} aria-hidden="true" />
+              </h2>
+              <div
+                className={styles.chatMensajes}
+                ref={scrollRef}
+                aria-live="polite"
+                aria-relevant="additions"
+              >
+                {messages.length === 0 && (
+                  <p className={styles.vacio}>Todavía no hay mensajes.</p>
+                )}
+                {messages.map((msg, i) => (
+                  <p
+                    className={`${styles.mensaje} ${msg.isOffer ? styles.mensajeOferta : ""} ${!msg.id ? styles.mensajeSistema : ""}`}
+                    key={msg.id ?? `local-${i}`}
+                  >
+                    <span className={styles.mensajeUsuario}>{msg.user}</span>
+                    <span className={styles.mensajeTexto}>{msg.text}</span>
+                    <span className={styles.mensajeHora}>{msg.time}</span>
+                  </p>
+                ))}
+              </div>
+              {aviso?.donde === "chat" && (
+                <Aviso tipo="error" className={styles.avisoChat}>
+                  {aviso.texto}
+                </Aviso>
+              )}
+              <div className={styles.chatEntrada}>
+                <label htmlFor="mensaje-chat" className={styles.oculto}>
+                  Tu mensaje
+                </label>
+                <input
+                  id="mensaje-chat"
+                  type="text"
+                  placeholder={
+                    user ? "Tu mensaje…" : "Solo lectura como invitado"
+                  }
+                  value={newMessage}
+                  maxLength={500}
+                  onChange={(e) => setNewMessage(e.target.value)}
+                  onKeyDown={onChatKeyDown}
+                  disabled={!user}
+                />
+                <button
+                  type="button"
+                  className={styles.enviar}
+                  onClick={sendMessage}
+                  disabled={!user}
+                  aria-label="Enviar mensaje"
+                >
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    aria-hidden="true"
+                  >
+                    <line x1="22" y1="2" x2="11" y2="13" />
+                    <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                  </svg>
+                </button>
+              </div>
+            </section>
+          </aside>
+        </div>
       </div>
 
-      {isLightboxOpen && (
-        <div className={styles.lightboxOverlay} onClick={closeLightbox}>
-          <div className={styles.lightboxContainer} onClick={(e) => e.stopPropagation()}>
-            <button className={styles.closeBtn} onClick={closeLightbox}>×</button>
-
-            <div className={styles.mediaViewer}>
-              <img src={loteInfo.imagenes[currentIndex]} alt="Lote Media" />
-
-              <button className={`${styles.navBtn} ${styles.prev}`} onClick={prevImage}>‹</button>
-              <button className={`${styles.navBtn} ${styles.next}`} onClick={nextImage}>›</button>
-            </div>
-
-            <div className={styles.lightboxFooter}>
-              <p>{loteInfo.nombre} - Imagen {currentIndex + 1} de {loteInfo.imagenes.length}</p>
-            </div>
-          </div>
-        </div>
+      {visorAbierto && loteVisor && (
+        <VisorLote lote={loteVisor} onCerrar={cerrarVisor} />
       )}
+    </div>
+  );
+}
+
+/** Lo que le falta al usuario para ofertar, con el botón para resolverlo. */
+function Requisito({
+  titulo,
+  texto,
+  children,
+}: {
+  titulo: string;
+  texto: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className={styles.requisito}>
+      <div>
+        <p className={styles.requisitoTitulo}>{titulo}</p>
+        <p className={styles.requisitoTexto}>{texto}</p>
+      </div>
+      <div className={styles.requisitoAccion}>{children}</div>
     </div>
   );
 }

@@ -1,3 +1,5 @@
+@use '../../styles/tokens' as t;
+
 .playerWrapper,
 .overlayWrapper {
   position: relative;
@@ -21,25 +23,26 @@
   justify-content: center;
   text-align: center;
   padding: 20px;
-  background: rgba(0, 0, 0, 0.45);
-  color: #fff;
-  font-family: 'Montserrat', sans-serif;
-  font-size: 14px;
-  font-weight: 600;
+  background: rgba(0, 0, 0, 0.55);
+  color: t.$blanco;
+  font-family: t.$font-texto;
+  font-size: 16px;
+  font-weight: 700;
   pointer-events: none;
 }
 
+// "● EN VIVO" arriba a la izquierda (mismo verde que la pastilla "ACTIVA")
 .badge {
   position: absolute;
   top: 14px;
   left: 14px;
-  background: #d32f2f;
-  color: #fff;
-  font-family: 'Montserrat', sans-serif;
-  font-size: 11px;
-  font-weight: 700;
+  background: t.$verde;
+  color: t.$blanco;
+  font-family: t.$font-texto;
+  font-size: 12px;
+  font-weight: 800;
   letter-spacing: 0.5px;
-  padding: 4px 10px;
-  border-radius: 4px;
+  padding: 5px 12px;
+  text-transform: uppercase;
   pointer-events: none;
 }
