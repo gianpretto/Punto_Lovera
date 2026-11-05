@@ -188,3 +188,9 @@
     outline-offset: 2px;
   }
 }
+
+// "·" entre los dos martilleros (el span de la matrícula va más chico)
+.martillero .separador {
+  font-size: 16px;
+  margin: 0 4px;
+}

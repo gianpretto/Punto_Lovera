@@ -1,3 +1,4 @@
+import { Fragment } from 'react';
 import { Link } from 'react-router-dom';
 import { uploadUrl } from '../../services/api';
 import type { AuctionApi } from '../../services/auctions';
@@ -9,9 +10,13 @@ import styles from './SubastaDestacada.module.scss';
 // Si no hay ninguna en vivo, la página pasa la próxima: mismo diseño con
 // "PRÓXIMA SUBASTA" y el botón al detalle.
 
-// TODO: el backend todavía no guarda martillero por subasta; nombre y
-// matrícula son los del diseño hasta que el cliente pase los reales.
-const MARTILLERO = { nombre: 'Lucas Gámez', matricula: '12345 46578 4684' };
+// Martilleros de Punto Lovera (el backend no guarda martillero por
+// subasta). TODO: cargar las matrículas cuando el cliente las pase; vacías
+// no se muestran.
+const MARTILLEROS = [
+  { nombre: 'Gonzalo Lovera', matricula: '' },
+  { nombre: 'Emiliano Lovera', matricula: '' },
+];
 
 const IMAGEN_DEFAULT = '/assets/figma/subasta-cafeteria.webp';
 
@@ -69,8 +74,13 @@ export default function SubastaDestacada({ subasta }: Props) {
         <div className={styles.pie}>
           <p className={styles.martillero}>
             <img src="/assets/figma/icono-martillo-verde.svg" alt="" width={19} height={19} />
-            <strong>{MARTILLERO.nombre}</strong>
-            <span>Matrícula {MARTILLERO.matricula}</span>
+            {MARTILLEROS.map((m, i) => (
+              <Fragment key={m.nombre}>
+                {i > 0 && <span className={styles.separador} aria-hidden="true">·</span>}
+                <strong>{m.nombre}</strong>
+                {m.matricula && <span>Matrícula {m.matricula}</span>}
+              </Fragment>
+            ))}
           </p>
           <Link className={styles.boton} to={enVivo ? `/subastas/${subasta.id}/activa` : `/subastas/${subasta.id}`}>
             {enVivo ? 'Unirse a la sesión' : 'Ver la subasta'} <span aria-hidden="true">→</span>
