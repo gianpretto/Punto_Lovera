@@ -110,7 +110,7 @@ export default function Home() {
       <section className={styles.split}>
         <div className={`${styles.splitMitad} ${styles.splitComprar}`}>
           <span className={styles.splitCirculo} aria-hidden="true">
-            <img src="/assets/figma/icono-home-comprar.webp" alt="" width={33} height={40} />
+            <img src="/assets/figma/icono-home-comprar.svg" alt="" width={33} height={40} />
           </span>
           <div className={styles.splitTexto}>
             <p className={styles.splitQuiero}>Quiero</p>
@@ -122,7 +122,7 @@ export default function Home() {
         </div>
         <div className={`${styles.splitMitad} ${styles.splitVender}`}>
           <span className={styles.splitCirculo} aria-hidden="true">
-            <img src="/assets/figma/icono-home-vender.webp" alt="" width={33} height={40} />
+            <img src="/assets/figma/icono-home-vender.svg" alt="" width={33} height={40} />
           </span>
           <div className={styles.splitTexto}>
             <p className={styles.splitQuiero}>Quiero</p>
@@ -148,7 +148,7 @@ export default function Home() {
         <section className={styles.marcas}>
           <div className={styles.contenedor}>
             <h2 className={styles.marcasTitulo}>Confían en nosotros</h2>
-            <img className={styles.ornamento} src="/assets/figma/ornamento.webp" alt="" aria-hidden="true" width={241} height={44} />
+            <img className={styles.ornamento} src="/assets/figma/ornamento.svg" alt="" aria-hidden="true" width={241} height={44} />
             <ul className={styles.marcasLista}>
               {MARCAS.map((m) => (
                 <li key={m.alt}>
@@ -158,7 +158,7 @@ export default function Home() {
             </ul>
             <img
               className={`${styles.ornamento} ${styles.ornamentoAbajo}`}
-              src="/assets/figma/ornamento.webp"
+              src="/assets/figma/ornamento.svg"
               alt=""
               aria-hidden="true"
               width={241}

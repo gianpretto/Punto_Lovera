@@ -235,10 +235,8 @@ casi todo por datos reales y la fuente Nugros).
   tarjeta muestra el precio base); formato del ID de subasta; respuestas de
   3 de las 4 preguntas de Home (borradores en `content/participar.ts`);
   textos de relleno de las tarjetas de Quiero comprar.
-- Assets sacados del render (la API de Figma devolvió 429 por días):
-  `ornamento.webp`, `icono-home-comprar.webp`, `icono-home-vender.webp`
-  (reemplazar por los SVG de los nodos 712:20358, 712:10533, 712:10541) y
-  `hero-lineas.svg` (reconstruido).
+- `hero-lineas.svg` está reconstruido a mano desde el render (no es export
+  de Figma); el resto de los assets son exports originales.
 - Herramientas de comparación: token de Figma en `figma-token.txt`
   (gitignored, nunca imprimirlo), API REST `/v1/files/:key/nodes` y
   `/v1/images/:key`; el conector MCP de Figma tiene una cuota mensual muy
