@@ -347,6 +347,9 @@ había Docker.
 
 ## Pendiente / próximos pasos
 
+**Checklist para producción con el cliente** (cuentas, variables, datos y
+decisiones): `docs/pendientes-produccion.md`. Mantenerlo al día.
+
 1. Probar todo de punta a punta en producción (Vercel + Railway) con
    subastas reales cargadas y una transmisión real de OBS.
 2. Probar el video con el rtsp-manager real de Francis (solo se probó con
