@@ -59,6 +59,28 @@ contraseñas ni secretos en chats.
       `http://localhost:5173`. Copiar el ID de cliente a
       `GOOGLE_CLIENT_ID` en Railway. El botón aparece solo.
 
+## 3 bis. Medición de visitas (Google Analytics y Clarity)
+
+Se cargan en **Vercel** (no en Railway): proyecto `frontend-react` →
+Settings → Environment Variables (Production) y después **Redeploy**.
+
+- [ ] **Google Analytics 4**: https://analytics.google.com con una cuenta de
+      Punto Lovera → Administrar → Crear propiedad "Punto Lovera" (zona
+      horaria Argentina, moneda ARS) → Flujo de datos **Web** con la URL del
+      sitio → copiar el **ID de medición** (`G-XXXXXXX`) a `VITE_GA_ID`.
+      Ya se registran páginas vistas y los eventos `sign_up`, `login`,
+      `generate_lead` (consulta enviada) y `oferta`. En GA, marcar
+      `sign_up` y `generate_lead` como **eventos clave** (conversiones).
+- [ ] **Microsoft Clarity** (gratis; mapas de calor de clics y grabaciones
+      de sesión): https://clarity.microsoft.com → nuevo proyecto con la URL
+      del sitio → Settings → Overview → copiar el **Project ID** a
+      `VITE_CLARITY_ID`. Opcional: conectarlo con GA desde Settings.
+- [ ] **Google Search Console** (para aparecer en Google): agregar el sitio,
+      verificarlo (lo más simple con dominio propio, por DNS) y enviar el
+      sitemap `/sitemap.xml`.
+- [ ] Si cambia el dominio: actualizar `og:url`/`og:image` en
+      `frontend-react/index.html`, `public/robots.txt` y `public/sitemap.xml`.
+
 ## 4. Datos del negocio
 
 - [ ] **Datos de transferencia** para cargar crédito: `TRANSFER_ALIAS`,
@@ -102,6 +124,10 @@ contraseñas ni secretos en chats.
       de letra y botones).
 
 ## Mejoras técnicas para más adelante (no bloquean)
+
+- Migrar `zod` 3 → 4 en el backend: `npm audit` marca un aviso de zod 3
+  (memoria al validar listas enormes) que hoy no aplica (no validamos
+  listas y los pedidos están limitados a 100 KB), pero conviene hacerlo.
 
 - Sesiones revocables (hoy cambiar la contraseña no cierra las otras
   sesiones abiertas).
