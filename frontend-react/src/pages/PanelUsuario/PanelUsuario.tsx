@@ -1,8 +1,17 @@
 import { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import SeccionVender from '../../components/secciones/SeccionVender';
+import Boton from '../../components/ui/Boton';
+import Etiqueta from '../../components/ui/Etiqueta';
 import { useAuth } from '../../services/AuthContext';
 import { api } from '../../services/api';
 import styles from './PanelUsuario.module.scss';
+
+// /perfil — panel del usuario (wireframes 620:13052 escritorio y 620:15223
+// celular; sin diseño final). En la línea del rediseño: cabecera sobre fondo
+// claro con patrón (avatar, nombre en serif, datos de facturación), banda
+// verde con el crédito disponible, tablas de ofertas y compras (#compras) y
+// abajo la banda de SeccionVender.
 
 interface Compra {
   id: number;
@@ -89,7 +98,8 @@ export default function PanelUsuario() {
     }
   }, [location.hash, misCompras, misOfertas]);
 
-  const userName = user ? `${user.firstName} ${user.lastName}`.trim() || 'Usuario' : 'Usuario';
+  const nombre = user?.firstName?.trim() ?? '';
+  const apellido = user?.lastName?.trim() ?? '';
   const userPhone = user?.phone ?? '';
   const userDni = user?.dni ?? '';
   const userAddress = user?.address ?? '';
@@ -98,122 +108,160 @@ export default function PanelUsuario() {
   const creditoReservado = user?.heldCredit ?? 0;
 
   return (
-    <div className={styles.perfilWrapper}>
-      <div className={styles.userHeader}>
-        <div className={styles.userInfoContainer}>
-          <div className={styles.userAvatar}>
+    <>
+      <div className={styles.pagina}>
+        <section className={`${styles.contenedor} ${styles.cabecera}`}>
+          <div className={styles.avatar}>
             {avatarUrl ? (
-              <img src={avatarUrl} alt="Avatar" className={styles.avatarImage} />
+              <img src={avatarUrl} alt="" className={styles.avatarImagen} />
             ) : (
-              <div className={styles.avatarPlaceholder}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="#ccc">
-                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-                </svg>
-              </div>
+              <svg width="72" height="72" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+              </svg>
             )}
           </div>
 
-          <div className={styles.userDetails}>
-            <h1 className={styles.userName}>{userName}</h1>
-            <p className={styles.userPhone}>Teléfono: {userPhone || 'Sin cargar'}</p>
+          <div className={styles.identidad}>
+            <Etiqueta tono="verde">Mi cuenta</Etiqueta>
+            <h1 className={styles.nombre}>
+              {nombre || apellido ? (
+                <>
+                  {nombre} {apellido && <em>{apellido}</em>}
+                </>
+              ) : (
+                'Usuario'
+              )}
+            </h1>
+            <p className={styles.telefono}>Teléfono: {userPhone || 'Sin cargar'}</p>
           </div>
 
-          <div className={styles.userExtra}>
-            <div className={styles.extraColumn}>
-              <p className={styles.extraTitle}>Datos de facturación</p>
-              {userDni && <p className={styles.extraData}>DNI: {userDni}</p>}
-              {userAddress && <p className={styles.extraData}>{userAddress}</p>}
-              {userCity && <p className={styles.extraData}>{userCity}</p>}
-              {!userDni && !userAddress && <p className={styles.extraData}>Sin datos cargados</p>}
-            </div>
+          <div className={styles.facturacion}>
+            <p className={styles.facturacionTitulo}>Datos de facturación</p>
+            {userDni && <p>DNI: {userDni}</p>}
+            {userAddress && <p>{userAddress}</p>}
+            {userCity && <p>{userCity}</p>}
+            {!userDni && !userAddress && <p>Sin datos cargados</p>}
+          </div>
 
-            <div className={styles.extraActions}>
-              <Link to="/datos" className={styles.editProfileLink}>Editar perfil</Link>
+          <Link to="/datos" className={styles.editar}>
+            Editar perfil <span aria-hidden="true">→</span>
+          </Link>
+        </section>
+
+        <section className={styles.contenedor} aria-labelledby="credito-titulo">
+          <div className={styles.credito}>
+            <div>
+              <h2 id="credito-titulo" className={styles.creditoTitulo}>
+                <span className={styles.creditoLinea} aria-hidden="true" />
+                Crédito disponible
+              </h2>
+              <p className={styles.creditoMonto}>$ {formatNumber(creditoDisponible)}</p>
+            </div>
+            <div className={styles.creditoAcciones}>
+              {creditoReservado > 0 && (
+                <p className={styles.creditoReservado}>
+                  <strong>$ {formatNumber(creditoReservado)}</strong> reservados (lotes que vas ganando y reintegros en
+                  trámite)
+                </p>
+              )}
+              <Boton to="/creditos" variante="claro" flecha>
+                Cargar créditos
+              </Boton>
             </div>
           </div>
-        </div>
-      </div>
+        </section>
 
-      <div className={styles.creditBanner}>
-        <h2 className={styles.creditTitle}>Crédito disponible</h2>
-        <div className={styles.creditAmount}>$ {formatNumber(creditoDisponible)}</div>
-        {creditoReservado > 0 && (
-          <p className={styles.creditHeld}>$ {formatNumber(creditoReservado)} reservados (lotes que vas ganando y reintegros en trámite)</p>
-        )}
-        <Link to="/creditos" className={styles.btnCargarCredito}>Cargar créditos</Link>
-      </div>
-
-      <div className={styles.purchasesSection} id="compras">
-        {misOfertas.length > 0 && (
-          <>
-            <h3 className={styles.sectionTitle}>Mis ofertas en curso</h3>
-            <div className={`${styles.tableResponsive} ${styles.ofertasTable}`}>
-              <table className={styles.purchasesTable}>
+        <section className={`${styles.contenedor} ${styles.compras}`} id="compras">
+          {misOfertas.length > 0 && (
+            <div className={styles.bloque}>
+              <h2 className={styles.tituloSeccion}>
+                Mis ofertas <em>en curso</em>
+              </h2>
+              <table className={styles.tabla}>
                 <thead>
                   <tr>
-                    <th>Lote</th>
-                    <th>Subasta</th>
-                    <th>Mi oferta</th>
-                    <th>Precio actual</th>
-                    <th>Estado</th>
+                    <th scope="col">Lote</th>
+                    <th scope="col">Subasta</th>
+                    <th scope="col" className={styles.numero}>Mi oferta</th>
+                    <th scope="col" className={styles.numero}>Precio actual</th>
+                    <th scope="col" className={styles.numero}>Estado</th>
                   </tr>
                 </thead>
                 <tbody>
                   {misOfertas.map((o) => (
                     <tr key={o.lotId}>
-                      <td>{o.lotNumber}. {o.lotTitle}</td>
-                      <td>
+                      <td data-etiqueta="Lote">
+                        {o.lotNumber}. {o.lotTitle}
+                      </td>
+                      <td data-etiqueta="Subasta">
                         {o.auctionStatus === 'ACTIVA' ? (
-                          <Link to={`/subastas/${o.auctionId}/activa`}>{o.auctionTitle}</Link>
+                          <Link to={`/subastas/${o.auctionId}/activa`} className={styles.enlace}>
+                            {o.auctionTitle}
+                          </Link>
                         ) : (
                           o.auctionTitle
                         )}
                       </td>
-                      <td>{formatCurrency(o.myBestBid)}</td>
-                      <td>{formatCurrency(o.currentPrice)}</td>
-                      <td><strong>{o.winning ? 'Vas ganando' : 'Te superaron'}</strong></td>
+                      <td data-etiqueta="Mi oferta" className={styles.numero}>
+                        {formatCurrency(o.myBestBid)}
+                      </td>
+                      <td data-etiqueta="Precio actual" className={styles.numero}>
+                        {formatCurrency(o.currentPrice)}
+                      </td>
+                      <td data-etiqueta="Estado" className={styles.numero}>
+                        <span className={`${styles.estado} ${o.winning ? styles.ganando : styles.superado}`}>
+                          {o.winning ? 'Vas ganando' : 'Te superaron'}
+                        </span>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </div>
-          </>
-        )}
+          )}
 
-        <h3 className={styles.sectionTitle}>Mis Compras</h3>
-
-        <div className={styles.tableResponsive}>
-          <table className={styles.purchasesTable}>
-            <thead>
-              <tr>
-                <th>#</th>
-                <th>Referencia</th>
-                <th>Fecha</th>
-                <th>Descripción</th>
-                <th>Valor unitario</th>
-                <th>Valor Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {misCompras.map((compra, i) => (
-                <tr key={i}>
-                  <td>{compra.id}</td>
-                  <td>{compra.referencia}</td>
-                  <td>{compra.fecha}</td>
-                  <td>{compra.descripcion}</td>
-                  <td>{formatCurrency(compra.valorUnitario)}</td>
-                  <td><strong>{formatCurrency(compra.valorTotal)}</strong></td>
-                </tr>
-              ))}
-              {misCompras.length === 0 && (
+          <div className={styles.bloque}>
+            <h2 className={styles.tituloSeccion}>
+              Mis <em>compras</em>
+            </h2>
+            <table className={styles.tabla}>
+              <thead>
                 <tr>
-                  <td colSpan={6}>Todavía no tenés compras.</td>
+                  <th scope="col">#</th>
+                  <th scope="col">Referencia</th>
+                  <th scope="col">Fecha</th>
+                  <th scope="col">Descripción</th>
+                  <th scope="col" className={styles.numero}>Valor unitario</th>
+                  <th scope="col" className={styles.numero}>Valor Total</th>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {misCompras.map((compra, i) => (
+                  <tr key={i}>
+                    <td data-etiqueta="#">{compra.id}</td>
+                    <td data-etiqueta="Referencia">{compra.referencia}</td>
+                    <td data-etiqueta="Fecha">{compra.fecha}</td>
+                    <td data-etiqueta="Descripción">{compra.descripcion}</td>
+                    <td data-etiqueta="Valor unitario" className={styles.numero}>
+                      {formatCurrency(compra.valorUnitario)}
+                    </td>
+                    <td data-etiqueta="Valor total" className={`${styles.numero} ${styles.total}`}>
+                      {formatCurrency(compra.valorTotal)}
+                    </td>
+                  </tr>
+                ))}
+                {misCompras.length === 0 && (
+                  <tr className={styles.vacio}>
+                    <td colSpan={6}>Todavía no tenés compras.</td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </section>
       </div>
-    </div>
+
+      <SeccionVender origen="perfil" />
+    </>
   );
 }

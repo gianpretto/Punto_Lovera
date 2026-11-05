@@ -1,8 +1,19 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import SeccionVender from '../../components/secciones/SeccionVender';
+import Aviso from '../../components/ui/Aviso';
+import Boton from '../../components/ui/Boton';
+import Campo from '../../components/ui/Campo';
+import Etiqueta from '../../components/ui/Etiqueta';
 import { useAuth, type User } from '../../services/AuthContext';
 import { ApiError } from '../../services/api';
 import styles from './DatosUsuario.module.scss';
+
+// /datos — "Cargá tus datos" (wireframes 620:12952 escritorio y 620:15133
+// celular; sin diseño final). Sigue el lenguaje de Contactanos: fondo claro
+// con patrón, título serif a la izquierda con el avatar y el formulario de
+// campos subrayados a la derecha; abajo la banda verde de SeccionVender.
+// Son los datos que exige isProfileComplete para ofertar (PATCH /auth/me).
 
 interface FormState {
   nombre: string;
@@ -94,6 +105,21 @@ export default function DatosUsuario() {
   const showInvalid = (field: keyof FormState) => (submitted || touched[field]) && errors[field];
   const markTouched = (field: keyof FormState) => setTouched((t) => ({ ...t, [field]: true }));
 
+  // Texto que acompaña al campo marcado en rojo (antes solo cambiaba el borde)
+  const mensajeError = (field: keyof FormState) => {
+    if (!showInvalid(field)) return undefined;
+    return form[field].trim() === '' ? 'Completá este dato.' : 'Ingresá solo números.';
+  };
+
+  // Props comunes de cada campo de texto del formulario
+  const campo = (field: keyof FormState) => ({
+    id: `datos-${field}`,
+    value: form[field],
+    error: mensajeError(field),
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => setField(field, e.target.value),
+    onBlur: () => markTouched(field),
+  });
+
   const onlyNumbers = (event: KeyboardEvent<HTMLInputElement>) => {
     if (!/[0-9]/.test(event.key)) {
       event.preventDefault();
@@ -140,149 +166,102 @@ export default function DatosUsuario() {
   };
 
   return (
-    <div className={styles.editWrapper}>
-      <h1 className={styles.editTitle}>Cargá tus datos</h1>
+    <>
+      <div className={styles.pagina}>
+        <div className={styles.contenedor}>
+          <div className={styles.columnaTitulo}>
+            <Etiqueta tono="verde">Mi cuenta</Etiqueta>
+            <h1 className={styles.titulo}>
+              Cargá <em>tus datos</em>
+            </h1>
 
-      <div className={styles.avatarContainer} onClick={() => fileInputRef.current?.click()}>
-        <div className={styles.avatarCircle}>
-          {!avatarUrl && (
-            <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="#ccc">
-              <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
-            </svg>
-          )}
-          {avatarUrl && <img src={avatarUrl} alt="Avatar" className={styles.avatarImage} />}
+            <button
+              type="button"
+              className={styles.avatar}
+              onClick={() => fileInputRef.current?.click()}
+              aria-label="Cambiar foto de perfil"
+            >
+              <span className={styles.avatarCirculo}>
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="" className={styles.avatarImagen} />
+                ) : (
+                  <svg width="72" height="72" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
+                  </svg>
+                )}
+              </span>
+              <span className={styles.avatarCamara} aria-hidden="true">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M4 8h3l2-3h6l2 3h3v11H4z" strokeLinejoin="round" />
+                  <circle cx="12" cy="13" r="3.5" />
+                </svg>
+              </span>
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              onChange={onFileSelected}
+              accept="image/*"
+              className={styles.archivo}
+              tabIndex={-1}
+              aria-hidden="true"
+            />
+          </div>
+
+          <form className={styles.formulario} onSubmit={onSubmit} noValidate>
+            <Campo etiqueta="Nombre" type="text" autoComplete="given-name" {...campo('nombre')} />
+            <Campo etiqueta="Apellido" type="text" autoComplete="family-name" {...campo('apellido')} />
+            <Campo
+              etiqueta="Teléfono"
+              type="tel"
+              inputMode="numeric"
+              autoComplete="tel"
+              onKeyPress={onlyNumbers}
+              {...campo('telefono')}
+            />
+            <Campo etiqueta="DNI / CUIT" type="text" inputMode="numeric" onKeyPress={onlyNumbers} {...campo('dni')} />
+            <Campo
+              etiqueta="Fecha de nacimiento"
+              type="date"
+              autoComplete="bday"
+              className={styles.ancho}
+              {...campo('fechaNacimiento')}
+            />
+            <Campo
+              etiqueta="Dirección"
+              type="text"
+              placeholder="Calle, altura, piso"
+              autoComplete="street-address"
+              className={styles.ancho}
+              {...campo('direccion')}
+            />
+            <Campo etiqueta="Ciudad" type="text" autoComplete="address-level2" {...campo('ciudad')} />
+            <Campo etiqueta="Código postal" type="text" autoComplete="postal-code" {...campo('cp')} />
+            <Campo
+              etiqueta="Provincia"
+              type="text"
+              autoComplete="address-level1"
+              className={styles.ancho}
+              {...campo('provincia')}
+            />
+
+            {successMessage && <Aviso className={styles.ancho}>{successMessage}</Aviso>}
+            {errorMessage && (
+              <Aviso tipo="error" className={styles.ancho}>
+                {errorMessage}
+              </Aviso>
+            )}
+
+            <div className={`${styles.ancho} ${styles.acciones}`}>
+              <Boton type="submit" variante="verde" flecha bloque disabled={!dirty || formInvalid || sending}>
+                {sending ? 'Guardando...' : 'Guardar cambios'}
+              </Boton>
+            </div>
+          </form>
         </div>
-        <div className={styles.cameraIcon}>
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="white">
-            <path d="M9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9zm3 15c-2.76 0-5-2.24-5-5s2.24-5 5-5 5 2.24 5 5-2.24 5-5 5z" />
-          </svg>
-        </div>
-        <input
-          ref={fileInputRef}
-          type="file"
-          onChange={onFileSelected}
-          accept="image/*"
-          style={{ display: 'none' }}
-        />
       </div>
 
-      <form className={styles.editForm} onSubmit={onSubmit} noValidate>
-        <div className={styles.formRow}>
-          <div className={`${styles.formGroup} ${styles.half}`}>
-            <input
-              type="text"
-              className={`${styles.formControl} ${showInvalid('nombre') ? styles.isInvalid : ''}`}
-              placeholder="Nombre"
-              value={form.nombre}
-              onChange={(e) => setField('nombre', e.target.value)}
-              onBlur={() => markTouched('nombre')}
-            />
-          </div>
-          <div className={`${styles.formGroup} ${styles.half}`}>
-            <input
-              type="text"
-              className={`${styles.formControl} ${showInvalid('apellido') ? styles.isInvalid : ''}`}
-              placeholder="Apellido"
-              value={form.apellido}
-              onChange={(e) => setField('apellido', e.target.value)}
-              onBlur={() => markTouched('apellido')}
-            />
-          </div>
-        </div>
-
-        <div className={styles.formRow}>
-          <div className={`${styles.formGroup} ${styles.half}`}>
-            <input
-              type="tel"
-              className={`${styles.formControl} ${showInvalid('telefono') ? styles.isInvalid : ''}`}
-              placeholder="Teléfono"
-              value={form.telefono}
-              onKeyPress={onlyNumbers}
-              onChange={(e) => setField('telefono', e.target.value)}
-              onBlur={() => markTouched('telefono')}
-            />
-          </div>
-          <div className={`${styles.formGroup} ${styles.half}`}>
-            <input
-              type="text"
-              className={`${styles.formControl} ${showInvalid('dni') ? styles.isInvalid : ''}`}
-              placeholder="DNI / CUIT"
-              value={form.dni}
-              onKeyPress={onlyNumbers}
-              onChange={(e) => setField('dni', e.target.value)}
-              onBlur={() => markTouched('dni')}
-            />
-          </div>
-        </div>
-
-        <div className={styles.formRow}>
-          <div className={`${styles.formGroup} ${styles.full}`}>
-            <label className={styles.formLabel}>Fecha de Nacimiento</label>
-            <input
-              type="date"
-              className={styles.formControl}
-              value={form.fechaNacimiento}
-              onChange={(e) => setField('fechaNacimiento', e.target.value)}
-            />
-          </div>
-        </div>
-
-        <div className={styles.formRow}>
-          <div className={`${styles.formGroup} ${styles.full}`}>
-            <input
-              type="text"
-              className={`${styles.formControl} ${showInvalid('direccion') ? styles.isInvalid : ''}`}
-              placeholder="Dirección (Calle, altura, piso)"
-              value={form.direccion}
-              onChange={(e) => setField('direccion', e.target.value)}
-              onBlur={() => markTouched('direccion')}
-            />
-          </div>
-        </div>
-
-        <div className={styles.formRow}>
-          <div className={`${styles.formGroup} ${styles.half}`}>
-            <input
-              type="text"
-              className={`${styles.formControl} ${showInvalid('ciudad') ? styles.isInvalid : ''}`}
-              placeholder="Ciudad"
-              value={form.ciudad}
-              onChange={(e) => setField('ciudad', e.target.value)}
-              onBlur={() => markTouched('ciudad')}
-            />
-          </div>
-          <div className={`${styles.formGroup} ${styles.half}`}>
-            <input
-              type="text"
-              className={`${styles.formControl} ${showInvalid('cp') ? styles.isInvalid : ''}`}
-              placeholder="Código Postal"
-              value={form.cp}
-              onChange={(e) => setField('cp', e.target.value)}
-              onBlur={() => markTouched('cp')}
-            />
-          </div>
-        </div>
-
-        <div className={styles.formRow}>
-          <div className={`${styles.formGroup} ${styles.full}`}>
-            <input
-              type="text"
-              className={`${styles.formControl} ${showInvalid('provincia') ? styles.isInvalid : ''}`}
-              placeholder="Provincia"
-              value={form.provincia}
-              onChange={(e) => setField('provincia', e.target.value)}
-              onBlur={() => markTouched('provincia')}
-            />
-          </div>
-        </div>
-
-        {successMessage && <div className={`${styles.alert} ${styles.alertSuccess}`}>{successMessage}</div>}
-        {errorMessage && <div className={`${styles.alert} ${styles.alertDanger}`}>{errorMessage}</div>}
-
-        <button type="submit" className={styles.btnBlack} disabled={!dirty || formInvalid || sending}>
-          Guardar cambios
-        </button>
-      </form>
-    </div>
+      <SeccionVender origen="datos" />
+    </>
   );
 }
