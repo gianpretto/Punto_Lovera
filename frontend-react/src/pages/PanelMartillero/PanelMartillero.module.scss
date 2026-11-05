@@ -1,18 +1,22 @@
-// Pantalla interna del martillero: sigue la tipografía y botones del sitio
-// (Montserrat, botón negro) sin diseño propio de la diseñadora.
+@use '../../styles/tokens' as t;
+
+// Pantallas internas (panel del martillero y administración: comprobantes,
+// reintegros, subastas). Sin diseño de la diseñadora: siguen el lenguaje
+// del rediseño (Akatab, títulos tipo etiqueta, tarjetas blancas con sombra,
+// botones rectangulares verde / contorno, tabla con cabecera oscura).
 
 .panel {
   max-width: 1200px;
   margin: 0 auto;
-  padding: 20px 40px 100px;
-  font-family: 'Montserrat', sans-serif;
-  color: #333;
+  padding: 56px 40px 100px;
+  font-family: t.$font-texto;
+  color: t.$gris-oscuro;
   display: flex;
   flex-direction: column;
   gap: 20px;
 
   @media (max-width: 768px) {
-    padding: 20px 16px 60px;
+    padding: 32px 16px 60px;
   }
 }
 
@@ -23,17 +27,41 @@
   gap: 16px;
   flex-wrap: wrap;
 
+  // Mismo tratamiento que <Etiqueta tamano="grande" tono="verde">
   h1 {
-    font-size: 20px;
-    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
     margin: 0;
+    font-size: 24px;
+    line-height: 27px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: t.$verde;
+
+    &::before {
+      content: '';
+      width: 43px;
+      height: 2px;
+      background: currentColor;
+      flex: none;
+    }
+
+    @include t.mobile {
+      font-size: 18px;
+    }
   }
 }
 
 .subtitle {
-  margin: 6px 0 0;
-  color: #666;
-  font-size: 14px;
+  margin: 12px 0 0 53px;
+  color: t.$gris-texto;
+  font-size: 16px;
+  line-height: 22px;
+
+  @include t.mobile {
+    margin-left: 0;
+  }
 }
 
 .grid {
@@ -47,18 +75,21 @@
 }
 
 .card {
-  background: #fff;
-  border: 1px solid #e5e5e5;
-  border-radius: 12px;
-  padding: 20px;
+  background: t.$blanco;
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
+  padding: 24px 28px;
   min-width: 0;
 
+  @include t.mobile {
+    padding: 20px 16px;
+  }
+
   h2 {
-    font-size: 15px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    margin: 0 0 14px;
+    font-family: t.$font-titulo;
+    font-size: 30px;
+    line-height: 34px;
+    font-weight: 400;
+    margin: 0 0 16px;
   }
 
   h3 {
@@ -95,12 +126,15 @@
 
 .label {
   font-size: 12px;
-  color: #777;
+  color: t.$gris-texto;
 }
 
 .precio {
-  font-size: 22px;
-  font-weight: 700;
+  font-family: t.$font-titulo;
+  font-size: 32px;
+  line-height: 36px;
+  font-weight: 400;
+  color: t.$verde;
 }
 
 .bids {
@@ -114,7 +148,7 @@
     grid-template-columns: 1fr auto auto;
     gap: 12px;
     padding: 6px 0;
-    border-bottom: 1px solid #f0f0f0;
+    border-bottom: 1px solid t.$gris-claro;
   }
 }
 
@@ -123,20 +157,20 @@
 }
 
 .hora {
-  color: #999;
+  color: t.$gris-texto;
   font-size: 12px;
 }
 
 .vacio,
 .nota {
-  color: #777;
+  color: t.$gris-texto;
   font-size: 13px !important;
 }
 
 .conexion {
   margin-top: 14px !important;
   font-size: 12px !important;
-  color: #777;
+  color: t.$gris-texto;
 }
 
 .acciones {
@@ -148,8 +182,7 @@
 
 .preview {
   aspect-ratio: 16 / 9;
-  background: #bbb;
-  border-radius: 10px;
+  background: t.$gris-medio;
   overflow: hidden;
   margin-bottom: 12px;
 }
@@ -160,7 +193,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #555;
+  color: t.$blanco;
   font-size: 13px;
 }
 
@@ -171,29 +204,48 @@
 }
 
 .input {
-  padding: 12px 14px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
+  padding: 11px 14px;
+  border: 1px solid t.$gris-claro;
+  border-radius: 0;
+  background: t.$blanco;
+  color: t.$gris-oscuro;
+  font-size: 15px;
   font-family: inherit;
 
   &:focus {
     outline: none;
-    border-color: #333;
+    border-color: t.$verde;
+    box-shadow: inset 0 0 0 1px t.$verde;
   }
 }
 
+// Botones como <Boton>: rectangulares; principal verde, secundario contorno
 .btnNegro,
 .btnGris,
 .btnChico {
-  border: none;
-  border-radius: 4px;
-  font-family: inherit;
-  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  border: 1px solid transparent;
+  border-radius: 0;
+  font-family: t.$font-texto;
+  font-weight: 400;
   cursor: pointer;
   text-decoration: none;
   text-align: center;
-  display: inline-block;
+  transition:
+    filter 0.15s ease,
+    background-color 0.15s ease;
+
+  &:hover {
+    filter: brightness(0.94);
+  }
+
+  &:focus-visible {
+    outline: 2px solid t.$gris-oscuro;
+    outline-offset: 2px;
+  }
 
   &:disabled {
     opacity: 0.5;
@@ -202,24 +254,33 @@
 }
 
 .btnNegro {
-  background: #000;
-  color: #fff;
-  padding: 12px 20px;
-  font-size: 14px;
+  min-height: 43px;
+  background: t.$verde;
+  color: t.$blanco;
+  padding: 0 18px;
+  font-size: 16px;
 }
 
 .btnGris {
-  background: #e0e0e0;
-  color: #333;
-  padding: 12px 20px;
-  font-size: 14px;
+  min-height: 43px;
+  background: transparent;
+  border-color: t.$gris-oscuro;
+  color: t.$gris-oscuro;
+  padding: 0 18px;
+  font-size: 16px;
+
+  &:hover {
+    filter: none;
+    background: rgba(t.$gris-oscuro, 0.06);
+  }
 }
 
 .btnChico {
-  background: #000;
-  color: #fff;
-  padding: 6px 12px;
-  font-size: 12px;
+  min-height: 32px;
+  background: t.$verde;
+  color: t.$blanco;
+  padding: 0 12px;
+  font-size: 14px;
   white-space: nowrap;
 }
 
@@ -230,42 +291,45 @@
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: 15px;
 
   th,
   td {
     text-align: left;
-    padding: 10px 8px;
-    border-bottom: 1px solid #eee;
+    padding: 12px 14px;
+    border-bottom: 1px solid t.$gris-claro;
+    vertical-align: middle;
   }
 
   th {
+    background: t.$gris-oscuro;
+    color: t.$gris-claro;
     font-size: 12px;
-    color: #777;
-    font-weight: 600;
+    line-height: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
   }
 }
 
 .filaActual {
-  background: #f6f6f6;
+  background: t.$verde-claro;
   font-weight: 700;
 }
 
 .alertDanger {
-  color: #dc3545;
-  background: #f8d7da;
-  border: 1px solid #f5c2c7;
-  border-radius: 4px;
-  padding: 12px 16px;
-  font-size: 14px;
+  color: t.$error;
+  background: t.$error-fondo;
+  padding: 10px 14px;
+  font-size: 15px;
+  line-height: 21px;
 }
 
 .alertSuccess {
-  background-color: #d4edda;
-  color: #155724;
-  padding: 12px 16px;
-  border-radius: 4px;
-  font-size: 14px;
+  background-color: t.$verde-claro;
+  color: t.$verde;
+  padding: 10px 14px;
+  font-size: 15px;
+  line-height: 21px;
 }
 
 .paseForm {
@@ -288,7 +352,7 @@
 
 .label {
   font-size: 12px;
-  color: #777;
+  color: t.$gris-texto;
   margin-top: 4px;
 }
 
@@ -302,16 +366,15 @@
     min-width: 0;
     overflow-x: auto;
     white-space: nowrap;
-    background: #f4f4f4;
-    border: 1px solid #e3e3e3;
-    border-radius: 4px;
+    background: t.$fondo;
+    border: 1px solid t.$gris-claro;
     padding: 8px 10px;
     font-size: 13px;
   }
 }
 
 .senalOk {
-  color: #2f855a;
+  color: t.$verde;
   font-weight: 700;
   font-size: 13px !important;
 }
