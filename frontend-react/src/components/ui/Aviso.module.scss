@@ -1,0 +1,19 @@
+@use '../../styles/tokens' as t;
+
+.aviso {
+  margin: 0;
+  padding: 10px 14px;
+  font-family: t.$font-texto;
+  font-size: 15px;
+  line-height: 21px;
+}
+
+.ok {
+  background: t.$verde-claro;
+  color: t.$verde;
+}
+
+.error {
+  background: #fbe9e9;
+  color: #8a1f1f;
+}

@@ -1,12 +1,27 @@
 import { useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import PantallaAuth from '../../components/auth/PantallaAuth';
+import estilos from '../../components/auth/PantallaAuth.module.scss';
+import Aviso from '../../components/ui/Aviso';
+import Boton from '../../components/ui/Boton';
 import { api, ApiError } from '../../services/api';
 import { useAuth, type User } from '../../services/AuthContext';
-import styles from './ValidarMail.module.scss';
 
 type Estado = 'pendiente' | 'verificando' | 'verificado' | 'error';
 
-// Dos usos:
+// Sobre de mail (trazo verde, mismo estilo que los íconos de Figma)
+function IconoSobre() {
+  return (
+    <div className={estilos.icono} aria-hidden="true">
+      <svg viewBox="0 0 34 34" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round">
+        <rect x="3" y="7" width="28" height="20" />
+        <path d="M3 8l14 11L31 8" />
+      </svg>
+    </div>
+  );
+}
+
+// Dos usos (sin wireframe: usan el mismo layout que Login):
 //  - /validar-mail             → después de registrarse: "revisá tu mail" + reenviar
 //  - /validar-mail?token=...   → link del mail: confirma la cuenta contra el backend
 export default function ValidarMail() {
@@ -52,59 +67,68 @@ export default function ValidarMail() {
     }
   };
 
+  const titulo = (
+    <>
+      Validar <em>email</em>
+    </>
+  );
+
   if (token) {
     return (
-      <div className={styles.validarWrapper}>
-        <div className={styles.validarContent}>
-          <h1 className={styles.validarTitle}>VALIDAR EMAIL</h1>
-          <div className={styles.validarIcon}>✉️</div>
+      <PantallaAuth etiqueta="Mi cuenta" titulo={titulo} origen="validar-mail">
+        <IconoSobre />
 
-          {estado === 'verificando' && <p className={styles.validarDesc}>Verificando tu cuenta...</p>}
+        <div className={estilos.formulario} aria-live="polite">
+          {estado === 'verificando' && <p className={estilos.texto}>Verificando tu cuenta...</p>}
           {estado === 'verificado' && (
-            <div className={styles.alertSuccess}>
+            <Aviso tipo="ok">
               ¡Listo! Tu cuenta quedó verificada. Ahora completá tus datos para poder participar.
-            </div>
+            </Aviso>
           )}
-          {estado === 'error' && <div className={styles.alertDanger}>{mensaje}</div>}
+          {estado === 'error' && <Aviso tipo="error">{mensaje}</Aviso>}
 
-          <div className={styles.formActions}>
+          <div className={estilos.acciones}>
             {estado === 'verificado' ? (
-              <Link to="/datos" className={`${styles.btn} ${styles.btnBlack}`}>Completar mis datos</Link>
+              <Boton variante="verde" bloque flecha to="/datos">
+                Completar mis datos
+              </Boton>
             ) : (
-              <Link to="/login" className={`${styles.btn} ${styles.btnBlack}`}>Iniciar sesión</Link>
+              <Boton variante="verde" bloque to="/login">
+                Iniciar sesión
+              </Boton>
             )}
           </div>
         </div>
-      </div>
+      </PantallaAuth>
     );
   }
 
   return (
-    <div className={styles.validarWrapper}>
-      <div className={styles.validarContent}>
-        <h1 className={styles.validarTitle}>VALIDAR EMAIL</h1>
+    <PantallaAuth etiqueta="Mi cuenta" titulo={titulo} origen="validar-mail">
+      <IconoSobre />
 
-        <div className={styles.validarIcon}>✉️</div>
+      <p className={estilos.texto}>
+        Te hemos enviado un correo electrónico para confirmar tu cuenta. Por favor, revisá tu bandeja de entrada y
+        seguí las instrucciones que allí se indican.
+      </p>
+      <p className={`${estilos.texto} ${estilos.textoSecundario}`}>Si no lo encontrás, revisá tu carpeta de spam.</p>
 
-        <p className={styles.validarDesc}>
-          Te hemos enviado un correo electrónico para confirmar tu cuenta. Por favor, revisá tu bandeja de entrada y
-          seguí las instrucciones que allí se indican.
-        </p>
+      <div className={estilos.formulario}>
+        {reenviado && <Aviso tipo="ok">Correo de verificación reenviado.</Aviso>}
+        {mensaje && <Aviso tipo="error">{mensaje}</Aviso>}
 
-        <p className={styles.validarInfo}>Si no lo encontrás, revisá tu carpeta de spam.</p>
-
-        {reenviado && <div className={styles.alertSuccess}>Correo de verificación reenviado.</div>}
-        {mensaje && <div className={styles.alertDanger}>{mensaje}</div>}
-
-        <div className={styles.formActions}>
-          {email && (
-            <button type="button" className={`${styles.btn} ${styles.btnBlack}`} onClick={resendEmail}>
+        {email && (
+          <div className={estilos.acciones}>
+            <Boton variante="verde" bloque onClick={resendEmail}>
               Reenviar correo
-            </button>
-          )}
-          <Link to="/login" className={`${styles.btn} ${styles.btnLink}`}>Volver al inicio de sesión</Link>
-        </div>
+            </Boton>
+          </div>
+        )}
+
+        <Link to="/login" className={estilos.enlace}>
+          Volver al inicio de sesión
+        </Link>
       </div>
-    </div>
+    </PantallaAuth>
   );
 }
