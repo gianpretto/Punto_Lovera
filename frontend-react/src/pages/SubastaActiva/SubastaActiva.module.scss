@@ -1,608 +1,1145 @@
-.activeAuctionContainer {
-  max-width: 1440px;
-  margin: 0 auto;
-  padding: 20px 40px 100px;
-  font-family: 'Montserrat', sans-serif;
+@use '../../styles/tokens' as t;
 
-  @media (max-width: 768px) {
-    padding: 20px;
-  }
+// Sala en vivo. Disposición de los wireframes (620:14277 escritorio,
+// 620:16312 / 620:16356 celular): video grande a la izquierda (955 de 1280)
+// con "SE VENDE EN", debajo el panel para ofertar; a la derecha martillero,
+// lote en remate y chat. Estilo del rediseño: fondo claro con patrón,
+// etiquetas "——", serif para títulos y precios, tarjetas blancas con sombra.
+// En el celular todo va en una columna: video → ofertar → lote → ofertas → chat.
 
-  @media (max-width: 425px) {
-    padding: 10px;
-    padding-bottom: 60px;
+// Mismos rojos que components/ui/Aviso (errores)
+$error: #8a1f1f;
+$error-fondo: #fbe9e9;
+$sombra: 0 4px 4px rgba(0, 0, 0, 0.25);
+$una-columna: 900px;
+
+@mixin una-columna {
+  @media (max-width: $una-columna) {
+    @content;
   }
 }
 
-.auctionHeader {
-  margin-bottom: 20px;
+.pagina {
+  @include t.fondo-patron(t.$fondo);
+  font-family: t.$font-texto;
+  color: t.$gris-oscuro;
+  padding: 48px 0 96px;
+  overflow-x: clip;
 
-  h1 {
-    font-size: 20px;
-    font-weight: 600;
-    color: #333;
+  @include t.mobile {
+    padding: 20px 0 56px;
   }
+}
 
-  @media (max-width: 425px) {
-    margin-bottom: 10px;
+.contenedor {
+  @include t.contenedor;
+}
 
-    h1 {
-      font-size: 16px;
+.oculto {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+// ---------- Cabecera
+
+.migas {
+  font-size: 12px;
+  line-height: 13px;
+  color: t.$gris-oscuro;
+  text-transform: uppercase;
+
+  a {
+    color: inherit;
+    text-decoration: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+
+    &:focus-visible {
+      outline: 2px solid t.$verde;
+      outline-offset: 2px;
     }
   }
 }
 
-.auctionGrid {
-  display: grid;
-  grid-template-columns: 1fr 340px;
-  gap: 30px;
-  align-items: stretch;
+.cabeceraFila {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-top: 36px;
 
-  @media (max-width: 1100px) {
-    grid-template-columns: 1fr;
+  @include t.tablet {
+    flex-direction: column;
+    align-items: stretch;
   }
 
-  @media (max-width: 425px) {
-    gap: 10px;
+  @include t.mobile {
+    margin-top: 20px;
+    gap: 16px;
   }
 }
 
-.mainContent {
+.cabeceraTexto {
+  min-width: 0;
+}
+
+.filaEstado {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px 20px;
+}
+
+// "—— SUBASTA ACTIVA": texto verde, línea oscura (como en el catálogo)
+.etiquetaVerde {
+  color: t.$verde;
+
+  > span {
+    background: t.$gris-oscuro;
+  }
+}
+
+.pastilla {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 26px;
+  padding: 0 14px 0 12px;
+  background: t.$gris-claro;
+  color: t.$gris-oscuro;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 15px;
+  text-transform: uppercase;
+}
+
+.pastillaVivo {
+  background: t.$verde-claro;
+  color: t.$verde;
+}
+
+.puntoVivo {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: t.$verde;
+  animation: latido 1.6s ease-in-out infinite;
+
+  @media (prefers-reduced-motion: reduce) {
+    animation: none;
+  }
+}
+
+@keyframes latido {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(t.$verde, 0.5);
+  }
+  50% {
+    box-shadow: 0 0 0 5px rgba(t.$verde, 0);
+  }
+}
+
+.titulo {
+  @include t.titulo-display(64px, 1.094);
+  margin-top: 20px;
+  color: t.$gris-oscuro;
+  overflow-wrap: break-word;
+
+  @include t.mobile {
+    margin-top: 14px;
+    font-size: 34px;
+  }
+}
+
+.ubicacion {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin: 10px 0 0;
+  font-size: 16px;
+  line-height: 22px;
+  color: t.$gris-texto;
+
+  img {
+    display: block;
+  }
+}
+
+.cabeceraAcciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  flex: none;
+
+  @include t.mobile {
+    > * {
+      flex: 1 1 140px;
+    }
+  }
+}
+
+// ---------- Grilla
+
+.grilla {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 24px;
+  align-items: start;
+  margin-top: 36px;
+
+  @media (max-width: 1200px) {
+    grid-template-columns: minmax(0, 1fr) 320px;
+  }
+
+  @include una-columna {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+  }
+
+  @include t.mobile {
+    margin-top: 20px;
+    gap: 16px;
+  }
+}
+
+.principal,
+.lateral {
   display: flex;
   flex-direction: column;
-  gap: 20px;
+  gap: 24px;
+  min-width: 0;
 
-  @media (max-width: 425px) {
-    gap: 10px;
+  // En una columna las dos se "disuelven" para poder ordenar las secciones:
+  // primero lo necesario para pujar, después el lote, las ofertas y el chat.
+  @include una-columna {
+    display: contents;
   }
 }
 
-.streamContainer {
+@include una-columna {
+  .video {
+    order: 1;
+  }
+  .adjudicado {
+    order: 2;
+  }
+  .ofertar {
+    order: 3;
+  }
+  .martillero {
+    order: 4;
+  }
+  .lote {
+    order: 5;
+  }
+  .historial {
+    order: 6;
+  }
+  .chat {
+    order: 7;
+  }
+}
+
+// ---------- Video
+
+.video {
   position: relative;
-  width: 100%;
   aspect-ratio: 16 / 9;
-  background: #bbb;
-  border-radius: 20px;
+  background: t.$negro;
+  box-shadow: $sombra;
   overflow: hidden;
+}
 
-  @media (max-width: 425px) {
-    border-radius: 12px;
+.sinVideo {
+  @include t.fondo-patron(t.$gris-oscuro);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 100%;
+  padding: 24px 24px 72px;
+  box-sizing: border-box;
+  text-align: center;
+  color: t.$gris-claro;
+
+  svg {
+    opacity: 0.8;
+    margin-bottom: 8px;
+  }
+
+  @include t.mobile {
+    padding-bottom: 56px;
+
+    svg {
+      width: 36px;
+      height: 36px;
+      margin-bottom: 0;
+    }
   }
 }
 
-.videoPlaceholder {
-  width: 100%;
-  height: 100%;
+.sinVideoTitulo {
+  margin: 0;
+  font-family: t.$font-titulo;
+  font-size: 32px;
+  line-height: 1.1;
+  color: t.$blanco;
+
+  @include t.mobile {
+    font-size: 22px;
+  }
+}
+
+.sinVideoTexto {
+  margin: 0;
+  max-width: 360px;
+  font-size: 14px;
+  line-height: 20px;
+
+  @include t.mobile {
+    font-size: 12px;
+    line-height: 16px;
+  }
+}
+
+// Recuadro "SE VENDE EN $ ..." abajo a la izquierda del video (wireframe:
+// 325 x 56 pegado al borde), como el recuadro de la foto del catálogo.
+.seVende {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 0;
+  min-height: 56px;
+  padding: 0 24px;
+  background: t.$blanco;
+  color: t.$gris-oscuro;
+  box-shadow: $sombra;
+  font-family: t.$font-destacada;
+  font-weight: 500;
+  font-size: 20px;
+  line-height: 28px;
+  text-transform: uppercase;
+  pointer-events: none;
+
+  strong {
+    color: t.$verde;
+    font-weight: 800;
+  }
+
+  @include t.mobile {
+    gap: 10px;
+    min-height: 40px;
+    padding: 0 12px;
+    font-size: 14px;
+    line-height: 18px;
+  }
+}
+
+.seVendeLote {
+  font-size: 12px;
+  font-weight: 700;
+  color: t.$gris-texto;
+
+  @include t.mobile {
+    font-size: 10px;
+  }
+}
+
+// Aviso de "¡Adjudicado a ... por $ ...!" (lot:sold)
+.adjudicado {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 0;
+  padding: 16px 20px;
+  @include t.fondo-patron(t.$verde);
+  color: t.$blanco;
+  font-weight: 700;
+  font-size: 18px;
+  line-height: 24px;
+  box-shadow: $sombra;
+
+  img {
+    filter: brightness(0) invert(1);
+    flex: none;
+  }
+}
+
+// ---------- Panel para ofertar
+
+.ofertar {
+  background: t.$blanco;
+  box-shadow: $sombra;
+  padding: 28px 32px 26px;
+
+  @include t.mobile {
+    padding: 18px 16px 18px;
+  }
+}
+
+.ofertarCabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+}
+
+.ofertarTitulo {
+  margin: 0;
+  min-width: 0;
+  font-family: t.$font-titulo;
+  font-weight: 400;
+  font-size: 32px;
+  line-height: 36px;
+  color: t.$gris-oscuro;
+  overflow-wrap: break-word;
+
+  @include t.mobile {
+    font-size: 24px;
+    line-height: 28px;
+  }
+}
+
+.estadoPuja {
+  display: inline-flex;
+  align-items: center;
+  height: 30px;
+  padding: 0 14px;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 15px;
+  text-transform: uppercase;
+}
+
+.ganando {
+  background: t.$verde;
+  color: t.$blanco;
+}
+
+.superado {
+  background: $error-fondo;
+  color: $error;
+  border: 1px solid $error;
+}
+
+.precios {
+  display: grid;
+  grid-template-columns: 1.6fr 1fr 1fr;
+  gap: 16px;
+  margin: 20px 0 0;
+  padding: 18px 0;
+  border-top: 1px solid t.$gris-claro;
+  border-bottom: 1px solid t.$gris-claro;
+
+  div {
+    min-width: 0;
+  }
+
+  dt {
+    font-size: 12px;
+    font-weight: 700;
+    line-height: 13px;
+    color: t.$gris-texto;
+    text-transform: uppercase;
+  }
+
+  dd {
+    margin: 8px 0 0;
+    font-size: 20px;
+    font-weight: 700;
+    line-height: 26px;
+    color: t.$gris-oscuro;
+  }
+
+  @include t.mobile {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 14px;
+    padding: 14px 0;
+
+    div:first-child {
+      grid-column: 1 / -1;
+    }
+
+    dd {
+      font-size: 16px;
+      line-height: 20px;
+    }
+  }
+}
+
+.precios dd.precioActual {
+  font-family: t.$font-titulo;
+  font-weight: 400;
+  font-size: 48px;
+  line-height: 48px;
+  color: t.$verde;
+
+  @include t.mobile {
+    font-size: 40px;
+    line-height: 42px;
+  }
+}
+
+.salaMensaje {
+  margin: 20px 0 0;
+  padding: 18px 0;
+  border-top: 1px solid t.$gris-claro;
+  font-family: t.$font-titulo;
+  font-size: 28px;
+  line-height: 1.15;
+  color: t.$gris-texto;
+}
+
+// Selector [-] $ monto [+] y botón OFERTAR (wireframe: 630 + 305 x 105)
+.pujaFila {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  gap: 16px;
+  margin-top: 22px;
+
+  @include t.tablet {
+    grid-template-columns: minmax(0, 1fr) 200px;
+  }
+
+  @include t.mobile {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-top: 16px;
+  }
+}
+
+.selector {
+  display: flex;
+  align-items: stretch;
+  min-height: 76px;
+  border: 1px solid t.$gris-oscuro;
+
+  @include t.mobile {
+    min-height: 64px;
+  }
+}
+
+.paso {
+  flex: none;
+  width: 64px;
+  border: 0;
+  background: t.$fondo;
+  color: t.$gris-oscuro;
+  font-family: t.$font-texto;
+  font-size: 30px;
+  font-weight: 400;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+
+  &:first-child {
+    border-right: 1px solid t.$gris-claro;
+  }
+
+  &:last-child {
+    border-left: 1px solid t.$gris-claro;
+  }
+
+  &:hover:not(:disabled) {
+    background: t.$gris-claro;
+  }
+
+  &:disabled {
+    color: t.$gris-medio;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    outline: 3px solid t.$verde;
+    outline-offset: -3px;
+  }
+
+  @include t.mobile {
+    width: 56px;
+  }
+}
+
+.monto {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 6px 8px;
+}
+
+.montoLabel {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 13px;
+  color: t.$gris-texto;
+  text-transform: uppercase;
+}
+
+.montoCampo {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 4px;
+  max-width: 100%;
+  font-size: 30px;
+  font-weight: 800;
+  line-height: 38px;
+
+  @include t.mobile {
+    font-size: 26px;
+    line-height: 32px;
+  }
+}
+
+.montoInput {
+  min-width: 0;
+  max-width: 100%;
+  padding: 0;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  font-family: t.$font-texto;
+  font-size: inherit;
+  font-weight: inherit;
+  line-height: inherit;
+  color: t.$gris-oscuro;
+  text-align: center;
+
+  &:focus {
+    outline: none;
+    border-bottom-color: t.$verde;
+  }
+
+  &:disabled {
+    color: t.$gris-medio;
+  }
+}
+
+.botonOfertar {
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 10px;
+  min-height: 76px;
+  border: 0;
+  border-radius: 0;
+  background: t.$verde;
+  color: t.$blanco;
+  font-family: t.$font-destacada;
+  font-size: 24px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+
+  &:hover:not(:disabled) {
+    filter: brightness(0.92);
+  }
+
+  &:disabled {
+    background: t.$gris-medio;
+    cursor: not-allowed;
+  }
+
+  &:focus-visible {
+    outline: 3px solid t.$gris-oscuro;
+    outline-offset: 3px;
+  }
+
+  @include t.mobile {
+    min-height: 60px;
+    font-size: 22px;
+  }
 }
 
-.streamBanner {
-  position: absolute;
-  bottom: 20px;
-  left: 20px;
-  background: rgba(240, 240, 240, 0.9);
-  backdrop-filter: blur(5px);
-  color: #111;
-  padding: 12px 24px;
-  border-radius: 40px;
+.creditos {
+  margin: 16px 0 0;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 16px;
+  color: t.$gris-texto;
+  text-transform: uppercase;
+
+  strong {
+    color: t.$gris-oscuro;
+    font-weight: 900;
+  }
+}
+
+.aviso {
+  margin-top: 14px;
+  border-left: 3px solid $error;
+}
+
+.avisoChat {
+  margin: 0 20px 12px;
+  font-size: 13px;
+  line-height: 18px;
+}
+
+// Lo que falta para poder ofertar (cuenta, mail, datos o crédito)
+.requisito {
   display: flex;
   align-items: center;
-  gap: 15px;
-  font-weight: 700;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  justify-content: space-between;
+  gap: 16px 24px;
+  margin-top: 22px;
+  padding: 20px 24px;
+  background: t.$fondo;
+  border-left: 3px solid t.$verde;
 
-  svg {
-    stroke: #111;
-  }
-
-  @media (max-width: 425px) {
-    bottom: 10px;
-    left: 10px;
-    right: 10px;
-    justify-content: center;
-    padding: 8px 16px;
+  @include t.mobile {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px;
+    margin-top: 16px;
   }
 }
 
-.bannerText {
-  font-size: 16px;
+.requisitoTitulo {
+  margin: 0;
+  font-family: t.$font-titulo;
+  font-size: 26px;
+  line-height: 30px;
+  color: t.$gris-oscuro;
+}
 
-  @media (max-width: 425px) {
+.requisitoTexto {
+  margin: 6px 0 0;
+  font-size: 15px;
+  line-height: 21px;
+  color: t.$gris-texto;
+}
+
+.requisitoAccion {
+  flex: none;
+
+  @include t.mobile {
+    > * {
+      width: 100%;
+    }
+  }
+}
+
+.requisitoOk {
+  margin: 0;
+  max-width: 260px;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 19px;
+  color: t.$verde;
+}
+
+// ---------- Historial de ofertas
+
+.historial {
+  padding-top: 8px;
+}
+
+.etiquetaSeccion {
+  color: t.$verde;
+
+  > span {
+    background: t.$gris-oscuro;
+  }
+}
+
+.vacio {
+  margin: 16px 0 0;
+  font-size: 15px;
+  line-height: 21px;
+  color: t.$gris-texto;
+}
+
+.historialLista {
+  margin: 16px 0 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid t.$gris-claro;
+}
+
+.historialItem {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: baseline;
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid t.$gris-claro;
+  font-size: 16px;
+  line-height: 22px;
+  color: t.$gris-texto;
+
+  @include t.mobile {
+    gap: 10px;
+    grid-template-columns: minmax(0, 1fr) auto auto;
     font-size: 14px;
   }
 }
 
-.biddingSection {
-  display: flex;
-  gap: 20px;
-  align-items: stretch;
+.historialPrimero {
+  color: t.$gris-oscuro;
 
-  @media (max-width: 600px) {
-    flex-direction: column;
-  }
-
-  @media (max-width: 425px) {
-    gap: 10px;
+  .historialMonto {
+    color: t.$verde;
   }
 }
 
-.bidSelector {
-  flex: 1;
-  background: #eee;
-  border-radius: 25px;
-  border: 1px solid #ddd;
-  display: flex;
-  align-items: center;
-  padding: 10px 20px;
-
-  @media (max-width: 425px) {
-    padding: 5px 10px;
-  }
-}
-
-.bidBtn {
-  width: 40px;
-  height: 100%;
-  border: none;
-  background: transparent;
-  font-size: 28px;
-  color: #999;
-  cursor: pointer;
-  transition: color 0.2s;
-
-  &:hover {
-    color: #000;
-  }
-}
-
-.bidDisplay {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.bidFieldWrapper {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-}
-
-.currencySymbol {
-  font-size: 28px;
-  font-weight: 800;
-  color: #000;
-
-  @media (max-width: 425px) {
-    font-size: 24px;
-  }
-}
-
-.bidInput {
-  font-size: 32px;
-  font-weight: 800;
-  color: #000;
-  background: transparent;
-  border: none;
-  width: 100%;
-  text-align: center;
-  font-family: inherit;
-  outline: none;
-  margin-left: -20px;
-
-  @media (max-width: 425px) {
-    font-size: 24px;
-  }
-}
-
-.userCredits {
-  font-size: 9px;
-  font-weight: 700;
-  color: #333;
-  text-transform: uppercase;
-  margin-top: 2px;
-}
-
-.offerBtn {
-  width: 300px;
-  background: #000;
-  color: #fff;
-  border: none;
-  border-radius: 25px;
-  font-size: 18px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: transform 0.2s, background 0.2s;
-
-  &:hover {
-    background: #222;
-    transform: translateY(-2px);
-  }
-
-  @media (max-width: 600px) {
-    width: 100%;
-    padding: 25px;
-  }
-
-  @media (max-width: 425px) {
-    padding: 15px;
-    font-size: 16px;
-  }
-}
-
-.sidebar {
-  display: flex;
-  flex-direction: column;
-  max-height: 705px;
-}
-
-.sidebarCard {
-  background: #f2f2f2;
-  border-radius: 30px;
-  border: 1px solid #e0e0e0;
+.historialQuien {
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
-  max-height: 100%;
-
-  @media (max-width: 425px) {
-    border-radius: 20px;
-  }
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.martilleroVideoBlock {
-  width: 100%;
-  aspect-ratio: 21 / 9;
-  background: #999;
-  position: relative;
-  overflow: hidden;
-  flex-shrink: 0;
-
-  @media (max-width: 425px) {
-    display: none;
-  }
+.vos {
+  color: t.$verde;
+  font-weight: 700;
 }
 
-.cameraPlaceholder {
-  width: 100%;
-  height: 100%;
+.historialMonto {
+  font-weight: 800;
+  color: t.$gris-oscuro;
+}
+
+.historialHora {
+  white-space: nowrap;
+  font-size: 13px;
+  color: t.$gris-medio;
+  text-align: right;
+}
+
+// ---------- Columna lateral
+
+.martillero {
+  @include t.fondo-patron(t.$gris-oscuro);
   display: flex;
   align-items: center;
-  justify-content: center;
-}
-
-.martilleroBanner {
-  background: #4a4a4a;
-  color: #fff;
-  padding: 10px 20px;
-  display: flex;
   justify-content: space-between;
-  align-items: center;
-  font-size: 11px;
-  letter-spacing: 0.5px;
-  flex-shrink: 0;
-}
-
-.label {
-  font-weight: 600;
-  opacity: 0.8;
-}
-
-.name {
-  font-weight: 800;
-  font-size: 14px;
-  text-transform: uppercase;
-}
-
-.toggleChatBtn {
-  display: none;
-  background: transparent;
-  border: none;
-  width: 100%;
-  padding: 10px;
-  font-size: 11px;
-  color: #555;
-  font-weight: 600;
-  cursor: pointer;
-  border-bottom: 1px solid #eee;
-  text-align: left;
-  padding-left: 20px;
-
-  @media (max-width: 425px) {
-    display: block;
-  }
-
-  &:hover {
-    background-color: #f9f9f9;
-    color: #000;
-  }
-}
-
-.sidebarBody {
-  padding: 8px 20px 15px;
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-  transition: all 0.3s ease;
-
-  @media (max-width: 425px) {
-    height: 400px;
-  }
-}
-
-.collapsed {
-  @media (max-width: 425px) {
-    display: none;
-  }
-}
-
-.loteInfoCompact {
-  flex-shrink: 0;
-}
-
-.titleRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 4px;
-
-  h3 {
-    font-size: 15px;
-    font-weight: 800;
-    color: #333;
-    max-width: 70%;
-    line-height: 1.2;
-  }
-}
-
-.btnNegroExtraSmall {
-  background: #000;
-  color: #fff;
-  border: none;
-  padding: 5px 10px;
-  font-size: 9px;
-  font-weight: 700;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-.location {
-  font-size: 10px;
-  font-weight: 600;
-  color: #777;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-bottom: 4px;
-}
-
-.descriptionShort {
-  font-size: 10px;
-  line-height: 1.4;
-  color: #666;
-  font-weight: 500;
-}
-
-.sidebarDivider {
-  border: none;
-  border-top: 1px solid #ddd;
-  margin: 10px 0;
-  flex-shrink: 0;
-}
-
-.chatContainerInner {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  overflow: hidden;
-}
-
-.chatHeaderMinimal {
-  font-size: 10px;
-  font-weight: 700;
-  color: #999;
-  text-transform: uppercase;
-  margin-bottom: 10px;
-  flex-shrink: 0;
-}
-
-.chatMessagesScroll {
-  flex: 1;
-  overflow-y: auto;
-  min-height: 0;
-  margin-bottom: 15px;
-  display: flex;
-  flex-direction: column;
   gap: 12px;
-  padding-right: 5px;
-
-  &::-webkit-scrollbar {
-    width: 4px;
-  }
-
-  &::-webkit-scrollbar-thumb {
-    background: #ddd;
-    border-radius: 10px;
-  }
+  padding: 16px 20px;
+  color: t.$blanco;
+  box-shadow: $sombra;
 }
 
-.message {
-  font-size: 11px;
-  line-height: 1.4;
+.martilleroLabel {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 13px;
+  color: t.$gris-claro;
+  text-transform: uppercase;
 }
 
-.messageUser {
-  font-weight: 800;
-  color: #333;
-  margin-right: 4px;
+.martilleroNombre {
+  min-width: 0;
+  font-family: t.$font-destacada;
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 26px;
+  text-align: right;
+  text-transform: uppercase;
+  overflow-wrap: break-word;
 }
 
-.messageText {
-  color: #555;
-  font-weight: 500;
+// Lote en remate (misma tarjeta que el catálogo, más compacta)
+.lote {
+  display: flex;
+  flex-direction: column;
+  background: t.$blanco;
+  box-shadow: $sombra;
 }
 
-.messageTime {
-  font-size: 8px;
-  color: #bbb;
-  margin-left: 6px;
-}
+.loteMedia {
+  position: relative;
+  height: 200px;
+  background: t.$gris-medio;
 
-.isOffer {
-  background: #eef7ee;
-  padding: 6px 10px;
-  border-radius: 8px;
-
-  .messageUser {
-    color: #2e7d32;
-  }
-
-  .messageText {
-    color: #2e7d32;
-    font-weight: 700;
+  @include una-columna {
+    height: auto;
+    aspect-ratio: 16 / 9;
+    max-height: 320px;
   }
 }
 
-.chatInputRow {
-  background: #e8e8e8;
-  border-radius: 25px;
-  padding: 5px 15px;
+.loteFotoBoton {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+
+  &:focus-visible {
+    outline: 3px solid t.$verde;
+    outline-offset: -3px;
+  }
+}
+
+.loteFoto {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.loteCantidad {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  padding: 4px 10px;
+  background: rgba(t.$negro, 0.75);
+  color: t.$blanco;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 16px;
+  text-transform: uppercase;
+}
+
+.sinFotos {
   display: flex;
   align-items: center;
-  border: 1px solid #ddd;
-  margin-top: auto;
+  justify-content: center;
+  height: 100%;
+  color: t.$blanco;
+  font-size: 14px;
+}
+
+.loteCuerpo {
+  padding: 20px 24px 16px;
+}
+
+.loteEtiquetas {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+  font-weight: 700;
+  font-size: 12px;
+  line-height: 13px;
+  color: t.$verde;
+  text-transform: uppercase;
+}
+
+.loteTitulo {
+  margin: 14px 0 0;
+  font-family: t.$font-titulo;
+  font-weight: 400;
+  font-size: 28px;
+  line-height: 32px;
+  color: t.$gris-oscuro;
+  overflow-wrap: break-word;
+}
+
+.loteResumen {
+  margin: 12px 0 0;
+  font-size: 15px;
+  line-height: 21px;
+  color: t.$gris-texto;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.verFotos {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0 24px 18px;
+  padding: 15px 0 0;
+  border: 0;
+  border-top: 1px solid t.$gris-claro;
+  background: none;
+  font-family: t.$font-texto;
+  font-weight: 500;
+  font-size: 13px;
+  line-height: 17px;
+  color: t.$gris-texto;
+  text-align: left;
+  cursor: pointer;
+
+  &:hover {
+    color: t.$verde;
+  }
+
+  &:focus-visible {
+    outline: 2px solid t.$verde;
+    outline-offset: 2px;
+  }
+}
+
+// ---------- Chat
+
+.chat {
+  display: flex;
+  flex-direction: column;
+  background: t.$blanco;
+  box-shadow: $sombra;
+}
+
+.chatTitulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 18px 20px 14px;
+  border-bottom: 1px solid t.$gris-claro;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 13px;
+  color: t.$gris-texto;
+  text-transform: uppercase;
+}
+
+.chatMensajes {
+  height: 300px;
+  overflow-y: auto;
+  padding: 8px 20px;
+  overscroll-behavior: contain;
+
+  .vacio {
+    margin-top: 12px;
+  }
+
+  @include t.mobile {
+    height: 280px;
+  }
+}
+
+.mensaje {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 10px;
+  margin: 0;
+  padding: 9px 0;
+  border-bottom: 1px solid rgba(t.$gris-claro, 0.6);
+  font-size: 14px;
+  line-height: 19px;
+
+  &:last-child {
+    border-bottom: 0;
+  }
+}
+
+.mensajeUsuario {
+  font-weight: 700;
+  color: t.$gris-oscuro;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mensajeHora {
+  white-space: nowrap;
+  grid-row: 1;
+  grid-column: 2;
+  font-size: 12px;
+  color: t.$gris-medio;
+}
+
+.mensajeTexto {
+  grid-column: 1 / -1;
+  color: t.$gris-texto;
+  overflow-wrap: anywhere;
+}
+
+.mensajeOferta .mensajeTexto {
+  color: t.$verde;
+  font-weight: 800;
+}
+
+// Avisos de la sala (adjudicado): sin id del backend
+.mensajeSistema {
+  margin: 6px -10px;
+  padding: 9px 10px;
+  background: t.$verde-claro;
+  border-bottom: 0;
+
+  .mensajeUsuario,
+  .mensajeTexto {
+    color: t.$verde;
+  }
+}
+
+.chatEntrada {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  padding: 14px 20px 18px;
+  border-top: 1px solid t.$gris-claro;
 
   input {
     flex: 1;
-    border: none;
+    min-width: 0;
+    padding: 0 0 10px;
+    border: 0;
+    border-bottom: 1px solid t.$gris-oscuro;
+    border-radius: 0;
     background: transparent;
-    padding: 10px;
-    font-size: 12px;
-    font-weight: 500;
+    font-family: t.$font-texto;
+    font-size: 16px;
+    line-height: 22px;
+    color: t.$gris-oscuro;
+
+    &::placeholder {
+      color: t.$gris-medio;
+    }
 
     &:focus {
       outline: none;
+      border-bottom: 2px solid t.$verde;
+      padding-bottom: 9px;
+    }
+
+    &:disabled {
+      border-bottom-color: t.$gris-claro;
     }
   }
 }
 
-.sendBtn {
-  background: transparent;
-  border: none;
-  color: #888;
-  cursor: pointer;
-
-  &:hover {
-    color: #000;
-  }
-}
-
-.lightboxOverlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.95);
-  backdrop-filter: blur(10px);
+.enviar {
+  flex: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 3000;
-}
-
-.lightboxContainer {
-  position: relative;
-  width: 90%;
-  max-width: 1100px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.closeBtn {
-  position: absolute;
-  top: -60px;
-  right: 0;
-  background: none;
-  border: none;
-  color: #fff;
-  font-size: 40px;
+  width: 43px;
+  height: 43px;
+  border: 0;
+  background: t.$verde;
+  color: t.$blanco;
   cursor: pointer;
-}
 
-.mediaViewer {
-  width: 100%;
-  background: #000;
-  border-radius: 15px;
-  overflow: hidden;
-  display: flex;
-  justify-content: center;
-  box-shadow: 0 10px 50px rgba(0, 0, 0, 0.5);
-
-  img {
-    max-width: 100%;
-    max-height: 80vh;
-    object-fit: contain;
+  &:hover:not(:disabled) {
+    filter: brightness(0.92);
   }
-}
 
-.navBtn {
-  position: absolute;
-  top: 50%;
-  transform: translateY(-50%);
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-  border: none;
-  width: 50px;
-  height: 50px;
-  border-radius: 50%;
-  font-size: 30px;
-  cursor: pointer;
-  transition: 0.2s;
-
-  &:hover {
-    background: rgba(255, 255, 255, 0.2);
+  &:disabled {
+    background: t.$gris-claro;
+    color: t.$gris-medio;
+    cursor: not-allowed;
   }
-}
 
-.prev {
-  left: -75px;
-
-  @media (max-width: 1300px) {
-    left: 10px;
+  &:focus-visible {
+    outline: 3px solid t.$gris-oscuro;
+    outline-offset: 2px;
   }
-}
-
-.next {
-  right: -75px;
-
-  @media (max-width: 1300px) {
-    right: 10px;
-  }
-}
-
-.lightboxFooter {
-  margin-top: 15px;
-  color: #fff;
-  font-size: 12px;
-  opacity: 0.7;
-}
-
-// Solo visible para martillero/admin (no está en el diseño original)
-.panelLink {
-  display: inline-block;
-  margin-top: 6px;
-  font-size: 13px;
-  font-weight: 600;
-  color: #333;
-  text-decoration: underline;
 }
