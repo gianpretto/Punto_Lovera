@@ -1,159 +1,220 @@
-.reintegroWrapper {
-  max-width: 600px;
-  margin: 100px auto;
-  padding: 0 20px;
-  font-family: 'Montserrat', sans-serif;
-}
+@use '../../styles/tokens' as t;
 
-.formContainer {
-  background: #fff;
-  padding: 40px;
-  border-radius: 10px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
-}
+// Pedido de reintegro (sin wireframe): misma disposición que Contactanos,
+// título a la izquierda y formulario subrayado a la derecha.
 
-.title {
-  font-size: 32px;
-  font-weight: 700;
-  text-align: center;
-  margin-bottom: 10px;
-  color: #111;
-}
+.pagina {
+  @include t.fondo-patron(t.$blanco);
+  padding: 140px 0 136px;
+  font-family: t.$font-texto;
+  color: t.$gris-oscuro;
 
-.subtitle {
-  text-align: center;
-  color: #666;
-  margin-bottom: 40px;
-  font-size: 14px;
-}
+  @include t.tablet {
+    padding: 80px 0 96px;
+  }
 
-.reintegroForm {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-
-.formGroup {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-
-  label {
-    font-size: 12px;
-    font-weight: 600;
-    text-transform: uppercase;
-    color: #888;
-    letter-spacing: 0.5px;
+  @include t.mobile {
+    padding: 48px 0 64px;
   }
 }
 
-.formControl {
-  padding: 14px 16px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-  font-family: inherit;
+.contenedor {
+  @include t.contenedor;
+  display: grid;
+  grid-template-columns: minmax(0, 650px) minmax(0, 542px);
+  justify-content: space-between;
+  align-items: start;
 
-  &:focus {
-    outline: none;
-    border-color: #3e6d6d;
+  @include t.tablet {
+    grid-template-columns: 1fr;
+    row-gap: 48px;
   }
 }
 
-.isInvalid {
-  border-color: #dc3545;
+.columnaTexto {
+  display: flex;
+  flex-direction: column;
 }
 
-.textarea {
-  min-height: 100px;
-  resize: none;
+.titulo {
+  @include t.titulo-display(96px, 1.104);
+  margin-top: 24px;
+
+  em {
+    color: t.$verde;
+  }
 }
 
-.btnBlack {
-  background: #000;
-  color: #fff;
-  border: none;
-  padding: 18px;
+.bajada {
+  box-sizing: border-box;
+  max-width: 446px;
+  margin: 48px 0 0;
+  padding: 12px 0 12px 45px;
+  border-left: 1px solid t.$verde;
   font-size: 16px;
-  font-weight: 600;
-  border-radius: 4px;
-  cursor: pointer;
-  margin-top: 10px;
-  transition: background 0.2s;
+  line-height: 22px;
 
-  &:hover {
-    background: #333;
+  @include t.mobile {
+    margin-top: 32px;
+    padding-left: 24px;
   }
 }
 
-.btnBack {
-  text-align: center;
-  display: block;
-  color: #888;
+// Recuadro con el máximo que se puede pedir
+.disponible {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  align-self: start;
+  margin-top: 40px;
+  padding: 20px 28px;
+  background: t.$verde;
+  color: t.$gris-claro;
   font-size: 14px;
-  text-decoration: none;
-  margin-top: 10px;
+  line-height: 20px;
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
 
-  &:hover {
-    color: #333;
+  strong {
+    font-family: t.$font-titulo;
+    font-weight: 400;
+    font-size: 44px;
+    line-height: 48px;
+    color: t.$blanco;
+  }
+
+  @include t.mobile {
+    align-self: stretch;
+    margin-top: 32px;
   }
 }
 
-.successMessage {
-  text-align: center;
-  padding: 60px 40px;
-  background: #f9f9f9;
-  border-radius: 10px;
+.formulario {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  padding-top: 35px;
+
+  @include t.tablet {
+    padding-top: 0;
+  }
+
+  @include t.mobile {
+    gap: 24px;
+  }
 }
 
-.iconCircle {
-  width: 80px;
-  height: 80px;
-  background: #3e6d6d;
-  border-radius: 50%;
+// Motivo: textarea con el mismo estilo que Campo (Campo solo cubre <input>)
+.campo {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+
+  span {
+    font-weight: 700;
+    font-size: 16px;
+    line-height: 22px;
+  }
+
+  textarea {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 0;
+    padding: 0 0 13px;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid t.$gris-oscuro;
+    border-radius: 0;
+    font-family: t.$font-texto;
+    font-size: 16px;
+    line-height: 22px;
+    color: t.$gris-oscuro;
+    resize: vertical;
+
+    &::placeholder {
+      color: inherit;
+      opacity: 0.55;
+    }
+
+    &:focus {
+      outline: none;
+      border-bottom: 2px solid t.$verde;
+      padding-bottom: 12px;
+    }
+  }
+}
+
+.acciones {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  margin-top: 8px;
+}
+
+.cancelar {
+  font-size: 16px;
+  line-height: 22px;
+  color: t.$gris-texto;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+
+  &:hover {
+    color: t.$gris-oscuro;
+  }
+
+  &:focus-visible {
+    outline: 2px solid t.$verde;
+    outline-offset: 2px;
+  }
+}
+
+// ---------- Pedido enviado
+.exito {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: calc(100% - 32px);
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 64px 56px;
+  background: t.$blanco;
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
+  box-sizing: border-box;
+  text-align: center;
+
+  @include t.mobile {
+    padding: 40px 24px;
+  }
+}
+
+.icono {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 30px;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: t.$verde;
+  color: t.$blanco;
 }
 
-.successTitle {
-  font-size: 24px;
-  margin-bottom: 15px;
-  font-weight: 700;
-}
+.exitoTitulo {
+  @include t.titulo-display(56px, 1.1);
+  margin-top: 32px;
 
-.successDesc {
-  color: #666;
-  line-height: 1.6;
-}
+  em {
+    color: t.$verde;
+  }
 
-.disponible {
-  text-align: center;
-  font-size: 14px;
-  color: #333;
-  margin: -24px 0 30px;
-
-  strong {
-    font-weight: 700;
+  @include t.mobile {
+    font-size: 36px;
   }
 }
 
-.fieldError {
-  color: #dc3545;
-  font-size: 12px;
-}
-
-.alertDanger {
-  color: #dc3545;
-  background: #f8d7da;
-  border: 1px solid #f5c2c7;
-  border-radius: 4px;
-  padding: 12px 16px;
-  font-size: 14px;
-}
-
-.btnBlack:disabled {
-  background: #999;
-  cursor: default;
+.exitoTexto {
+  max-width: 440px;
+  margin: 24px 0 0;
+  font-size: 16px;
+  line-height: 22px;
+  color: t.$gris-texto;
 }
