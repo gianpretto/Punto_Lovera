@@ -149,13 +149,22 @@ export default function Home() {
           <div className={styles.contenedor}>
             <h2 className={styles.marcasTitulo}>Confían en nosotros</h2>
             <img className={styles.ornamento} src="/assets/figma/ornamento.svg" alt="" aria-hidden="true" width={241} height={44} />
-            <ul className={styles.marcasLista}>
-              {MARCAS.map((m) => (
-                <li key={m.alt}>
-                  <img src={m.src} alt={m.alt} width={m.ancho} height={m.alto} loading="lazy" />
-                </li>
-              ))}
-            </ul>
+            {/* Carrusel que se mueve solo: la cinta tiene dos copias iguales de
+                los logos (la segunda oculta para lectores de pantalla) y se
+                desplaza la mitad de su ancho en loop, así el corte no se nota. */}
+            <div className={styles.carrusel}>
+              <div className={styles.cinta}>
+                {[0, 1].map((copia) => (
+                  <ul key={copia} className={styles.marcasLista} aria-hidden={copia === 1 || undefined}>
+                    {[...MARCAS, ...MARCAS].map((m, i) => (
+                      <li key={i}>
+                        <img src={m.src} alt={copia === 0 && i < MARCAS.length ? m.alt : ''} width={m.ancho} height={m.alto} />
+                      </li>
+                    ))}
+                  </ul>
+                ))}
+              </div>
+            </div>
             <img
               className={`${styles.ornamento} ${styles.ornamentoAbajo}`}
               src="/assets/figma/ornamento.svg"
