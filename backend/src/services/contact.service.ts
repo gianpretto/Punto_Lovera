@@ -1,3 +1,4 @@
+import { desc } from 'drizzle-orm';
 import { db } from '../config/db';
 import { contactMessages } from '../db/schema';
 import { env } from '../config/env';
@@ -20,4 +21,9 @@ export async function createContactMessage(input: ContactInput) {
     console.error('No se pudo enviar el aviso de la consulta de contacto:', err);
   }
   return row;
+}
+
+/** Últimas consultas recibidas, las más nuevas primero (para el admin). */
+export async function listContactMessages(limit = 200) {
+  return db.select().from(contactMessages).orderBy(desc(contactMessages.createdAt)).limit(limit);
 }

@@ -9,6 +9,7 @@ import SubastaActiva from './pages/SubastaActiva/SubastaActiva';
 import PanelMartillero from './pages/PanelMartillero/PanelMartillero';
 import AdminComprobantes from './pages/AdminComprobantes/AdminComprobantes';
 import AdminReintegros from './pages/AdminReintegros/AdminReintegros';
+import AdminConsultas from './pages/AdminConsultas/AdminConsultas';
 import AdminSubastas from './pages/AdminSubastas/AdminSubastas';
 import EditarSubasta from './pages/AdminSubastas/EditarSubasta';
 import Login from './pages/Login/Login';
@@ -55,6 +56,7 @@ export default function App() {
           <Route path="/reintegro" element={<Reintegro />} />
           <Route path="/admin/comprobantes" element={<AdminComprobantes />} />
           <Route path="/admin/reintegros" element={<AdminReintegros />} />
+          <Route path="/admin/consultas" element={<AdminConsultas />} />
 
           {/* Administración de subastas y lotes (martillero / admin) */}
           <Route path="/admin/subastas" element={<AdminSubastas />} />

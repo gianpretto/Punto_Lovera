@@ -39,3 +39,19 @@ describe('POST /contacto', () => {
     expect(estados).toContain(429);
   });
 });
+
+describe('GET /contacto (admin)', () => {
+  it('lista las consultas solo para el admin, las más nuevas primero', async () => {
+    expect((await app.api('GET', '/contacto')).status).toBe(401);
+    const usuario = await app.login('usuario@test.com', 'user1234');
+    expect((await app.api('GET', '/contacto', undefined, usuario)).status).toBe(403);
+
+    const admin = await app.login('admin@puntolovera.com', 'admin1234');
+    const res = await app.api('GET', '/contacto', undefined, admin);
+    expect(res.status).toBe(200);
+    expect(res.data.messages.length).toBeGreaterThan(0);
+    expect(res.data.messages[0]).toMatchObject({ email: expect.any(String), message: expect.any(String) });
+    const fechas = res.data.messages.map((m: { createdAt: string }) => Date.parse(m.createdAt));
+    expect([...fechas].sort((a, b) => b - a)).toEqual(fechas);
+  });
+});

@@ -8,3 +8,8 @@ export const create = asyncHandler(async (req: Request, res: Response) => {
   await contactService.createContactMessage(input);
   res.status(201).json({ message: 'Recibimos tu consulta. Te vamos a responder a la brevedad.' });
 });
+
+export const list = asyncHandler(async (_req: Request, res: Response) => {
+  const messages = await contactService.listContactMessages();
+  res.json({ messages });
+});
