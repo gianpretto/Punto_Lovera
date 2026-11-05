@@ -2,6 +2,10 @@ import { useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../services/AuthContext';
 import { api, ApiError } from '../../services/api';
+import Aviso from '../../components/ui/Aviso';
+import Boton from '../../components/ui/Boton';
+import Campo from '../../components/ui/Campo';
+import Etiqueta from '../../components/ui/Etiqueta';
 import styles from './Reintegro.module.scss';
 
 // Pedido de reintegro: el usuario pide que le devuelvan crédito que no usó.
@@ -70,94 +74,110 @@ export default function Reintegro() {
 
   if (!user) return null;
 
+  // Mensajes por campo (antes solo se marcaba el borde en rojo en los que no tenían texto)
+  const errorMonto = !submitted || !errors.monto
+    ? undefined
+    : monto !== '' && montoNumero > disponible
+      ? 'Supera tu crédito disponible.'
+      : 'Indicá un monto mayor a cero.';
+  const errorCbu = !submitted || !errors.cbu
+    ? undefined
+    : cbu.trim() !== ''
+      ? 'El CBU tiene que tener 22 dígitos.'
+      : 'Indicá el CBU.';
+  const errorAlias = submitted && errors.alias ? 'Indicá el alias.' : undefined;
+
   return (
-    <div className={styles.reintegroWrapper}>
+    <div className={styles.pagina}>
       {!success && (
-        <div className={styles.formContainer}>
-          <h1 className={styles.title}>Solicitar Reintegro</h1>
-          <p className={styles.subtitle}>
-            Completá los datos de la cuenta donde querés recibir el dinero de vuelta.
-          </p>
-          <p className={styles.disponible}>
-            Podés pedir hasta <strong>$ {formatNumber(Math.max(disponible, 0))}</strong> (tu crédito disponible).
-          </p>
-
-          <form className={styles.reintegroForm} onSubmit={onSubmit} noValidate>
-            <div className={styles.formGroup}>
-              <label>Monto a reintegrar</label>
-              <input
-                type="number"
-                min={1}
-                className={`${styles.formControl} ${submitted && errors.monto ? styles.isInvalid : ''}`}
-                placeholder="$ 0.00"
-                value={monto}
-                onChange={(e) => setMonto(e.target.value)}
-              />
-              {submitted && monto !== '' && montoNumero > disponible && (
-                <span className={styles.fieldError}>Supera tu crédito disponible.</span>
-              )}
+        <div className={styles.contenedor}>
+          <div className={styles.columnaTexto}>
+            <Etiqueta tono="verde" tamano="grande">
+              reintegro
+            </Etiqueta>
+            <h1 className={styles.titulo}>
+              Solicitar <em>reintegro.</em>
+            </h1>
+            <p className={styles.bajada}>
+              Completá los datos de la cuenta donde querés recibir el dinero de vuelta.
+            </p>
+            <div className={styles.disponible}>
+              <span>Podés pedir hasta</span>
+              <strong>$ {formatNumber(Math.max(disponible, 0))}</strong>
+              <span>(tu crédito disponible)</span>
             </div>
+          </div>
 
-            <div className={styles.formGroup}>
-              <label>CBU (22 dígitos)</label>
-              <input
-                type="text"
-                inputMode="numeric"
-                className={`${styles.formControl} ${submitted && errors.cbu ? styles.isInvalid : ''}`}
-                placeholder="0000000000000000000000"
-                value={cbu}
-                onChange={(e) => setCbu(e.target.value)}
-              />
-              {submitted && errors.cbu && cbu.trim() !== '' && (
-                <span className={styles.fieldError}>El CBU tiene que tener 22 dígitos.</span>
-              )}
-            </div>
+          <form className={styles.formulario} onSubmit={onSubmit} noValidate>
+            <Campo
+              etiqueta="Monto a reintegrar"
+              type="number"
+              min={1}
+              placeholder="$ 0.00"
+              value={monto}
+              error={errorMonto}
+              onChange={(e) => setMonto(e.target.value)}
+            />
 
-            <div className={styles.formGroup}>
-              <label>Alias</label>
-              <input
-                type="text"
-                className={`${styles.formControl} ${submitted && errors.alias ? styles.isInvalid : ''}`}
-                placeholder="mi.alias.pago"
-                value={alias}
-                onChange={(e) => setAlias(e.target.value)}
-              />
-            </div>
+            <Campo
+              etiqueta="CBU (22 dígitos)"
+              type="text"
+              inputMode="numeric"
+              placeholder="0000000000000000000000"
+              value={cbu}
+              error={errorCbu}
+              onChange={(e) => setCbu(e.target.value)}
+            />
 
-            <div className={styles.formGroup}>
-              <label>Motivo (opcional)</label>
+            <Campo
+              etiqueta="Alias"
+              type="text"
+              placeholder="mi.alias.pago"
+              value={alias}
+              error={errorAlias}
+              onChange={(e) => setAlias(e.target.value)}
+            />
+
+            <label className={styles.campo}>
+              <span>Motivo (opcional)</span>
               <textarea
-                className={`${styles.formControl} ${styles.textarea}`}
                 placeholder="¿Por qué solicitas el reintegro?"
                 value={motivo}
                 maxLength={500}
+                rows={2}
                 onChange={(e) => setMotivo(e.target.value)}
               />
+            </label>
+
+            {error && <Aviso tipo="error">{error}</Aviso>}
+
+            <div className={styles.acciones}>
+              <Boton variante="verde" type="submit" flecha bloque disabled={sending || disponible <= 0}>
+                {sending ? 'Enviando...' : 'Solicitar reintegro'}
+              </Boton>
+              <Link to="/creditos" className={styles.cancelar}>
+                Cancelar
+              </Link>
             </div>
-
-            {error && <div className={styles.alertDanger}>{error}</div>}
-
-            <button type="submit" className={styles.btnBlack} disabled={sending || disponible <= 0}>
-              {sending ? 'Enviando...' : 'Solicitar Reintegro'}
-            </button>
-            <Link to="/creditos" className={styles.btnBack}>Cancelar</Link>
           </form>
         </div>
       )}
 
       {success && (
-        <div className={styles.successMessage}>
-          <div className={styles.iconCircle}>
-            <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth={2}>
-              <polyline points="20 6 9 17 4 12"></polyline>
+        <section className={styles.exito} aria-live="polite">
+          <span className={styles.icono} aria-hidden="true">
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="20 6 9 17 4 12" />
             </svg>
-          </div>
-          <h2 className={styles.successTitle}>Solicitud enviada</h2>
-          <p className={styles.successDesc}>
+          </span>
+          <h2 className={styles.exitoTitulo}>
+            Solicitud <em>enviada</em>
+          </h2>
+          <p className={styles.exitoTexto}>
             Recibimos tu pedido de reintegro. El monto queda reservado hasta que te lo transfiramos; te avisamos por mail.
             Serás redirigido a tus créditos en un momento.
           </p>
-        </div>
+        </section>
       )}
     </div>
   );

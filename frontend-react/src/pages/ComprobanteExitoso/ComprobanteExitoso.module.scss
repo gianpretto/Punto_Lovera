@@ -1,55 +1,83 @@
-.successWrapper {
+@use '../../styles/tokens' as t;
+
+.pagina {
+  @include t.fondo-patron(t.$blanco);
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 80vh;
-  padding: 20px;
-  font-family: 'Montserrat', sans-serif;
+  min-height: 70vh;
+  padding: 120px t.$margen-lateral;
+  box-sizing: border-box;
+  font-family: t.$font-texto;
+  color: t.$gris-oscuro;
+
+  @include t.mobile {
+    padding: 56px 16px;
+  }
 }
 
-.successCard {
-  max-width: 500px;
+.tarjeta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   width: 100%;
+  max-width: 640px;
+  padding: 64px 56px;
+  background: t.$blanco;
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
+  box-sizing: border-box;
   text-align: center;
-  background: #f9f9f9;
-  padding: 60px 40px;
-  border-radius: 10px;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+
+  @include t.mobile {
+    padding: 40px 24px;
+  }
 }
 
-.iconCircle {
-  width: 100px;
-  height: 100px;
-  background: #3e6d6d;
-  border-radius: 50%;
+.icono {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 30px;
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: t.$verde;
+  color: t.$blanco;
 }
 
-.title {
-  font-size: 24px;
-  font-weight: 700;
-  margin-bottom: 20px;
-  color: #111;
+.tarjeta .etiqueta {
+  margin-top: 36px;
 }
 
-.desc {
+.titulo {
+  @include t.titulo-display(56px, 1.1);
+  margin-top: 20px;
+
+  em {
+    color: t.$verde;
+  }
+
+  @include t.mobile {
+    font-size: 36px;
+  }
+}
+
+.texto {
+  max-width: 420px;
+  margin: 24px 0 0;
   font-size: 16px;
-  color: #666;
-  line-height: 1.6;
-  margin-bottom: 40px;
+  line-height: 22px;
+  color: t.$gris-texto;
 }
 
-.btnBlack {
-  background: #000;
-  color: #fff;
-  border: none;
-  padding: 16px 40px;
-  font-size: 16px;
-  font-weight: 600;
-  border-radius: 4px;
-  cursor: pointer;
-  width: 100%;
+.acciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 16px;
+  margin-top: 40px;
+
+  @include t.mobile {
+    flex-direction: column;
+    align-self: stretch;
+  }
 }

@@ -1,0 +1,41 @@
+@use '../../styles/tokens' as t;
+
+.pastilla {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 22px;
+  padding: 0 10px 0 8px;
+  font-family: t.$font-texto;
+  font-size: 11px;
+  line-height: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: nowrap;
+
+  // Punto de color delante del texto
+  &::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    flex: none;
+  }
+}
+
+.PENDIENTE {
+  background: t.$gris-claro;
+  color: t.$gris-oscuro;
+}
+
+.APROBADO {
+  background: t.$verde-claro;
+  color: t.$verde;
+}
+
+.RECHAZADO {
+  background: t.$error-fondo;
+  color: t.$error;
+}
