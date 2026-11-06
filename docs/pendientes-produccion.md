@@ -131,7 +131,12 @@ Settings → Environment Variables (Production) y después **Redeploy**.
 - [ ] **Prueba de transmisión con OBS**: generar la clave en el panel del
       martillero, transmitir, ver el video en la sala desde otra compu y el
       celular. Cámara chica del martillero: armarla dentro de la escena de
-      OBS. Recomendado 720p a ~2500 kbps (menos consumo en Railway).
+      OBS. Recomendado 720p a ~2500 kbps (menos consumo en Railway),
+      intervalo de fotogramas clave 2 s. **Audio: dejar activo solo el
+      micrófono (Mic/Aux)**; silenciar "Audio del escritorio" y cualquier
+      "Captura de entrada audio" que no sea el mic, y no tener la sala
+      sonando cerca del micrófono: si no, el stream se vuelve a grabar y el
+      audio se repite en bucle.
 - [ ] Flujo completo con dos usuarios: registro (mail y Google) → datos →
       cargar crédito (comprobante) → admin lo aprueba → ofertar en vivo →
       adjudicar → reintegro del crédito sobrante.
