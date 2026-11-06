@@ -28,7 +28,7 @@ interface Touched {
 // apellido se mantienen porque el backend los pide al registrarse.
 export default function Registro() {
   const navigate = useNavigate();
-  const { register } = useAuth();
+  const { register, login } = useAuth();
   const [searchParams] = useSearchParams();
   const volver = searchParams.get('volver');
 
@@ -97,8 +97,15 @@ export default function Registro() {
 
     setSending(true);
     try {
-      await register(email, password, nombre, apellido);
+      const creado = await register(email, password, nombre, apellido);
       registrarEvento('sign_up', { method: 'email' });
+      if (creado.emailVerified) {
+        // Entorno sin validación de mail: entra directo y completa sus datos
+        await login(email, password);
+        const destino = volver && volver.startsWith('/') && !volver.startsWith('//') ? volver : '/';
+        navigate(`/datos?volver=${encodeURIComponent(destino)}`);
+        return;
+      }
       // El mail viaja a /validar-mail para poder ofrecer "Reenviar correo"
       navigate('/validar-mail', { state: { email } });
     } catch (err) {

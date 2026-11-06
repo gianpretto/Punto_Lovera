@@ -19,6 +19,17 @@ contraseñas ni secretos en chats.
       `ADMIN_EMAIL=... ADMIN_PASSWORD=... npm run create-admin` con
       `DATABASE_URL` apuntando a producción. Repetir con
       `ADMIN_ROLE=MARTILLERO` para Gonzalo y Emiliano.
+- [ ] **Velocidad: poner el backend y la base en la misma región.** Hoy la
+      base de Neon está en São Paulo (`sa-east-1`) y Railway en EE.UU.: cada
+      consulta cruza el continente (~0,2 s extra por consulta). Railway no
+      tiene región en Sudamérica, así que lo mejor es: Railway → servicio
+      backend (y media-server) → Settings → Region **US East**, y crear el
+      proyecto de Neon de producción en **AWS us-east-1** (N. Virginia).
+      La región de un proyecto de Neon no se cambia: hay que crear otro y
+      cargar los datos (la base de producción hoy está vacía, así que es
+      el momento). Además, el plan gratis de Neon duerme la base a los 5
+      minutos sin uso (la primera visita tarda ~2 s): en el plan pago se
+      puede dejar siempre despierta.
 - [ ] **Volumen para archivos**: confirmar que `UPLOAD_DIR` apunta al
       Volume de Railway (fotos de lotes, comprobantes); si no, se borran en
       cada deploy.
@@ -27,6 +38,10 @@ contraseñas ni secretos en chats.
       orígenes autorizados de Google (punto 3).
 
 ## 2. Seguridad (antes de tener usuarios reales)
+
+- [ ] **Sacar `SKIP_EMAIL_VERIFICATION`** de las variables de Railway (o
+      ponerla en `false`) antes de abrir al público: con `true` nadie
+      necesita validar su mail. El backend lo avisa en los logs al arrancar.
 
 - [ ] **Rotar secretos que quedaron en chats**: contraseña de Neon
       (`neondb_owner`, ramas dev y production) ✔ ya rotada; falta

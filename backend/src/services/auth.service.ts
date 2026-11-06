@@ -7,6 +7,7 @@ import { hashToken, randomToken } from '../utils/tokens';
 import { Errors } from '../utils/AppError';
 import { sendPasswordResetEmail, sendVerificationEmail } from './mail.service';
 import { getHeldCredit } from './credit.service';
+import { env } from '../config/env';
 import type { GoogleProfile } from './google.service';
 
 const SALT_ROUNDS = 10;
@@ -55,7 +56,8 @@ function publicUser(user: UserRow, heldCredit = 0) {
     province: user.province,
     zipCode: user.zipCode,
     role: user.role,
-    emailVerified: user.emailVerified,
+    // En entornos de prueba sin SMTP (SKIP_EMAIL_VERIFICATION) todos cuentan como validados
+    emailVerified: user.emailVerified || env.skipEmailVerification,
     creditBalance: Number(user.creditBalance),
     // Reservado (lotes que va ganando + reintegros pendientes) y lo que le
     // queda para pujar o pedir de reintegro
@@ -74,6 +76,24 @@ export async function register(input: RegisterInput) {
   if (existing) throw Errors.conflict('Ya existe una cuenta con ese email');
 
   const passwordHash = await bcrypt.hash(input.password, SALT_ROUNDS);
+
+  // Entorno de prueba sin SMTP: la cuenta queda validada y no se manda mail
+  if (env.skipEmailVerification) {
+    const [user] = await db
+      .insert(users)
+      .values({
+        email: input.email,
+        passwordHash,
+        firstName: input.firstName,
+        lastName: input.lastName,
+        phone: input.phone,
+        dni: input.dni,
+        emailVerified: true,
+      })
+      .returning();
+    return publicUser(user);
+  }
+
   const verificationToken = randomToken();
 
   const [user] = await db

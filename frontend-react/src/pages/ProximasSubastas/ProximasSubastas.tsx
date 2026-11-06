@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import Etiqueta from '../../components/ui/Etiqueta';
 import TarjetaSubasta from '../../components/tarjetas/TarjetaSubasta';
 import SubastaDestacada from '../../components/secciones/SubastaDestacada';
@@ -6,13 +6,12 @@ import BannerRedes from '../../components/secciones/BannerRedes';
 import PreguntasFrecuentes from '../../components/secciones/PreguntasFrecuentes';
 import { preguntasDestacadas } from '../../content/participar';
 import { uploadUrl } from '../../services/api';
-import { toSubasta, useAuctions, useNow } from '../../services/auctions';
-import { ordenarSubastas } from '../../utils/ordenarSubastas';
+import { toSubasta, useAuctions, useAuctionsPage, useNow, type AuctionStatus } from '../../services/auctions';
 import styles from './ProximasSubastas.module.scss';
 
 // "Todas las subastas" del rediseño (Figma "Proximas subastas"): subasta en
-// vivo (o la próxima) arriba, grilla de 4 x 3 con paginación (en vivo,
-// próximas y terminadas), redes y preguntas frecuentes.
+// vivo (o la próxima) arriba, grilla paginada en el backend (6 por página:
+// 3 x 2; en vivo, próximas y terminadas), redes y preguntas frecuentes.
 
 const FOTOS_EJEMPLO = [
   '/assets/figma/subasta-cocina-2.webp',
@@ -21,28 +20,19 @@ const FOTOS_EJEMPLO = [
   '/assets/figma/subasta-cocina-3.webp',
 ];
 
-const porPagina = () => (typeof window !== 'undefined' && window.innerWidth <= 425 ? 4 : 12);
+const POR_PAGINA = 6;
+const ESTADOS: AuctionStatus[] = ['ACTIVA', 'PROXIMA', 'FINALIZADA'];
 
 export default function ProximasSubastas() {
   const now = useNow();
-  const subastas = useAuctions(['ACTIVA', 'PROXIMA', 'FINALIZADA']);
-  const ordenadas = useMemo(() => ordenarSubastas(subastas ?? []), [subastas]);
-  const destacada = ordenadas.find((a) => a.status !== 'FINALIZADA');
+  // La destacada es la primera en vivo o próxima (pedido aparte, 1 sola)
+  const [destacada] = useAuctions(['ACTIVA', 'PROXIMA'], 1) ?? [];
 
-  const [itemsPerPage, setItemsPerPage] = useState(porPagina);
-  const [paginaElegida, setCurrentPage] = useState(1);
-  const totalPages = Math.max(1, Math.ceil(ordenadas.length / itemsPerPage));
-  // Si cambia la cantidad por página (resize) y la elegida ya no existe, vuelve a la 1
-  const currentPage = paginaElegida > totalPages ? 1 : paginaElegida;
-
-  useEffect(() => {
-    const checkScreenSize = () => setItemsPerPage(porPagina());
-    window.addEventListener('resize', checkScreenSize);
-    return () => window.removeEventListener('resize', checkScreenSize);
-  }, []);
-
-  const inicio = (currentPage - 1) * itemsPerPage;
-  const pagina = ordenadas.slice(inicio, inicio + itemsPerPage);
+  const [currentPage, setCurrentPage] = useState(1);
+  const { data, error } = useAuctionsPage(ESTADOS, currentPage, POR_PAGINA);
+  const totalPages = data?.pages ?? 1;
+  const pagina = data?.auctions ?? [];
+  const inicio = (currentPage - 1) * POR_PAGINA;
 
   const visiblePages = useMemo((): (number | string)[] => {
     const delta = 2;
@@ -87,7 +77,7 @@ export default function ProximasSubastas() {
               Todas las subastas
             </h1>
           </div>
-          {subastas && <p className={styles.total}>Total subastas ({ordenadas.length})</p>}
+          {data && <p className={styles.total}>Total subastas ({data.total})</p>}
         </div>
 
         <div className={styles.grilla}>
@@ -109,8 +99,9 @@ export default function ProximasSubastas() {
             );
           })}
         </div>
-        {subastas && ordenadas.length === 0 && (
-          <p className={styles.sinSubastas}>Pronto vamos a publicar nuevas subastas.</p>
+        {data && data.total === 0 && <p className={styles.sinSubastas}>Pronto vamos a publicar nuevas subastas.</p>}
+        {error && !data && (
+          <p className={styles.sinSubastas}>No pudimos cargar las subastas. Probá de nuevo en un momento.</p>
         )}
 
         {totalPages > 1 && (

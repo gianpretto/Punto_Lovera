@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import { Request, Response } from 'express';
 import { asyncHandler } from '../utils/asyncHandler';
 import * as auctionService from '../services/auction.service';
@@ -10,10 +11,27 @@ import { removeUploadedFile, toPublicUrl } from '../middleware/upload.middleware
 
 type AuctionStatus = (typeof auctions.$inferSelect)['status'];
 
+const ESTADOS = ['PROXIMA', 'ACTIVA', 'FINALIZADA', 'CANCELADA'] as const;
+
+// ?status=ACTIVA,PROXIMA (uno o varios) &page=1 &pageSize=6 (máx. 24).
+// Sin page devuelve la lista completa (la usa el admin).
+const listQuerySchema = z.object({
+  status: z
+    .string()
+    .optional()
+    .transform((v) => (v ? v.split(',').map((s) => s.trim().toUpperCase()) : undefined))
+    .pipe(z.array(z.enum(ESTADOS)).max(4).optional()),
+  page: z.coerce.number().int().min(1).max(10000).optional(),
+  pageSize: z.coerce.number().int().min(1).max(24).default(6),
+});
+
 export const list = asyncHandler(async (req: Request, res: Response) => {
-  const status = req.query.status as AuctionStatus | undefined;
-  const auctions = await auctionService.listAuctions(status);
-  res.json({ auctions });
+  const { status, page, pageSize } = listQuerySchema.parse(req.query);
+  if (page === undefined) {
+    const auctions = await auctionService.listAuctions(status as AuctionStatus[] | undefined);
+    return res.json({ auctions });
+  }
+  res.json(await auctionService.listAuctionsPage(status as AuctionStatus[] | undefined, page, pageSize));
 });
 
 export const getOne = asyncHandler(async (req: Request, res: Response) => {

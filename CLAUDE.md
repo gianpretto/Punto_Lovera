@@ -162,6 +162,18 @@ vivo de YouTube embebido (lo ve cualquiera con el link).
   avisa en el registro ("Ya existe una cuenta con ese email"). Los mails
   se normalizan a minúsculas sin espacios (migración 0007).
 
+## Listado paginado y entorno de prueba sin mail (nov 2026)
+
+- `GET /api/subastas?status=ACTIVA,PROXIMA&page=1&pageSize=6` (máx. 24):
+  paginado en la base, en el orden de la web (en vivo → próximas por fecha
+  → terminadas, la más reciente primero); responde `{ auctions, total,
+  page, pageSize, pages }`. Sin `page` devuelve la lista completa (admin).
+  Front: `useAuctionsPage` (Todas las subastas, 6 por página en 3 x 2) y
+  `useAuctions(estados, cantidad)` (Home 4, Quiénes somos 4).
+- `SKIP_EMAIL_VERIFICATION=true` (solo pruebas sin SMTP): el registro deja
+  la cuenta validada, se puede ofertar sin validar y el front entra directo
+  a `/datos`. Avisa en los logs al arrancar. Sacarlo antes de producción.
+
 ## Ingreso con Google (nov 2026)
 
 "Continuar con Google" en Login y Registro (`components/auth/BotonGoogle`,

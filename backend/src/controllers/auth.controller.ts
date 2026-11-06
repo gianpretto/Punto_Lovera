@@ -17,7 +17,10 @@ import {
 export const register = asyncHandler(async (req: Request, res: Response) => {
   const input = registerSchema.parse(req.body);
   const user = await authService.register(input);
-  res.status(201).json({ user, message: 'Cuenta creada. Revisá tu mail para confirmarla.' });
+  res.status(201).json({
+    user,
+    message: user.emailVerified ? 'Cuenta creada.' : 'Cuenta creada. Revisá tu mail para confirmarla.',
+  });
 });
 
 export const login = asyncHandler(async (req: Request, res: Response) => {

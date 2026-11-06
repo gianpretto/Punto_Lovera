@@ -42,6 +42,10 @@ export const env = {
     from: process.env.MAIL_FROM ?? 'Punto Lovera <no-responder@puntolovera.com>',
   },
 
+  // SOLO para entornos de prueba sin SMTP: las cuentas quedan con el mail
+  // validado al registrarse y se puede ofertar sin validar. Nunca en producción.
+  skipEmailVerification: process.env.SKIP_EMAIL_VERIFICATION === 'true',
+
   // "Continuar con Google": Client ID web de Google Cloud (vacío = sin botón)
   googleClientId: process.env.GOOGLE_CLIENT_ID?.trim() ?? '',
 

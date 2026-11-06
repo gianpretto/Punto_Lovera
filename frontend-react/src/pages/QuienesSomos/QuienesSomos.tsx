@@ -14,9 +14,10 @@ import styles from './QuienesSomos.module.scss';
 //     finalizadas (reales, del backend).
 //  3. Banda verde "¿Tenés bienes para vender?" (SeccionVender).
 export default function QuienesSomos() {
-  const finalizadas = useAuctions(['FINALIZADA']);
+  // El backend ya las devuelve de la más reciente a la más vieja
+  const finalizadas = useAuctions(['FINALIZADA'], 4);
   // Las más recientes primero (la API las ordena por fecha de inicio)
-  const anteriores = (finalizadas ?? []).slice().reverse().slice(0, 4);
+  const anteriores = finalizadas ?? [];
 
   return (
     <div className={styles.pagina}>

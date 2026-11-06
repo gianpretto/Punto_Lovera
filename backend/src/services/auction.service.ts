@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray } from 'drizzle-orm';
+import { and, asc, count, desc, eq, inArray, sql } from 'drizzle-orm';
 import { db } from '../config/db';
 import { auctions, bids, lotImages, lots } from '../db/schema';
 import { removeUploadedFile } from '../middleware/upload.middleware';
@@ -6,12 +6,40 @@ import { Errors } from '../utils/AppError';
 
 type AuctionStatus = (typeof auctions.$inferSelect)['status'];
 
-export async function listAuctions(status?: AuctionStatus) {
+/** Lista completa (admin y compatibilidad): por fecha de inicio. */
+export async function listAuctions(statuses?: AuctionStatus[]) {
   return db.query.auctions.findMany({
-    where: status ? eq(auctions.status, status) : undefined,
+    where: statuses?.length ? inArray(auctions.status, statuses) : undefined,
     orderBy: (a, { asc }) => asc(a.startsAt),
     with: { lots: { columns: { id: true } } },
   });
+}
+
+/**
+ * Una página de subastas para las listas públicas, en el orden de la web:
+ * primero las en vivo, después las próximas (la más cercana primero) y al
+ * final las terminadas (la más reciente primero). La base devuelve solo esa
+ * página (LIMIT/OFFSET) y el total para el paginador.
+ */
+export async function listAuctionsPage(statuses: AuctionStatus[] | undefined, page: number, pageSize: number) {
+  const where = statuses?.length ? inArray(auctions.status, statuses) : undefined;
+  const [{ total }] = await db.select({ total: count() }).from(auctions).where(where);
+  const pages = Math.max(1, Math.ceil(total / pageSize));
+
+  const items = await db.query.auctions.findMany({
+    where,
+    orderBy: [
+      sql`CASE ${auctions.status} WHEN 'ACTIVA' THEN 0 WHEN 'PROXIMA' THEN 1 WHEN 'FINALIZADA' THEN 2 ELSE 3 END`,
+      sql`CASE WHEN ${auctions.status} IN ('FINALIZADA', 'CANCELADA') THEN NULL ELSE ${auctions.startsAt} END ASC NULLS LAST`,
+      desc(auctions.startsAt),
+      asc(auctions.id),
+    ],
+    limit: pageSize,
+    offset: (page - 1) * pageSize,
+    with: { lots: { columns: { id: true } } },
+  });
+
+  return { auctions: items, total, page, pageSize, pages };
 }
 
 export async function getAuctionById(id: string) {

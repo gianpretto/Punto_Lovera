@@ -5,6 +5,7 @@ import { Errors } from '../utils/AppError';
 import { getCurrentLot } from './auction.service';
 import { getHeldCredit } from './credit.service';
 import { isProfileComplete } from './auth.service';
+import { env } from '../config/env';
 
 const pesos = (n: number) => `$${n.toLocaleString('es-AR')}`;
 
@@ -51,7 +52,7 @@ export async function placeBid(lotId: string, userId: string, amount: number) {
       if (!user) throw Errors.unauthorized();
       // El login no exige el mail verificado, pero ofertar sí: una puja
       // compromete plata y tiene que haber un mail real al que avisarle.
-      if (!user.emailVerified) {
+      if (!user.emailVerified && !env.skipEmailVerification) {
         throw Errors.badRequest(
           'Verificá tu mail para poder ofertar: revisá tu casilla (y spam) o pedí que te reenviemos el link'
         );

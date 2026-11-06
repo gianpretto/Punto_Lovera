@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import Boton from '../../components/ui/Boton';
 import Etiqueta from '../../components/ui/Etiqueta';
 import TarjetaSubasta from '../../components/tarjetas/TarjetaSubasta';
@@ -9,7 +8,6 @@ import SeccionVender from '../../components/secciones/SeccionVender';
 import { preguntasDestacadas } from '../../content/participar';
 import { uploadUrl } from '../../services/api';
 import { toSubasta, useAuctions, useNow } from '../../services/auctions';
-import { ordenarSubastas } from '../../utils/ordenarSubastas';
 import styles from './Home.module.scss';
 
 // Home del rediseño (Figma "Home", 1440 px): hero, subasta en vivo +
@@ -33,8 +31,10 @@ const MARCAS = [
 
 export default function Home() {
   const now = useNow();
-  const subastas = useAuctions(['ACTIVA', 'PROXIMA']);
-  const ordenadas = useMemo(() => ordenarSubastas(subastas ?? []), [subastas]);
+  // La destacada es la primera y la agenda muestra 4
+  const subastas = useAuctions(['ACTIVA', 'PROXIMA'], 4);
+  // Ya vienen en el orden de la web (en vivo → próximas), desde el backend
+  const ordenadas = subastas ?? [];
   const destacada = ordenadas[0];
   const agenda = ordenadas.slice(0, 4);
 

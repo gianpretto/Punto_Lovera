@@ -49,7 +49,8 @@ interface AuthContextValue {
   /** true mientras se valida el token guardado al cargar la app. */
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, nombre: string, apellido: string) => Promise<void>;
+  /** Devuelve el usuario creado (emailVerified = true si el entorno no pide validar el mail) */
+  register: (email: string, password: string, nombre: string, apellido: string) => Promise<User>;
   logout: () => void;
   updateUserData: (data: UpdateUserData) => Promise<void>;
   /** Vuelve a pedir el usuario (ej: después de que cambie el saldo). */
@@ -94,8 +95,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const register = useCallback(async (email: string, password: string, nombre: string, apellido: string) => {
-    await api.post('/auth/register', { email, password, firstName: nombre, lastName: apellido });
-    // No logueamos todavía, se espera la validación de mail
+    const { user } = await api.post<{ user: User }>('/auth/register', {
+      email,
+      password,
+      firstName: nombre,
+      lastName: apellido,
+    });
+    // No logueamos todavía: se espera la validación de mail (salvo en
+    // entornos de prueba sin SMTP, donde la cuenta ya viene validada)
+    return user;
   }, []);
 
   const setSession = useCallback((token: string, user: User) => {

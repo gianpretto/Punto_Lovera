@@ -85,27 +85,49 @@ export function useNow(intervalMs = 1000) {
   return now;
 }
 
-/** Lista de subastas, opcionalmente filtrada por estado (orden: fecha de inicio). */
-export function useAuctions(statuses?: AuctionStatus[]) {
-  const [auctions, setAuctions] = useState<AuctionApi[] | null>(null);
-  const key = statuses?.join(',') ?? '';
+export interface AuctionsPage {
+  auctions: AuctionApi[];
+  total: number;
+  page: number;
+  pageSize: number;
+  pages: number;
+}
+
+/**
+ * Una página de subastas, paginada en el backend
+ * (GET /subastas?status=...&page=N&pageSize=M). Orden de la web: en vivo,
+ * próximas (la más cercana primero) y terminadas (la más reciente primero).
+ * Mientras carga otra página deja la anterior a la vista (no parpadea).
+ */
+export function useAuctionsPage(statuses: AuctionStatus[], page: number, pageSize: number) {
+  const [data, setData] = useState<AuctionsPage | null>(null);
+  const [error, setError] = useState(false);
+  const status = statuses.join(',');
 
   useEffect(() => {
     let cancel = false;
+    const query = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+    if (status) query.set('status', status);
     api
-      .get<{ auctions: AuctionApi[] }>('/subastas')
-      .then(({ auctions }) => {
+      .get<AuctionsPage>(`/subastas?${query}`)
+      .then((r) => {
         if (cancel) return;
-        const wanted = key ? key.split(',') : null;
-        setAuctions(wanted ? auctions.filter((a) => wanted.includes(a.status)) : auctions);
+        setData(r);
+        setError(false);
       })
-      .catch(() => !cancel && setAuctions([]));
+      .catch(() => !cancel && setError(true));
     return () => {
       cancel = true;
     };
-  }, [key]);
+  }, [status, page, pageSize]);
 
-  return auctions;
+  return { data, error };
+}
+
+/** Las primeras `cantidad` subastas de esos estados (en el orden de la web). */
+export function useAuctions(statuses: AuctionStatus[], cantidad = 6) {
+  const { data, error } = useAuctionsPage(statuses, 1, cantidad);
+  return error ? [] : (data?.auctions ?? null);
 }
 
 export function useAuction(id: string | undefined) {
