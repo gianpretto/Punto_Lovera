@@ -1,8 +1,9 @@
-import { Fragment } from 'react';
+import { Fragment, lazy, Suspense } from 'react';
 import { Link } from 'react-router-dom';
 import { getToken, uploadUrl } from '../../services/api';
 import { useAuth } from '../../services/AuthContext';
-import LivePlayer from '../LivePlayer/LivePlayer';
+// El reproductor (hls.js, ~500 KB) se descarga solo si hay stream que mostrar
+const LivePlayer = lazy(() => import('../LivePlayer/LivePlayer'));
 import type { AuctionApi } from '../../services/auctions';
 import { MARTILLEROS } from '../../content/martilleros';
 import styles from './SubastaDestacada.module.scss';
@@ -40,7 +41,9 @@ export default function SubastaDestacada({ subasta }: Props) {
       <div className={styles.media}>
         {conStream ? (
           <div className={styles.vivo}>
-            <LivePlayer auctionId={subasta.id} camaraPrendida token={getToken()} placeholder={foto} placeholderSinSenal />
+            <Suspense fallback={foto}>
+              <LivePlayer auctionId={subasta.id} camaraPrendida token={getToken()} placeholder={foto} placeholderSinSenal />
+            </Suspense>
           </div>
         ) : (
           foto

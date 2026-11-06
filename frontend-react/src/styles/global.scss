@@ -3,7 +3,8 @@
 /* Rediseño Figma: Akatab (texto) + Instrument Serif (títulos, con itálica).
    Nugros (botones/etiquetas destacadas) es comercial y todavía no está:
    ver $font-destacada en _tokens.scss. */
-@import url('https://fonts.googleapis.com/css2?family=Akatab:wght@400;500;600;700;800;900&family=Instrument+Serif:ital@0;1&display=swap');
+/* Las fuentes se cargan desde index.html (con preconnect), no con @import:
+   así el navegador las pide en paralelo y no después de bajar este CSS. */
 
 html,
 body {
@@ -21,4 +22,10 @@ body {
 
 img {
   max-width: 100%;
+}
+
+/* Mientras una página carga (datos o el código de la página), el contenido
+   ocupa al menos la pantalla: el footer queda abajo y no salta */
+main {
+  min-height: calc(100svh - 110px);
 }
