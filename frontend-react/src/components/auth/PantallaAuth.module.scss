@@ -17,6 +17,19 @@
   }
 }
 
+// Registro: foto a la derecha (en escritorio; en tablet/celular igual que Login)
+.invertida {
+  grid-template-columns: minmax(0, 41.8fr) minmax(0, 58.2fr);
+
+  .foto {
+    order: 2;
+  }
+
+  @include t.tablet {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* ---------- Foto ---------- */
 .foto {
   position: relative;

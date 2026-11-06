@@ -18,12 +18,14 @@ interface Props {
   /** Origen que queda guardado si mandan la consulta de "¿Querés vender?" */
   origen: string;
   children: ReactNode;
+  /** Foto a la derecha y formulario a la izquierda (Registro, para que no sea igual al Login) */
+  invertida?: boolean;
 }
 
-export default function PantallaAuth({ etiqueta, titulo, bajada, origen, children }: Props) {
+export default function PantallaAuth({ etiqueta, titulo, bajada, origen, children, invertida = false }: Props) {
   return (
     <>
-      <div className={styles.pantalla}>
+      <div className={`${styles.pantalla} ${invertida ? styles.invertida : ''}`}>
         <div className={styles.foto} aria-hidden="true">
           <img className={styles.fotoImagen} src="/assets/figma/subasta-cocina-3.webp" alt="" />
           <div className={styles.fotoTinte} />

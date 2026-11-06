@@ -117,6 +117,7 @@ export default function Registro() {
 
   return (
     <PantallaAuth
+      invertida
       etiqueta="Mi cuenta"
       titulo={<em>Registrarse</em>}
       origen="registro"
