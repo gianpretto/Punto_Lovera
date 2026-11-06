@@ -161,16 +161,14 @@ export default function LivePlayer({
           {estado === 'cargando' ? 'Conectando con la cámara...' : 'Esperando la señal de la cámara...'}
         </div>
       )}
-      {estado === 'en-vivo' &&
-        (atrasado ? (
-          <button type="button" className={`${styles.badge} ${styles.badgeAtrasado}`} onClick={irAlVivo}>
-            ↻ Ir al vivo
-          </button>
-        ) : (
-          <span className={styles.badge}>● EN VIVO</span>
-        ))}
       {estado === 'en-vivo' && (
         <div className={styles.controles}>
+          {/* Solo si quedó atrás del vivo */}
+          {atrasado && (
+            <button type="button" className={`${styles.control} ${styles.irAlVivo}`} onClick={irAlVivo}>
+              ↻ Ir al vivo
+            </button>
+          )}
           <button type="button" className={styles.control} onClick={alternarSonido}>
             {muteado ? '🔇 Activar sonido' : '🔊 Silenciar'}
           </button>

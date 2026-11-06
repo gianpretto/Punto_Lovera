@@ -56,7 +56,7 @@
 // arriba a la izquierda debajo de "● EN VIVO" (abajo están los rótulos de la sala)
 .controles {
   position: absolute;
-  top: 48px;
+  top: 14px;
   left: 14px;
   display: flex;
   gap: 8px;
@@ -93,14 +93,12 @@
   object-fit: contain;
 }
 
-// "↻ Ir al vivo": el mismo rótulo, gris y clickeable cuando quedó atrás
-.badgeAtrasado {
-  border: 0;
-  background: t.$gris-oscuro;
-  cursor: pointer;
-  pointer-events: auto;
+// "↻ Ir al vivo": verde para que se note
+.irAlVivo {
+  background: t.$verde;
 
   &:hover {
-    background: t.$negro;
+    background: t.$verde;
+    filter: brightness(0.92);
   }
 }
