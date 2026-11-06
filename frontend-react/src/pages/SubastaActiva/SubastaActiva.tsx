@@ -447,12 +447,11 @@ export default function SubastaActiva() {
             )}
           </nav>
 
+          {/* Cabecera compacta: el video y el panel para ofertar tienen que
+              entrar juntos en la pantalla sin bajar */}
           <div className={styles.cabeceraFila}>
             <div className={styles.cabeceraTexto}>
-              <div className={styles.filaEstado}>
-                <Etiqueta tamano="grande" className={styles.etiquetaVerde}>
-                  Subasta activa
-                </Etiqueta>
+              <div className={styles.filaTitulo}>
                 <span
                   className={`${styles.pastilla} ${pastilla.activa ? styles.pastillaVivo : ""}`}
                 >
@@ -461,10 +460,10 @@ export default function SubastaActiva() {
                   )}
                   {pastilla.texto}
                 </span>
+                <h1 className={styles.titulo}>
+                  {auction?.title ?? "Sala en vivo"}
+                </h1>
               </div>
-              <h1 className={styles.titulo}>
-                {auction?.title ?? "Sala en vivo"}
-              </h1>
               {auction?.location && (
                 <p className={styles.ubicacion}>
                   <img
@@ -497,8 +496,10 @@ export default function SubastaActiva() {
           </div>
         </header>
 
-        <div className={styles.grilla}>
-          {/* ---------- Columna principal: video, ofertar e historial */}
+        {/* ---------- Escenario: video + panel para ofertar a la izquierda,
+            chat a la derecha con la misma altura. Pensado para que en una
+            pantalla de escritorio se vea todo junto sin scrollear. */}
+        <div className={styles.escenario}>
           <div className={styles.principal}>
             <section className={styles.video} aria-label="Transmisión en vivo">
               {id && (
@@ -532,6 +533,24 @@ export default function SubastaActiva() {
                   }
                 />
               )}
+
+              <p className={styles.martilleros}>
+                <span className={styles.martillerosLabel}>Martilleros</span>
+                <span>{NOMBRES_MARTILLEROS}</span>
+              </p>
+
+              {adjudicacion && adjudicacionVisible === adjudicacion.clave && (
+                <p className={styles.adjudicado} role="status">
+                  <img
+                    src="/assets/figma/icono-martillo.svg"
+                    alt=""
+                    width={18}
+                    height={18}
+                  />
+                  {adjudicacion.texto}
+                </p>
+              )}
+
               {lot && (
                 <p className={styles.seVende}>
                   <span className={styles.seVendeLote}>Lote {lot.number}</span>
@@ -542,142 +561,134 @@ export default function SubastaActiva() {
               )}
             </section>
 
-            {adjudicacion && adjudicacionVisible === adjudicacion.clave && (
-              <p className={styles.adjudicado} role="status">
-                <img
-                  src="/assets/figma/icono-martillo.svg"
-                  alt=""
-                  width={18}
-                  height={18}
-                />
-                {adjudicacion.texto}
-              </p>
-            )}
-
-            {/* ---------- Panel para ofertar */}
+            {/* ---------- Panel para ofertar (barra debajo del video) */}
             <section
               className={styles.ofertar}
               aria-labelledby="titulo-ofertar"
             >
-              <div className={styles.ofertarCabecera}>
-                <h2 id="titulo-ofertar" className={styles.ofertarTitulo}>
-                  {lot ? `Lote ${lot.number} · ${lot.title}` : "Lote en remate"}
-                </h2>
-                {vaGanando && (
-                  <span
-                    className={`${styles.estadoPuja} ${styles.ganando}`}
-                    role="status"
-                  >
-                    ✓ Vas ganando
-                  </span>
-                )}
-                {!vaGanando && superado && (
-                  <span
-                    className={`${styles.estadoPuja} ${styles.superado}`}
-                    role="status"
-                  >
-                    Te superaron · ofertá de nuevo
-                  </span>
+              <div className={styles.ofertarInfo}>
+                <div className={styles.ofertarCabecera}>
+                  <h2 id="titulo-ofertar" className={styles.ofertarTitulo}>
+                    {lot ? `Lote ${lot.number} · ${lot.title}` : "Lote en remate"}
+                  </h2>
+                  {vaGanando && (
+                    <span
+                      className={`${styles.estadoPuja} ${styles.ganando}`}
+                      role="status"
+                    >
+                      ✓ Vas ganando
+                    </span>
+                  )}
+                  {!vaGanando && superado && (
+                    <span
+                      className={`${styles.estadoPuja} ${styles.superado}`}
+                      role="status"
+                    >
+                      Te superaron
+                    </span>
+                  )}
+                </div>
+
+                {lot ? (
+                  <dl className={styles.precios}>
+                    <div>
+                      <dt>Precio actual</dt>
+                      <dd className={styles.precioActual}>
+                        {pesos(lot.currentPrice)}
+                      </dd>
+                    </div>
+                    <div>
+                      <dt>Oferta mínima</dt>
+                      <dd>{pesos(minNextBid)}</dd>
+                    </div>
+                    <div>
+                      <dt>Incremento</dt>
+                      <dd>{pesos(increment)}</dd>
+                    </div>
+                  </dl>
+                ) : (
+                  <p className={styles.salaMensaje} role="status">
+                    {mensajeSala}
+                  </p>
                 )}
               </div>
 
-              {lot ? (
-                <dl className={styles.precios}>
-                  <div>
-                    <dt>Precio actual</dt>
-                    <dd className={styles.precioActual}>
-                      {pesos(lot.currentPrice)}
-                    </dd>
-                  </div>
-                  <div>
-                    <dt>Oferta mínima</dt>
-                    <dd>{pesos(minNextBid)}</dd>
-                  </div>
-                  <div>
-                    <dt>Incremento</dt>
-                    <dd>{pesos(increment)}</dd>
-                  </div>
-                </dl>
-              ) : (
-                <p className={styles.salaMensaje} role="status">
-                  {mensajeSala}
-                </p>
-              )}
+              <div className={styles.ofertarAccion}>
+                {requisito}
 
-              {requisito}
-
-              {!requisito && lot && (
-                <div className={styles.pujaFila}>
-                  <div className={styles.selector}>
-                    <button
-                      type="button"
-                      className={styles.paso}
-                      onClick={decreaseBid}
-                      disabled={
-                        !puedeOfertar || currentBid - increment < minNextBid
-                      }
-                      aria-label={`Bajar ${pesos(increment)}`}
-                    >
-                      −
-                    </button>
-                    <div className={styles.monto}>
-                      <label
-                        htmlFor="monto-oferta"
-                        className={styles.montoLabel}
+                {!requisito && lot && (
+                  <div className={styles.pujaFila}>
+                    <div className={styles.selector}>
+                      <button
+                        type="button"
+                        className={styles.paso}
+                        onClick={decreaseBid}
+                        disabled={
+                          !puedeOfertar || currentBid - increment < minNextBid
+                        }
+                        aria-label={`Bajar ${pesos(increment)}`}
                       >
-                        Tu oferta
-                      </label>
-                      <div className={styles.montoCampo}>
-                        <span aria-hidden="true">$</span>
-                        <input
-                          id="monto-oferta"
-                          type="text"
-                          inputMode="numeric"
-                          autoComplete="off"
-                          className={styles.montoInput}
-                          value={formattedBid}
-                          style={{
-                            width: `${Math.max(formattedBid.length, 1) + 0.5}ch`,
-                          }}
-                          onChange={(e) => onBidInputChange(e.target.value)}
-                          onKeyDown={onlyNumbers}
-                          disabled={!puedeOfertar}
-                        />
+                        −
+                      </button>
+                      <div className={styles.monto}>
+                        <label
+                          htmlFor="monto-oferta"
+                          className={styles.montoLabel}
+                        >
+                          Tu oferta
+                        </label>
+                        <div className={styles.montoCampo}>
+                          <span aria-hidden="true">$</span>
+                          <input
+                            id="monto-oferta"
+                            type="text"
+                            inputMode="numeric"
+                            autoComplete="off"
+                            className={styles.montoInput}
+                            value={formattedBid}
+                            style={{
+                              width: `${Math.max(formattedBid.length, 1) + 0.5}ch`,
+                            }}
+                            onChange={(e) => onBidInputChange(e.target.value)}
+                            onKeyDown={onlyNumbers}
+                            disabled={!puedeOfertar}
+                          />
+                        </div>
                       </div>
+                      <button
+                        type="button"
+                        className={styles.paso}
+                        onClick={increaseBid}
+                        disabled={!puedeOfertar}
+                        aria-label={`Subir ${pesos(increment)}`}
+                      >
+                        +
+                      </button>
                     </div>
                     <button
                       type="button"
-                      className={styles.paso}
-                      onClick={increaseBid}
+                      className={styles.botonOfertar}
+                      onClick={placeOffer}
                       disabled={!puedeOfertar}
-                      aria-label={`Subir ${pesos(increment)}`}
                     >
-                      +
+                      Ofertar
+                      <span aria-hidden="true">→</span>
                     </button>
                   </div>
-                  <button
-                    type="button"
-                    className={styles.botonOfertar}
-                    onClick={placeOffer}
-                    disabled={!puedeOfertar}
-                  >
-                    Ofertar
-                    <span aria-hidden="true">→</span>
-                  </button>
-                </div>
-              )}
+                )}
 
-              {user && (
-                <p className={styles.creditos}>
-                  Tus créditos: <strong>{pesos(userCredits)}</strong>
-                  {vaGanando && lot && (
-                    <span>
-                      {" "}
-                      · {pesos(lot.currentPrice)} reservados en este lote
-                    </span>
-                  )}
-                </p>
-              )}
+                {user && (
+                  <p className={styles.creditos}>
+                    Tus créditos: <strong>{pesos(userCredits)}</strong>
+                    {vaGanando && lot && (
+                      <span>
+                        {" "}
+                        · {pesos(lot.currentPrice)} reservados en este lote
+                      </span>
+                    )}
+                  </p>
+                )}
+              </div>
 
               {aviso?.donde === "puja" && (
                 <Aviso tipo="error" className={styles.aviso}>
@@ -685,55 +696,10 @@ export default function SubastaActiva() {
                 </Aviso>
               )}
             </section>
-
-            {/* ---------- Historial de ofertas */}
-            <section
-              className={styles.historial}
-              aria-labelledby="titulo-historial"
-            >
-              <Etiqueta className={styles.etiquetaSeccion}>
-                Últimas ofertas
-              </Etiqueta>
-              <h2 id="titulo-historial" className={styles.oculto}>
-                Últimas ofertas
-              </h2>
-              {ofertas.length === 0 ? (
-                <p className={styles.vacio}>
-                  Todavía no hay ofertas. ¡Podés ser el primero!
-                </p>
-              ) : (
-                <ol className={styles.historialLista}>
-                  {ofertas.map((o, i) => (
-                    <li
-                      key={o.id ?? `o-${i}`}
-                      className={`${styles.historialItem} ${i === 0 ? styles.historialPrimero : ""}`}
-                    >
-                      <span className={styles.historialQuien}>
-                        {o.user}
-                        {miNombre === o.user && (
-                          <span className={styles.vos}> (vos)</span>
-                        )}
-                      </span>
-                      <span className={styles.historialMonto}>
-                        {o.text.replace(/^ofreció\s*/, "")}
-                      </span>
-                      <span className={styles.historialHora}>{o.time}</span>
-                    </li>
-                  ))}
-                </ol>
-              )}
-            </section>
           </div>
 
-          {/* ---------- Columna lateral: martillero, chat y lote */}
+          {/* ---------- Chat, alineado con el video y la barra de ofertar */}
           <aside className={styles.lateral}>
-            <div className={styles.martillero}>
-              <span className={styles.martilleroLabel}>Martillero</span>
-              <span className={styles.martilleroNombre}>
-                {NOMBRES_MARTILLEROS}
-              </span>
-            </div>
-
             <section className={styles.chat} aria-labelledby="titulo-chat">
               <h2 id="titulo-chat" className={styles.chatTitulo}>
                 Chat en vivo{" "}
@@ -802,63 +768,93 @@ export default function SubastaActiva() {
                 </button>
               </div>
             </section>
+          </aside>
+        </div>
 
-            {lot && (
-              <section className={styles.lote} aria-labelledby="titulo-lote">
-                <div className={styles.loteMedia}>
-                  {imagenes.length > 0 ? (
-                    <button
-                      type="button"
-                      className={styles.loteFotoBoton}
-                      onClick={() => setVisorAbierto(true)}
-                      aria-label={`Ampliar fotos de ${lot?.title}`}
-                    >
-                      <img
-                        className={styles.loteFoto}
-                        src={imagenes[0]}
-                        alt=""
-                      />
-                      {imagenes.length > 1 && (
-                        <span className={styles.loteCantidad}>
-                          {imagenes.length} fotos
-                        </span>
-                      )}
-                    </button>
-                  ) : (
-                    <span className={styles.sinFotos}>
-                      {lot ? "Sin fotos todavía" : "Sin lote en remate"}
-                    </span>
-                  )}
-                </div>
-                <div className={styles.loteCuerpo}>
-                  <p className={styles.loteEtiquetas}>
-                    <span>{lot ? `Lote ${lot.number}` : "Lote en remate"}</span>
-                    {lot && <span>Base {pesos(lot.startingPrice)}</span>}
-                  </p>
-                  <h2 id="titulo-lote" className={styles.loteTitulo}>
-                    {lot?.title ?? mensajeSala}
-                  </h2>
-                  {descripcion?.resumen && (
-                    <p className={styles.loteResumen}>{descripcion.resumen}</p>
-                  )}
-                </div>
-                {lot && (
+        {/* ---------- Debajo: detalle del lote en remate y últimas ofertas */}
+        <div className={styles.inferior}>
+          {lot && (
+            <section className={styles.lote} aria-labelledby="titulo-lote">
+              <div className={styles.loteMedia}>
+                {imagenes.length > 0 ? (
                   <button
                     type="button"
-                    className={styles.verFotos}
+                    className={styles.loteFotoBoton}
                     onClick={() => setVisorAbierto(true)}
+                    aria-label={`Ampliar fotos de ${lot.title}`}
                   >
-                    <span>
-                      {imagenes.length > 0
-                        ? "Ver fotos y detalle"
-                        : "Ver detalle"}
-                    </span>
-                    <span aria-hidden="true">→</span>
+                    <img className={styles.loteFoto} src={imagenes[0]} alt="" />
+                    {imagenes.length > 1 && (
+                      <span className={styles.loteCantidad}>
+                        {imagenes.length} fotos
+                      </span>
+                    )}
                   </button>
+                ) : (
+                  <span className={styles.sinFotos}>Sin fotos todavía</span>
                 )}
-              </section>
+              </div>
+              <div className={styles.loteCuerpo}>
+                <p className={styles.loteEtiquetas}>
+                  <span>Lote {lot.number}</span>
+                  <span>Base {pesos(lot.startingPrice)}</span>
+                </p>
+                <h2 id="titulo-lote" className={styles.loteTitulo}>
+                  {lot.title}
+                </h2>
+                {descripcion?.resumen && (
+                  <p className={styles.loteResumen}>{descripcion.resumen}</p>
+                )}
+                <button
+                  type="button"
+                  className={styles.verFotos}
+                  onClick={() => setVisorAbierto(true)}
+                >
+                  <span>
+                    {imagenes.length > 0 ? "Ver fotos y detalle" : "Ver detalle"}
+                  </span>
+                  <span aria-hidden="true">→</span>
+                </button>
+              </div>
+            </section>
+          )}
+
+          <section
+            className={styles.historial}
+            aria-labelledby="titulo-historial"
+          >
+            <Etiqueta className={styles.etiquetaSeccion}>
+              Últimas ofertas
+            </Etiqueta>
+            <h2 id="titulo-historial" className={styles.oculto}>
+              Últimas ofertas
+            </h2>
+            {ofertas.length === 0 ? (
+              <p className={styles.vacio}>
+                Todavía no hay ofertas. ¡Podés ser el primero!
+              </p>
+            ) : (
+              <ol className={styles.historialLista}>
+                {ofertas.map((o, i) => (
+                  <li
+                    key={o.id ?? `o-${i}`}
+                    className={`${styles.historialItem} ${i === 0 ? styles.historialPrimero : ""}`}
+                  >
+                    <span className={styles.historialQuien}>
+                      {o.user}
+                      {miNombre === o.user && (
+                        <span className={styles.vos}> (vos)</span>
+                      )}
+                    </span>
+                    <span className={styles.historialMonto}>
+                      {o.text.replace(/^ofreció\s*/, "")}
+                    </span>
+                    <span className={styles.historialHora}>{o.time}</span>
+                  </li>
+                ))}
+              </ol>
             )}
-          </aside>
+          </section>
         </div>
       </div>
 
