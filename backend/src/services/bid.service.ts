@@ -56,6 +56,10 @@ export async function placeBid(lotId: string, userId: string, amount: number) {
     const result = await db.transaction(async (tx) => {
       const [user] = await tx.select().from(users).where(eq(users.id, userId)).for('update');
       if (!user) throw Errors.unauthorized();
+      // El martillero y los administradores conducen el remate: no ofertan
+      if (user.role !== 'USER') {
+        throw Errors.forbidden('El martillero y los administradores no pueden ofertar');
+      }
       // El login no exige el mail verificado, pero ofertar sí: una puja
       // compromete plata y tiene que haber un mail real al que avisarle.
       if (!user.emailVerified && !env.skipEmailVerification) {

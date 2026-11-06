@@ -38,6 +38,12 @@ describe('Reserva de crédito mientras se va ganando', () => {
     expect(u1).toMatchObject({ creditBalance: 500000, heldCredit: 0, availableCredit: 500000 });
   });
 
+  it('el admin/martillero no puede ofertar', async () => {
+    const res = await bid(lot1.id, 300000, A);
+    expect(res.status).toBe(403);
+    expect(res.data.error).toMatch(/no pueden ofertar/);
+  });
+
   it('ir ganando un lote reserva el monto de la puja', async () => {
     expect((await bid(lot1.id, 300000, U1)).status).toBe(201);
     expect(await me(U1)).toMatchObject({ heldCredit: 300000, availableCredit: 200000 });

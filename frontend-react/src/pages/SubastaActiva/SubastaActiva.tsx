@@ -353,6 +353,8 @@ export default function SubastaActiva() {
 
   /** Qué le falta al usuario para poder ofertar (reglas de ingreso) */
   const renderRequisito = () => {
+    // Martillero / admin: no ofertan (los controles quedan grises)
+    if (esMartillero) return null;
     if (paseVencido) {
       return (
         <Requisito
@@ -444,7 +446,7 @@ export default function SubastaActiva() {
   // subirse el precio a uno mismo): el botón queda gris hasta que lo superen
   // El monto sí se puede ir armando aunque vaya ganando (para contraofertar
   // rápido apenas lo superen); solo el botón OFERTAR queda gris
-  const puedeArmarOferta = !requisito && Boolean(lot);
+  const puedeArmarOferta = !requisito && Boolean(lot) && !esMartillero;
   const puedeOfertar = puedeArmarOferta && !vaGanando;
 
   return (
@@ -689,7 +691,7 @@ export default function SubastaActiva() {
                   </div>
                 )}
 
-                {user && (
+                {user && !esMartillero && (
                   <p className={styles.creditos}>
                     Tus créditos: <strong>{pesos(userCredits)}</strong>
                     {vaGanando && lot && (
