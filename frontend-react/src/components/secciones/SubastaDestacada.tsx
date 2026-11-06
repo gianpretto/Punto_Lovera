@@ -1,15 +1,19 @@
 import { Fragment } from 'react';
 import { Link } from 'react-router-dom';
-import { uploadUrl } from '../../services/api';
+import { getToken, uploadUrl } from '../../services/api';
+import { useAuth } from '../../services/AuthContext';
+import LivePlayer from '../LivePlayer/LivePlayer';
 import type { AuctionApi } from '../../services/auctions';
 import { MARTILLEROS } from '../../content/martilleros';
 import styles from './SubastaDestacada.module.scss';
 
 // Bloque grande de la subasta en vivo (Figma: tarjeta blanca de 1280 x 502,
-// foto de 847 px con la cámara del martillero abajo a la derecha y el panel
-// de datos con "Unirse a la sesión →"). Lo usan Home y Próximas subastas.
-// Si no hay ninguna en vivo, la página pasa la próxima: mismo diseño con
-// "PRÓXIMA SUBASTA" y el botón al detalle.
+// imagen de 847 px y el panel de datos con "Unirse a la sesión →"). Lo usan
+// Home y Próximas subastas. Si no hay ninguna en vivo, la página pasa la
+// próxima más cercana: mismo diseño con "PRÓXIMA SUBASTA" y el botón al detalle.
+// En vivo y con la transmisión prendida, en lugar de la foto va el stream
+// (muteado). El video exige sesión (el proxy HLS pide el JWT): sin sesión, o
+// mientras no hay señal, se ve la foto de la subasta.
 
 
 const IMAGEN_DEFAULT = '/assets/figma/subasta-cafeteria.webp';
@@ -19,19 +23,27 @@ interface Props {
 }
 
 export default function SubastaDestacada({ subasta }: Props) {
+  const { user } = useAuth();
   const enVivo = subasta.status === 'ACTIVA';
+  const foto = (
+    <img
+      className={styles.foto}
+      src={subasta.coverImageUrl ? uploadUrl(subasta.coverImageUrl) : IMAGEN_DEFAULT}
+      alt={subasta.title}
+    />
+  );
+  const conStream = enVivo && Boolean(subasta.cameraOn) && Boolean(user);
   const parrafos = subasta.description.split(/\n+/).filter(Boolean);
 
   return (
     <article className={styles.tarjeta}>
       <div className={styles.media}>
-        <img
-          className={styles.foto}
-          src={subasta.coverImageUrl ? uploadUrl(subasta.coverImageUrl) : IMAGEN_DEFAULT}
-          alt={subasta.title}
-        />
-        {enVivo && (
-          <img className={styles.camara} src="/assets/figma/martillero.webp" alt="" width={206} height={145} loading="lazy" />
+        {conStream ? (
+          <div className={styles.vivo}>
+            <LivePlayer auctionId={subasta.id} camaraPrendida token={getToken()} placeholder={foto} placeholderSinSenal />
+          </div>
+        ) : (
+          foto
         )}
       </div>
 

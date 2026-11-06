@@ -40,19 +40,10 @@
   object-fit: cover;
 }
 
-.camara {
+.vivo {
   position: absolute;
-  right: 0;
-  bottom: 0;
-  display: block;
-  width: 206px;
-  height: 145px;
-  object-fit: cover;
-
-  @include t.mobile {
-    width: 112px;
-    height: 79px;
-  }
+  inset: 0;
+  background: t.$negro;
 }
 
 .panel {

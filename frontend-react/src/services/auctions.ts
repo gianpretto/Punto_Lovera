@@ -15,6 +15,8 @@ export interface AuctionApi {
   coverImageUrl: string | null;
   startsAt: string;
   status: AuctionStatus;
+  /** Transmisión habilitada (la clave de OBS nunca llega al navegador) */
+  cameraOn?: boolean;
 }
 
 export interface LotApi {

@@ -19,13 +19,25 @@ interface Props {
   pase?: string | null;
   /** Lo que se muestra cuando no hay video (el placeholder del diseño) */
   placeholder: ReactNode;
+  /**
+   * Mientras no llega la señal, mostrar el placeholder en vez de los avisos
+   * "Conectando..." / "Esperando la señal..." (Home: la foto de la subasta)
+   */
+  placeholderSinSenal?: boolean;
 }
 
 type Estado = 'cargando' | 'en-vivo' | 'esperando';
 
 const REINTENTO_MS = 4000;
 
-export default function LivePlayer({ auctionId, camaraPrendida, token, pase = null, placeholder }: Props) {
+export default function LivePlayer({
+  auctionId,
+  camaraPrendida,
+  token,
+  pase = null,
+  placeholder,
+  placeholderSinSenal = false,
+}: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [estado, setEstado] = useState<Estado>('cargando');
 
@@ -99,7 +111,8 @@ export default function LivePlayer({ auctionId, camaraPrendida, token, pase = nu
   return (
     <div className={styles.playerWrapper}>
       <video ref={videoRef} className={styles.video} controls playsInline muted />
-      {estado !== 'en-vivo' && (
+      {estado !== 'en-vivo' && placeholderSinSenal && <div className={styles.tapa}>{placeholder}</div>}
+      {estado !== 'en-vivo' && !placeholderSinSenal && (
         <div className={styles.overlay}>
           {estado === 'cargando' ? 'Conectando con la cámara...' : 'Esperando la señal de la cámara...'}
         </div>
