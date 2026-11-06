@@ -25,7 +25,7 @@ export default function PantallaAuth({ etiqueta, titulo, bajada, origen, childre
     <>
       <div className={styles.pantalla}>
         <div className={styles.foto} aria-hidden="true">
-          <img className={styles.fotoImagen} src="/assets/figma/hero-galpon.webp" alt="" />
+          <img className={styles.fotoImagen} src="/assets/figma/subasta-cocina-3.webp" alt="" />
           <div className={styles.fotoTinte} />
         </div>
 
