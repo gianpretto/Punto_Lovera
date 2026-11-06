@@ -6,6 +6,7 @@ import estilos from '../../components/auth/PantallaAuth.module.scss';
 import Aviso from '../../components/ui/Aviso';
 import Boton from '../../components/ui/Boton';
 import Campo from '../../components/ui/Campo';
+import { useSoloSinSesion } from '../../services/useSoloSinSesion';
 import { useAuth } from '../../services/AuthContext';
 import { ApiError } from '../../services/api';
 import styles from './Registro.module.scss';
@@ -29,6 +30,8 @@ interface Touched {
 export default function Registro() {
   const navigate = useNavigate();
   const { register, login } = useAuth();
+  // Ya logueado: no tiene sentido mostrar esta pantalla
+  useSoloSinSesion();
   const [searchParams] = useSearchParams();
   const volver = searchParams.get('volver');
 

@@ -6,6 +6,7 @@ import estilos from '../../components/auth/PantallaAuth.module.scss';
 import Aviso from '../../components/ui/Aviso';
 import Boton from '../../components/ui/Boton';
 import Campo from '../../components/ui/Campo';
+import { useSoloSinSesion } from '../../services/useSoloSinSesion';
 import { useAuth } from '../../services/AuthContext';
 import { ApiError } from '../../services/api';
 import { registrarEvento } from '../../services/analytics';
@@ -19,6 +20,8 @@ function validarEmail(email: string) {
 export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  // Ya logueado: no tiene sentido mostrar esta pantalla
+  useSoloSinSesion();
   const [searchParams] = useSearchParams();
   // Ej: la sala del remate manda acá con ?volver=/subastas/:id/activa
   const volver = searchParams.get('volver');
