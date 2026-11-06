@@ -442,7 +442,10 @@ export default function SubastaActiva() {
   const requisito = renderRequisito();
   // Si ya va ganando el lote no puede volver a ofertar (no tiene sentido
   // subirse el precio a uno mismo): el botón queda gris hasta que lo superen
-  const puedeOfertar = !requisito && Boolean(lot) && !vaGanando;
+  // El monto sí se puede ir armando aunque vaya ganando (para contraofertar
+  // rápido apenas lo superen); solo el botón OFERTAR queda gris
+  const puedeArmarOferta = !requisito && Boolean(lot);
+  const puedeOfertar = puedeArmarOferta && !vaGanando;
 
   return (
     <div className={styles.pagina}>
@@ -633,7 +636,7 @@ export default function SubastaActiva() {
                         className={styles.paso}
                         onClick={decreaseBid}
                         disabled={
-                          !puedeOfertar || currentBid - increment < minNextBid
+                          !puedeArmarOferta || currentBid - increment < minNextBid
                         }
                         aria-label={`Bajar ${pesos(increment)}`}
                       >
@@ -660,7 +663,7 @@ export default function SubastaActiva() {
                             }}
                             onChange={(e) => onBidInputChange(e.target.value)}
                             onKeyDown={onlyNumbers}
-                            disabled={!puedeOfertar}
+                            disabled={!puedeArmarOferta}
                           />
                         </div>
                       </div>
@@ -668,7 +671,7 @@ export default function SubastaActiva() {
                         type="button"
                         className={styles.paso}
                         onClick={increaseBid}
-                        disabled={!puedeOfertar}
+                        disabled={!puedeArmarOferta}
                         aria-label={`Subir ${pesos(increment)}`}
                       >
                         +
