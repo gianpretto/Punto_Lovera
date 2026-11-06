@@ -439,7 +439,7 @@ export default function SubastaActiva() {
 
   const requisito = renderRequisito();
   // Si ya va ganando el lote no puede volver a ofertar (no tiene sentido
-  // subirse el precio a uno mismo): se habilita de nuevo si lo superan
+  // subirse el precio a uno mismo): el botón queda gris hasta que lo superen
   const puedeOfertar = !requisito && Boolean(lot) && !vaGanando;
 
   return (
@@ -615,19 +615,7 @@ export default function SubastaActiva() {
               <div className={styles.ofertarAccion}>
                 {requisito}
 
-                {!requisito && lot && vaGanando && (
-                  <div className={styles.vasGanando} role="status">
-                    <p className={styles.vasGanandoTitulo}>
-                      ✓ Vas ganando con {pesos(lot.currentPrice)}
-                    </p>
-                    <p className={styles.vasGanandoTexto}>
-                      Si alguien te supera, te avisamos acá y vas a poder
-                      volver a ofertar.
-                    </p>
-                  </div>
-                )}
-
-                {!requisito && lot && !vaGanando && (
+                {!requisito && lot && (
                   <div className={styles.pujaFila}>
                     <div className={styles.selector}>
                       <button
