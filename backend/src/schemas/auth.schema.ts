@@ -44,6 +44,14 @@ export const resendVerificationSchema = z.object({
 
 const soloNumeros = z.string().regex(/^[0-9]*$/, 'Solo números');
 
+/** Fecha real (no 31/02), desde 1900 y no en el futuro */
+function fechaDeNacimientoValida(iso: string) {
+  const [a, m, d] = iso.split('-').map(Number);
+  const fecha = new Date(Date.UTC(a, m - 1, d));
+  const real = fecha.getUTCFullYear() === a && fecha.getUTCMonth() === m - 1 && fecha.getUTCDate() === d;
+  return real && a >= 1900 && fecha.getTime() <= Date.now();
+}
+
 // Todos opcionales: el front manda solo lo que se editó en /datos.
 // '' se acepta y se guarda como null (campo borrado).
 export const updateProfileSchema = z.object({
@@ -54,6 +62,7 @@ export const updateProfileSchema = z.object({
   birthDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha inválida (AAAA-MM-DD)')
+    .refine(fechaDeNacimientoValida, 'Fecha de nacimiento inválida')
     .or(z.literal(''))
     .optional(),
   address: z.string().trim().optional(),

@@ -1,0 +1,190 @@
+@use '../../styles/tokens' as t;
+
+// Calendario propio (reemplaza al del navegador): tarjeta blanca con
+// sombra, mes y año con selectores, días en grilla y el elegido en verde.
+
+.fecha {
+  position: relative;
+}
+
+// Input subrayado (estilos de Campo) con el botón del calendario a la derecha
+.fila {
+  position: relative;
+
+  input {
+    padding-right: 40px;
+  }
+}
+
+.abrir {
+  position: absolute;
+  right: 0;
+  bottom: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: t.$gris-oscuro;
+  cursor: pointer;
+
+  &:hover {
+    color: t.$verde;
+  }
+
+  &:focus-visible {
+    outline: 2px solid t.$verde;
+    outline-offset: 2px;
+  }
+}
+
+.calendario {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 20;
+  width: 320px;
+  max-width: calc(100vw - 32px);
+  box-sizing: border-box;
+  margin-top: 8px;
+  padding: 16px;
+  background: t.$blanco;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  border-top: 3px solid t.$verde;
+  font-family: t.$font-texto;
+  color: t.$gris-oscuro;
+}
+
+.cabecera {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) 90px 36px;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.flecha {
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  background: t.$fondo;
+  color: t.$gris-oscuro;
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: t.$gris-claro;
+  }
+
+  &:disabled {
+    color: t.$gris-claro;
+    cursor: default;
+  }
+
+  &:focus-visible {
+    outline: 2px solid t.$verde;
+    outline-offset: 1px;
+  }
+}
+
+.selector {
+  min-width: 0;
+  height: 36px;
+  padding: 0 8px;
+  border: 1px solid t.$gris-claro;
+  border-radius: 0;
+  background: t.$blanco;
+  font-family: t.$font-texto;
+  font-size: 15px;
+  font-weight: 700;
+  color: t.$gris-oscuro;
+  cursor: pointer;
+
+  &:focus {
+    outline: none;
+    border-color: t.$verde;
+  }
+}
+
+.grilla {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 2px;
+}
+
+.diaSemana {
+  padding: 6px 0;
+  font-size: 12px;
+  font-weight: 700;
+  color: t.$gris-texto;
+  text-align: center;
+}
+
+.dia {
+  aspect-ratio: 1;
+  padding: 0;
+  border: 0;
+  background: none;
+  font-family: t.$font-texto;
+  font-size: 15px;
+  color: t.$gris-oscuro;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: t.$verde-claro;
+    color: t.$verde;
+  }
+
+  &:disabled {
+    color: t.$gris-claro;
+    cursor: default;
+  }
+
+  &:focus-visible {
+    outline: 2px solid t.$verde;
+    outline-offset: -2px;
+  }
+}
+
+.hoy {
+  font-weight: 800;
+  box-shadow: inset 0 -2px 0 t.$verde;
+}
+
+.dia.elegido,
+.dia.elegido:hover {
+  background: t.$verde;
+  color: t.$blanco;
+  font-weight: 700;
+}
+
+.pie {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+  padding-top: 10px;
+  border-top: 1px solid t.$gris-claro;
+}
+
+.enlace {
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  font-family: t.$font-texto;
+  font-size: 14px;
+  font-weight: 700;
+  color: t.$verde;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+
+  &:focus-visible {
+    outline: 2px solid t.$verde;
+    outline-offset: 2px;
+  }
+}

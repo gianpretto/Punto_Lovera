@@ -4,6 +4,7 @@ import SeccionVender from '../../components/secciones/SeccionVender';
 import Aviso from '../../components/ui/Aviso';
 import Boton from '../../components/ui/Boton';
 import Campo from '../../components/ui/Campo';
+import CampoFecha from '../../components/ui/CampoFecha';
 import Etiqueta from '../../components/ui/Etiqueta';
 import { useAuth, type User } from '../../services/AuthContext';
 import { ApiError } from '../../services/api';
@@ -220,12 +221,14 @@ export default function DatosUsuario() {
               {...campo('telefono')}
             />
             <Campo etiqueta="DNI / CUIT" type="text" inputMode="numeric" onKeyPress={onlyNumbers} {...campo('dni')} />
-            <Campo
+            <CampoFecha
+              id="datos-fechaNacimiento"
               etiqueta="Fecha de nacimiento"
-              type="date"
-              autoComplete="bday"
               className={styles.ancho}
-              {...campo('fechaNacimiento')}
+              value={form.fechaNacimiento}
+              error={mensajeError('fechaNacimiento')}
+              onChange={(iso) => setField('fechaNacimiento', iso)}
+              onBlur={() => markTouched('fechaNacimiento')}
             />
             <Campo
               etiqueta="Dirección"
