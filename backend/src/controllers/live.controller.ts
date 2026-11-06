@@ -98,9 +98,11 @@ export const proxyStream = asyncHandler(async (req: Request, res: Response) => {
   res.status(upstreamRes.status);
   const contentType = upstreamRes.headers.get('content-type');
   if (contentType) res.setHeader('Content-Type', contentType);
-  // Los manifests HLS/DASH no se deben cachear (cambian cada pocos segundos
-  // mientras la subasta está en vivo); los segmentos ya emitidos sí son inmutables.
-  res.setHeader('Cache-Control', rest.endsWith('.m3u8') || rest.endsWith('.mpd') ? 'no-store' : 'public, max-age=31536000, immutable');
+  // Nada se cachea: ni la playlist (cambia cada 2 s) ni los segmentos. nginx-rtmp
+  // reusa los nombres (0.ts, 1.ts...) cada vez que OBS vuelve a conectarse, y
+  // con caché el navegador reproducía segmentos viejos (audio/video repetido).
+  // Además es contenido con sesión: no debe quedar en cachés compartidas.
+  res.setHeader('Cache-Control', 'no-store');
 
   Readable.fromWeb(upstreamRes.body as import('stream/web').ReadableStream).pipe(res);
 });

@@ -36,6 +36,9 @@ rtmp {
             hls_fragment 2s;
             hls_playlist_length 12s;
             hls_cleanup on;
+            # La numeración de los segmentos sigue entre reconexiones de OBS
+            # (si no, vuelve a 0.ts y el reproductor puede mezclar segmentos)
+            hls_continuous on;
         }
     }
 }

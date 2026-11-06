@@ -51,3 +51,56 @@
   text-transform: uppercase;
   pointer-events: none;
 }
+
+// Controles propios (sin barra de tiempo): sonido y pantalla completa,
+// arriba a la izquierda debajo de "● EN VIVO" (abajo están los rótulos de la sala)
+.controles {
+  position: absolute;
+  top: 48px;
+  left: 14px;
+  display: flex;
+  gap: 8px;
+}
+
+.control {
+  min-height: 34px;
+  padding: 0 12px;
+  border: 0;
+  background: rgba(0, 0, 0, 0.65);
+  color: t.$blanco;
+  font-family: t.$font-texto;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+
+  &:hover {
+    background: rgba(0, 0, 0, 0.85);
+  }
+
+  &:focus-visible {
+    outline: 2px solid t.$blanco;
+    outline-offset: 2px;
+  }
+
+  @include t.mobile {
+    min-height: 30px;
+    padding: 0 10px;
+    font-size: 12px;
+  }
+}
+
+.playerWrapper:fullscreen .video {
+  object-fit: contain;
+}
+
+// "↻ Ir al vivo": el mismo rótulo, gris y clickeable cuando quedó atrás
+.badgeAtrasado {
+  border: 0;
+  background: t.$gris-oscuro;
+  cursor: pointer;
+  pointer-events: auto;
+
+  &:hover {
+    background: t.$negro;
+  }
+}

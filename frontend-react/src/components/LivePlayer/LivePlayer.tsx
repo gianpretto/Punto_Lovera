@@ -39,7 +39,38 @@ export default function LivePlayer({
   placeholderSinSenal = false,
 }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const contenedorRef = useRef<HTMLDivElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
+  // Quedó atrás del vivo (pestaña en segundo plano, pausa, corte de red)
+  const [atrasado, setAtrasado] = useState(false);
+
+  const irAlVivo = () => {
+    const video = videoRef.current;
+    const vivo = hlsRef.current?.liveSyncPosition;
+    if (!video) return;
+    if (vivo != null) video.currentTime = vivo;
+    video.play().catch(() => undefined);
+    setAtrasado(false);
+  };
   const [estado, setEstado] = useState<Estado>('cargando');
+  // Arranca muteado (los navegadores bloquean el autoplay con sonido)
+  const [muteado, setMuteado] = useState(true);
+
+  const alternarSonido = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = !video.muted;
+    setMuteado(video.muted);
+    // Al activar el sonido, saltar al vivo (por si quedó atrás)
+    if (!video.muted && video.paused) video.play().catch(() => undefined);
+  };
+
+  const pantallaCompleta = () => {
+    const el = contenedorRef.current;
+    if (!el) return;
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => undefined);
+    else el.requestFullscreen?.().catch(() => undefined);
+  };
 
   useEffect(() => {
     const video = videoRef.current;
@@ -54,19 +85,20 @@ export default function LivePlayer({
       if (cancelado) return;
       setEstado('cargando');
       hls = new Hls({
-        lowLatencyMode: true,
+        // nginx-rtmp genera HLS común (no LL-HLS): ir ~3 segmentos detrás del vivo
+        liveSyncDurationCount: 3,
+        liveMaxLatencyDurationCount: 6,
         xhrSetup: (xhr) =>
           token ? xhr.setRequestHeader('Authorization', `Bearer ${token}`) : xhr.setRequestHeader('X-Pase', pase!),
       });
+      hlsRef.current = hls;
       hls.loadSource(src);
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         setEstado('en-vivo');
-        video.play().catch(() => {
-          // Autoplay bloqueado: arranca muteado (el usuario puede activar el audio)
-          video.muted = true;
-          video.play().catch(() => undefined);
-        });
+        video.muted = true;
+        setMuteado(true);
+        video.play().catch(() => undefined);
       });
       hls.on(Hls.Events.ERROR, (_e, data) => {
         if (!data.fatal) return;
@@ -79,11 +111,22 @@ export default function LivePlayer({
       });
     };
 
+    // Más de ~8 s detrás del punto "en vivo" (o en pausa) → ofrecer volver
+    const revisarAtraso = () => {
+      const vivo = hlsRef.current?.liveSyncPosition;
+      setAtrasado(video.paused || (vivo != null && vivo - video.currentTime > 8));
+    };
+    video.addEventListener('timeupdate', revisarAtraso);
+    video.addEventListener('pause', revisarAtraso);
+
     arrancar();
 
     return () => {
       cancelado = true;
       clearTimeout(retry);
+      video.removeEventListener('timeupdate', revisarAtraso);
+      video.removeEventListener('pause', revisarAtraso);
+      hlsRef.current = null;
       hls?.destroy();
     };
   }, [auctionId, camaraPrendida, token, pase]);
@@ -109,15 +152,39 @@ export default function LivePlayer({
   }
 
   return (
-    <div className={styles.playerWrapper}>
-      <video ref={videoRef} className={styles.video} controls playsInline muted />
+    <div className={styles.playerWrapper} ref={contenedorRef}>
+      {/* Sin controles nativos: en vivo no tiene sentido la barra de tiempo */}
+      <video ref={videoRef} className={styles.video} playsInline muted />
       {estado !== 'en-vivo' && placeholderSinSenal && <div className={styles.tapa}>{placeholder}</div>}
       {estado !== 'en-vivo' && !placeholderSinSenal && (
         <div className={styles.overlay}>
           {estado === 'cargando' ? 'Conectando con la cámara...' : 'Esperando la señal de la cámara...'}
         </div>
       )}
-      {estado === 'en-vivo' && <span className={styles.badge}>● EN VIVO</span>}
+      {estado === 'en-vivo' &&
+        (atrasado ? (
+          <button type="button" className={`${styles.badge} ${styles.badgeAtrasado}`} onClick={irAlVivo}>
+            ↻ Ir al vivo
+          </button>
+        ) : (
+          <span className={styles.badge}>● EN VIVO</span>
+        ))}
+      {estado === 'en-vivo' && (
+        <div className={styles.controles}>
+          <button type="button" className={styles.control} onClick={alternarSonido}>
+            {muteado ? '🔇 Activar sonido' : '🔊 Silenciar'}
+          </button>
+          <button
+            type="button"
+            className={styles.control}
+            onClick={pantallaCompleta}
+            aria-label="Pantalla completa"
+            title="Pantalla completa"
+          >
+            ⛶
+          </button>
+        </div>
+      )}
     </div>
   );
 }
