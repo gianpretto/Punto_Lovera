@@ -26,6 +26,7 @@ import { api, ApiError, getToken, uploadUrl } from "../../services/api";
 import { useAuctionRoom } from "../../services/useAuctionRoom";
 import styles from "./SubastaActiva.module.scss";
 import { registrarEvento } from '../../services/analytics';
+import { NOMBRES_MARTILLEROS } from '../../content/martilleros';
 
 // Sala en vivo (wireframes 620:14277 escritorio y 620:16312 / 620:16356
 // celular, con el lenguaje visual del rediseño): video con el precio
@@ -724,70 +725,14 @@ export default function SubastaActiva() {
             </section>
           </div>
 
-          {/* ---------- Columna lateral: martillero, lote y chat */}
+          {/* ---------- Columna lateral: martillero, chat y lote */}
           <aside className={styles.lateral}>
             <div className={styles.martillero}>
               <span className={styles.martilleroLabel}>Martillero</span>
               <span className={styles.martilleroNombre}>
-                {auction?.martillero ?? "—"}
+                {NOMBRES_MARTILLEROS}
               </span>
             </div>
-
-            {lot && (
-              <section className={styles.lote} aria-labelledby="titulo-lote">
-                <div className={styles.loteMedia}>
-                  {imagenes.length > 0 ? (
-                    <button
-                      type="button"
-                      className={styles.loteFotoBoton}
-                      onClick={() => setVisorAbierto(true)}
-                      aria-label={`Ampliar fotos de ${lot?.title}`}
-                    >
-                      <img
-                        className={styles.loteFoto}
-                        src={imagenes[0]}
-                        alt=""
-                      />
-                      {imagenes.length > 1 && (
-                        <span className={styles.loteCantidad}>
-                          {imagenes.length} fotos
-                        </span>
-                      )}
-                    </button>
-                  ) : (
-                    <span className={styles.sinFotos}>
-                      {lot ? "Sin fotos todavía" : "Sin lote en remate"}
-                    </span>
-                  )}
-                </div>
-                <div className={styles.loteCuerpo}>
-                  <p className={styles.loteEtiquetas}>
-                    <span>{lot ? `Lote ${lot.number}` : "Lote en remate"}</span>
-                    {lot && <span>Base {pesos(lot.startingPrice)}</span>}
-                  </p>
-                  <h2 id="titulo-lote" className={styles.loteTitulo}>
-                    {lot?.title ?? mensajeSala}
-                  </h2>
-                  {descripcion?.resumen && (
-                    <p className={styles.loteResumen}>{descripcion.resumen}</p>
-                  )}
-                </div>
-                {lot && (
-                  <button
-                    type="button"
-                    className={styles.verFotos}
-                    onClick={() => setVisorAbierto(true)}
-                  >
-                    <span>
-                      {imagenes.length > 0
-                        ? "Ver fotos y detalle"
-                        : "Ver detalle"}
-                    </span>
-                    <span aria-hidden="true">→</span>
-                  </button>
-                )}
-              </section>
-            )}
 
             <section className={styles.chat} aria-labelledby="titulo-chat">
               <h2 id="titulo-chat" className={styles.chatTitulo}>
@@ -857,6 +802,62 @@ export default function SubastaActiva() {
                 </button>
               </div>
             </section>
+
+            {lot && (
+              <section className={styles.lote} aria-labelledby="titulo-lote">
+                <div className={styles.loteMedia}>
+                  {imagenes.length > 0 ? (
+                    <button
+                      type="button"
+                      className={styles.loteFotoBoton}
+                      onClick={() => setVisorAbierto(true)}
+                      aria-label={`Ampliar fotos de ${lot?.title}`}
+                    >
+                      <img
+                        className={styles.loteFoto}
+                        src={imagenes[0]}
+                        alt=""
+                      />
+                      {imagenes.length > 1 && (
+                        <span className={styles.loteCantidad}>
+                          {imagenes.length} fotos
+                        </span>
+                      )}
+                    </button>
+                  ) : (
+                    <span className={styles.sinFotos}>
+                      {lot ? "Sin fotos todavía" : "Sin lote en remate"}
+                    </span>
+                  )}
+                </div>
+                <div className={styles.loteCuerpo}>
+                  <p className={styles.loteEtiquetas}>
+                    <span>{lot ? `Lote ${lot.number}` : "Lote en remate"}</span>
+                    {lot && <span>Base {pesos(lot.startingPrice)}</span>}
+                  </p>
+                  <h2 id="titulo-lote" className={styles.loteTitulo}>
+                    {lot?.title ?? mensajeSala}
+                  </h2>
+                  {descripcion?.resumen && (
+                    <p className={styles.loteResumen}>{descripcion.resumen}</p>
+                  )}
+                </div>
+                {lot && (
+                  <button
+                    type="button"
+                    className={styles.verFotos}
+                    onClick={() => setVisorAbierto(true)}
+                  >
+                    <span>
+                      {imagenes.length > 0
+                        ? "Ver fotos y detalle"
+                        : "Ver detalle"}
+                    </span>
+                    <span aria-hidden="true">→</span>
+                  </button>
+                )}
+              </section>
+            )}
           </aside>
         </div>
       </div>

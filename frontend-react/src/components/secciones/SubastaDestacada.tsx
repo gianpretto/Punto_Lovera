@@ -2,6 +2,7 @@ import { Fragment } from 'react';
 import { Link } from 'react-router-dom';
 import { uploadUrl } from '../../services/api';
 import type { AuctionApi } from '../../services/auctions';
+import { MARTILLEROS } from '../../content/martilleros';
 import styles from './SubastaDestacada.module.scss';
 
 // Bloque grande de la subasta en vivo (Figma: tarjeta blanca de 1280 x 502,
@@ -10,13 +11,6 @@ import styles from './SubastaDestacada.module.scss';
 // Si no hay ninguna en vivo, la página pasa la próxima: mismo diseño con
 // "PRÓXIMA SUBASTA" y el botón al detalle.
 
-// Martilleros de Punto Lovera (el backend no guarda martillero por
-// subasta). TODO: cargar las matrículas cuando el cliente las pase; vacías
-// no se muestran.
-const MARTILLEROS = [
-  { nombre: 'Gonzalo Lovera', matricula: '' },
-  { nombre: 'Emiliano Lovera', matricula: '' },
-];
 
 const IMAGEN_DEFAULT = '/assets/figma/subasta-cafeteria.webp';
 

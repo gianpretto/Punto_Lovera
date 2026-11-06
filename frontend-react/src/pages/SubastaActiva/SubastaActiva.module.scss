@@ -221,7 +221,7 @@ $una-columna: 900px;
   min-width: 0;
 
   // En una columna las dos se "disuelven" para poder ordenar las secciones:
-  // primero lo necesario para pujar, después el lote, las ofertas y el chat.
+  // primero lo necesario para pujar, después el chat, las ofertas y el lote.
   @include una-columna {
     display: contents;
   }
@@ -240,13 +240,13 @@ $una-columna: 900px;
   .martillero {
     order: 4;
   }
-  .lote {
+  .chat {
     order: 5;
   }
   .historial {
     order: 6;
   }
-  .chat {
+  .lote {
     order: 7;
   }
 }
