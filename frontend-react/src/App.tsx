@@ -8,6 +8,7 @@ import ProximasSubastas from './pages/ProximasSubastas/ProximasSubastas';
 import DetalleSubasta from './pages/DetalleSubasta/DetalleSubasta';
 import SubastaActiva from './pages/SubastaActiva/SubastaActiva';
 import PanelMartillero from './pages/PanelMartillero/PanelMartillero';
+import IrAlPanel from './pages/IrAlPanel/IrAlPanel';
 import AdminComprobantes from './pages/AdminComprobantes/AdminComprobantes';
 import AdminReintegros from './pages/AdminReintegros/AdminReintegros';
 import AdminConsultas from './pages/AdminConsultas/AdminConsultas';
@@ -45,6 +46,7 @@ export default function App() {
           <Route path="/subastas/:id" element={<DetalleSubasta />} />
           <Route path="/subastas/:id/activa" element={<SubastaActiva />} />
           <Route path="/subastas/:id/martillero" element={<PanelMartillero />} />
+          <Route path="/martillero" element={<IrAlPanel />} />
 
           {/* Autenticación / usuario */}
           <Route path="/login" element={<Login />} />

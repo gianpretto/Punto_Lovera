@@ -38,7 +38,11 @@ export default function Header() {
         ]
       : []),
     ...(user?.role === 'MARTILLERO' || user?.role === 'ADMIN'
-      ? [{ to: '/admin/subastas', label: 'Administrar subastas' }]
+      ? [
+          // Va directo al panel de la subasta en vivo (o la próxima)
+          { to: '/martillero', label: 'Panel del martillero' },
+          { to: '/admin/subastas', label: 'Administrar subastas' },
+        ]
       : []),
   ];
 
