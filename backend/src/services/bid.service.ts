@@ -19,10 +19,12 @@ const pesos = (n: number) => `$${n.toLocaleString('es-AR')}`;
  * "pujas fantasma" en subastas en vivo con alta concurrencia sin tener que
  * tomar un lock pesado de tabla.
  *
+ * Quien ya va ganando el lote no puede volver a ofertar (no tiene sentido
+ * subirse el precio a uno mismo; pedido del cliente).
+ *
  * Crédito: la puja reserva su monto mientras el usuario va ganando. Se
  * valida contra el saldo disponible (saldo - lo reservado en OTROS lotes
- * que lidera; si ya lideraba este lote, su reserva anterior se reemplaza
- * por la nueva). La fila del usuario se bloquea (FOR UPDATE) dentro de la
+ * que lidera). La fila del usuario se bloquea (FOR UPDATE) dentro de la
  * transacción para que dos pujas simultáneas en lotes distintos no puedan
  * usar la misma plata dos veces.
  */
@@ -39,6 +41,10 @@ export async function placeBid(lotId: string, userId: string, amount: number) {
     const current = await getCurrentLot(lot.auctionId);
     if (current?.id !== lot.id) {
       throw Errors.badRequest('Este lote no está en remate en este momento');
+    }
+
+    if (lot.leaderId === userId) {
+      throw Errors.badRequest('Ya vas ganando este lote: esperá a que alguien te supere para volver a ofertar');
     }
 
     const currentPrice = Number(lot.currentPrice);

@@ -263,6 +263,11 @@ export default function SubastaActiva() {
       return;
     }
 
+    if (vaGanando) {
+      errorPuja("Ya vas ganando este lote.");
+      return;
+    }
+
     if (!amount || amount <= 0) {
       errorPuja("Ingresá un monto válido.");
       return;
@@ -433,7 +438,9 @@ export default function SubastaActiva() {
   };
 
   const requisito = renderRequisito();
-  const puedeOfertar = !requisito && Boolean(lot);
+  // Si ya va ganando el lote no puede volver a ofertar (no tiene sentido
+  // subirse el precio a uno mismo): se habilita de nuevo si lo superan
+  const puedeOfertar = !requisito && Boolean(lot) && !vaGanando;
 
   return (
     <div className={styles.pagina}>
@@ -571,14 +578,6 @@ export default function SubastaActiva() {
                   <h2 id="titulo-ofertar" className={styles.ofertarTitulo}>
                     {lot ? `Lote ${lot.number} · ${lot.title}` : "Lote en remate"}
                   </h2>
-                  {vaGanando && (
-                    <span
-                      className={`${styles.estadoPuja} ${styles.ganando}`}
-                      role="status"
-                    >
-                      ✓ Vas ganando
-                    </span>
-                  )}
                   {!vaGanando && superado && (
                     <span
                       className={`${styles.estadoPuja} ${styles.superado}`}
@@ -616,7 +615,19 @@ export default function SubastaActiva() {
               <div className={styles.ofertarAccion}>
                 {requisito}
 
-                {!requisito && lot && (
+                {!requisito && lot && vaGanando && (
+                  <div className={styles.vasGanando} role="status">
+                    <p className={styles.vasGanandoTitulo}>
+                      ✓ Vas ganando con {pesos(lot.currentPrice)}
+                    </p>
+                    <p className={styles.vasGanandoTexto}>
+                      Si alguien te supera, te avisamos acá y vas a poder
+                      volver a ofertar.
+                    </p>
+                  </div>
+                )}
+
+                {!requisito && lot && !vaGanando && (
                   <div className={styles.pujaFila}>
                     <div className={styles.selector}>
                       <button

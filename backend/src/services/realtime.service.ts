@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm';
+import { and, eq, gte } from 'drizzle-orm';
 import { db } from '../config/db';
 import { auctions, chatMessages, lots, users } from '../db/schema';
 import { Errors } from '../utils/AppError';
@@ -91,14 +91,22 @@ export async function getLotAuctionId(lotId: string) {
   return lot.auctionId;
 }
 
+// Al entrar a la sala solo se muestra el chat reciente: los últimos
+// CHAT_HISTORIAL_MAX mensajes de los últimos CHAT_HISTORIAL_MINUTOS (no tiene
+// sentido ver la charla de hace horas). En la base quedan todos.
+const CHAT_HISTORIAL_MAX = 40;
+const CHAT_HISTORIAL_MINUTOS = 30;
+
 export async function getChatHistory(auctionId: string) {
+  const desde = new Date(Date.now() - CHAT_HISTORIAL_MINUTOS * 60_000);
   const messages = await db.query.chatMessages.findMany({
-    where: eq(chatMessages.auctionId, auctionId),
-    orderBy: (m, { asc }) => asc(m.createdAt),
-    limit: 200,
+    where: and(eq(chatMessages.auctionId, auctionId), gte(chatMessages.createdAt, desde)),
+    // Los más nuevos (desc + limit) y después en orden cronológico
+    orderBy: (m, { desc }) => desc(m.createdAt),
+    limit: CHAT_HISTORIAL_MAX,
     with: { user: { columns: { firstName: true, lastName: true } } },
   });
-  return messages.map((m) => ({
+  return messages.reverse().map((m) => ({
     id: m.id,
     user: `${m.user.firstName} ${m.user.lastName}`,
     text: m.text,

@@ -51,17 +51,17 @@ describe('Reserva de crédito mientras se va ganando', () => {
     expect((await bid(lot2.id, 100000, U1)).status).toBe(201);
   });
 
-  it('subir la propia puja reemplaza la reserva de ese lote (no suma)', async () => {
-    expect((await bid(lot2.id, 200000, U1)).status).toBe(201);
-    expect(await me(U1)).toMatchObject({ heldCredit: 500000, availableCredit: 0 });
-    // y no puede pasarse de su saldo total
-    expect((await bid(lot2.id, 205000, U1)).status).toBe(400);
+  it('si ya va ganando el lote no puede volver a ofertar', async () => {
+    const otra = await bid(lot2.id, 200000, U1);
+    expect(otra.status).toBe(400);
+    expect(otra.data.error).toMatch(/ya vas ganando/i);
+    expect(await me(U1)).toMatchObject({ heldCredit: 400000, availableCredit: 100000 });
   });
 
   it('ser superado libera la reserva', async () => {
     await loteActual(lot1.id);
     expect((await bid(lot1.id, 310000, U2)).status).toBe(201);
-    expect(await me(U1)).toMatchObject({ heldCredit: 200000, availableCredit: 300000 });
+    expect(await me(U1)).toMatchObject({ heldCredit: 100000, availableCredit: 400000 });
     const u2 = await me(U2);
     expect(u2).toMatchObject({ heldCredit: 310000, availableCredit: 690000 });
 
@@ -75,7 +75,7 @@ describe('Reserva de crédito mientras se va ganando', () => {
     expect((await app.api('POST', `/compras/cerrar-lote/${lot1.id}`, null, A)).status).toBe(201);
     expect(await me(U2)).toMatchObject({ creditBalance: 690000, heldCredit: 0, availableCredit: 690000 });
     // U1 no pierde saldo: sigue reservando lo del lote 2
-    expect(await me(U1)).toMatchObject({ creditBalance: 500000, heldCredit: 200000 });
+    expect(await me(U1)).toMatchObject({ creditBalance: 500000, heldCredit: 100000 });
   });
 
   it('finalizar la subasta libera la reserva de los lotes sin adjudicar', async () => {

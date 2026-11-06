@@ -65,6 +65,12 @@ const toChat = (m: ServerMessage): ChatMessage => ({
   isOffer: m.isOffer,
 });
 
+// El chat de la sala muestra solo los últimos mensajes: los viejos se van
+// descartando (el backend además manda solo lo reciente al entrar)
+const MAX_MENSAJES = 60;
+const recortar = (lista: ChatMessage[]) =>
+  lista.length > MAX_MENSAJES ? lista.slice(-MAX_MENSAJES) : lista;
+
 export function useAuctionRoom(
   auctionId: string | undefined,
   token: string | null,
@@ -114,8 +120,8 @@ export function useAuctionRoom(
       if (code === 'AUTH_REQUIRED') setAuthRequired(true);
     });
 
-    socket.on('chat:history', (history: ServerMessage[]) => setMessages(history.map(toChat)));
-    socket.on('chat:message', (m: ServerMessage) => setMessages((prev) => [...prev, toChat(m)]));
+    socket.on('chat:history', (history: ServerMessage[]) => setMessages(recortar(history.map(toChat))));
+    socket.on('chat:message', (m: ServerMessage) => setMessages((prev) => recortar([...prev, toChat(m)])));
 
     socket.on('bid:new', (b: { lotId: string; currentPrice: number; minNextBid: number; leaderId: string }) => {
       setState((prev) =>
@@ -130,14 +136,14 @@ export function useAuctionRoom(
 
     socket.on('lot:sold', ({ amount, winner }: { lotId: string; amount: number; winner: string }) => {
       // Aviso local (no queda en el historial del backend)
-      setMessages((prev) => [
+      setMessages((prev) => recortar([
         ...prev,
         {
           user: 'Martillero',
           text: `¡Adjudicado a ${winner} por $${amount.toLocaleString('es-AR')}!`,
           time: formatTime(new Date().toISOString()),
         },
-      ]);
+      ]));
     });
 
     const onError = ({ message }: { message: string }) => handlersRef.current.onError?.(message);
