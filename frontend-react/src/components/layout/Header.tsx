@@ -18,7 +18,7 @@ const NAV = [
 const RUTAS_BARRA_GRIS = ['/', '/quiero-comprar', '/quiero-vender'];
 
 export default function Header() {
-  const { currentUser, user, logout } = useAuth();
+  const { currentUser, user, loading, logout } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -93,7 +93,7 @@ export default function Header() {
                   </div>
                 )}
               </div>
-            ) : (
+            ) : loading ? null : (
               <>
                 <Link className={styles.linkTop} to="/registro">
                   REGISTRARSE
@@ -178,7 +178,7 @@ export default function Header() {
                   Cerrar sesión
                 </button>
               </>
-            ) : (
+            ) : loading ? null : (
               <>
                 <Link to="/registro" className={styles.menuMovilSecundario}>
                   REGISTRARSE

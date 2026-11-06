@@ -54,7 +54,7 @@ interface AuthContextValue {
   logout: () => void;
   updateUserData: (data: UpdateUserData) => Promise<void>;
   /** Vuelve a pedir el usuario (ej: después de que cambie el saldo). */
-  refreshUser: () => Promise<void>;
+  refreshUser: () => Promise<boolean>;
   /** Inicia sesión con un token ya emitido (ej: al verificar el mail). */
   setSession: (token: string, user: User) => void;
 }
@@ -65,27 +65,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(() => Boolean(getToken()));
 
+  /** true si quedó resuelto (usuario cargado o sesión vencida); false si falló la red */
   const refreshUser = useCallback(async () => {
     if (!getToken()) {
       setUser(null);
-      return;
+      return true;
     }
     try {
       const { user } = await api.get<{ user: User }>('/auth/me');
       setUser(user);
+      return true;
     } catch (err) {
       // Token vencido o inválido: cerramos sesión. Si es un error de red
       // dejamos el token para reintentar en la próxima carga.
       if (err instanceof ApiError && (err.status === 401 || err.status === 404)) {
         setToken(null);
         setUser(null);
+        return true;
       }
+      return false;
     }
   }, []);
 
+  // Al cargar la página: si hay token se confirma la sesión. Si la red falla
+  // (backend despertando, conexión lenta) se reintenta antes de mostrar la
+  // web como si no hubiera sesión.
   useEffect(() => {
     if (!getToken()) return;
-    refreshUser().finally(() => setLoading(false));
+    let cancelado = false;
+    (async () => {
+      for (let intento = 0; intento < 3 && !cancelado; intento++) {
+        if (await refreshUser()) break;
+        await new Promise((r) => setTimeout(r, 1500));
+      }
+      if (!cancelado) setLoading(false);
+    })();
+    return () => {
+      cancelado = true;
+    };
   }, [refreshUser]);
 
   const login = useCallback(async (email: string, password: string) => {
