@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Medicion from './components/layout/Medicion';
+import PantallaCarga from './components/layout/PantallaCarga';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import { AuthProvider } from './services/AuthContext';
@@ -34,6 +35,7 @@ const PreguntasFrecuentesPage = lazy(() => import('./pages/PreguntasFrecuentesPa
 export default function App() {
   return (
     <AuthProvider>
+      <PantallaCarga />
       <Medicion />
       <Header />
 
