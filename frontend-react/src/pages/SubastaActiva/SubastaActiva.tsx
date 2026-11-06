@@ -67,8 +67,12 @@ export default function SubastaActiva() {
     id,
     user ? getToken() : null,
     {
-      onError: (message) =>
-        setAviso({ texto: message, donde: ultimaAccion.current }),
+      onError: (message) => {
+        // "Ya vas ganando" (doble click antes de que el botón se ponga gris):
+        // no se muestra, el botón gris y "✓ Vas ganando" ya lo dicen
+        if (/^Ya vas ganando/i.test(message)) return;
+        setAviso({ texto: message, donde: ultimaAccion.current });
+      },
     },
     pase,
   );
@@ -263,10 +267,8 @@ export default function SubastaActiva() {
       return;
     }
 
-    if (vaGanando) {
-      errorPuja("Ya vas ganando este lote.");
-      return;
-    }
+    // Va ganando: el botón está gris, no hay nada que avisar
+    if (vaGanando) return;
 
     if (!amount || amount <= 0) {
       errorPuja("Ingresá un monto válido.");
@@ -578,6 +580,14 @@ export default function SubastaActiva() {
                   <h2 id="titulo-ofertar" className={styles.ofertarTitulo}>
                     {lot ? `Lote ${lot.number} · ${lot.title}` : "Lote en remate"}
                   </h2>
+                  {vaGanando && (
+                    <span
+                      className={`${styles.estadoPuja} ${styles.ganando}`}
+                      role="status"
+                    >
+                      ✓ Vas ganando
+                    </span>
+                  )}
                   {!vaGanando && superado && (
                     <span
                       className={`${styles.estadoPuja} ${styles.superado}`}
