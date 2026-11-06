@@ -170,6 +170,11 @@ vivo de YouTube embebido (lo ve cualquiera con el link).
   page, pageSize, pages }`. Sin `page` devuelve la lista completa (admin).
   Front: `useAuctionsPage` (Todas las subastas, 6 por página en 3 x 2) y
   `useAuctions(estados, cantidad)` (Home 4, Quiénes somos 4).
+- Catálogo de bienes (DetalleSubasta) paginado igual: la ficha se pide sin
+  lotes (`GET /api/subastas/:id?lots=false`, trae `lotCount`) y los lotes
+  por página con fotos (`GET /api/subastas/:id/lotes?page=1&pageSize=6`,
+  máx. 30, por número). Sin `lots=false` la subasta viene completa (sala,
+  martillero, admin). Paginador compartido: `components/ui/Paginacion`.
 - `SKIP_EMAIL_VERIFICATION=true` (solo pruebas sin SMTP): el registro deja
   la cuenta validada, se puede ofertar sin validar y el front entra directo
   a `/datos`. Avisa en los logs al arrancar. Sacarlo antes de producción.

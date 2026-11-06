@@ -56,6 +56,30 @@ export async function getAuctionById(id: string) {
   return auction;
 }
 
+/** La subasta sin sus lotes (para el catálogo, que pide los lotes paginados aparte). */
+export async function getAuctionSummary(id: string) {
+  const auction = await db.query.auctions.findFirst({ where: eq(auctions.id, id) });
+  if (!auction) throw Errors.notFound('Subasta');
+  const [{ lotCount }] = await db.select({ lotCount: count() }).from(lots).where(eq(lots.auctionId, id));
+  return { ...auction, lotCount };
+}
+
+/** Una página de lotes de una subasta (por número), con sus fotos. */
+export async function listLotsPage(auctionId: string, page: number, pageSize: number) {
+  const [auction] = await db.select({ id: auctions.id }).from(auctions).where(eq(auctions.id, auctionId));
+  if (!auction) throw Errors.notFound('Subasta');
+
+  const [{ total }] = await db.select({ total: count() }).from(lots).where(eq(lots.auctionId, auctionId));
+  const items = await db.query.lots.findMany({
+    where: eq(lots.auctionId, auctionId),
+    orderBy: (l, { asc }) => asc(l.number),
+    limit: pageSize,
+    offset: (page - 1) * pageSize,
+    with: { images: { orderBy: (i, { asc }) => asc(i.position) } },
+  });
+  return { lots: items, total, page, pageSize, pages: Math.max(1, Math.ceil(total / pageSize)) };
+}
+
 /**
  * Lote en remate ahora: el que eligió el martillero (si sigue sin vender)
  * o, si no eligió ninguno, el primer lote sin vender por número.

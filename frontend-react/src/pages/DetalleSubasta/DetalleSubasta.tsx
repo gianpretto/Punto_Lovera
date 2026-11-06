@@ -6,14 +6,16 @@ import {
   formatHora,
   lotImages,
   useAuction,
+  useAuctionLots,
   useNow,
-  type AuctionDetailApi,
+  type AuctionSummaryApi,
   type LotApi,
 } from '../../services/auctions';
 import { uploadUrl } from '../../services/api';
 import { useAuth, type User } from '../../services/AuthContext';
 import Boton from '../../components/ui/Boton';
 import Etiqueta from '../../components/ui/Etiqueta';
+import Paginacion from '../../components/ui/Paginacion';
 import TarjetaLote from '../../components/lotes/TarjetaLote';
 import VisorLote from '../../components/lotes/VisorLote';
 import { partirDescripcion, type LoteCatalogo } from '../../components/lotes/lote';
@@ -55,7 +57,7 @@ function aLoteCatalogo(lot: LotApi): LoteCatalogo {
 }
 
 /** "En 18 días.", "En 5 horas.", etc. (columna CIERRE del diseño) */
-function textoCierre(auction: AuctionDetailApi, now: number) {
+function textoCierre(auction: AuctionSummaryApi, now: number) {
   if (auction.status === 'ACTIVA') return 'En curso.';
   if (auction.status === 'FINALIZADA') return 'Finalizada.';
   if (auction.status === 'CANCELADA') return 'Cancelada.';
@@ -80,7 +82,7 @@ interface Accion {
  * crédito; con la subasta ACTIVA → entrar a la sala (con sesión o con el
  * pase de invitado `?pase=`). Pujar lo vuelve a validar la sala.
  */
-function accionIngreso(auction: AuctionDetailApi, user: User | null, pase: string | null): Accion | null {
+function accionIngreso(auction: AuctionSummaryApi, user: User | null, pase: string | null): Accion | null {
   const sala = `/subastas/${auction.id}/activa`;
   const aqui = `/subastas/${auction.id}`;
   if (auction.status === 'FINALIZADA' || auction.status === 'CANCELADA') return null;
@@ -100,6 +102,8 @@ function accionIngreso(auction: AuctionDetailApi, user: User | null, pase: strin
   };
 }
 
+const LOTES_POR_PAGINA = 6;
+
 export default function DetalleSubasta() {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
@@ -109,7 +113,14 @@ export default function DetalleSubasta() {
   const [visor, setVisor] = useState<{ lote: LoteCatalogo; foto: number } | null>(null);
   const cerrarVisor = useCallback(() => setVisor(null), []);
 
-  const lotes = useMemo(() => (auction?.lots ?? []).map(aLoteCatalogo), [auction]);
+  // Catálogo paginado en el backend: 6 lotes por página (3 x 2)
+  const [paginaLotes, setPaginaLotes] = useState(1);
+  const paginaCatalogo = useAuctionLots(id, paginaLotes, LOTES_POR_PAGINA);
+  const lotes = useMemo(() => (paginaCatalogo?.lots ?? []).map(aLoteCatalogo), [paginaCatalogo]);
+  const cambiarPaginaLotes = (p: number) => {
+    setPaginaLotes(p);
+    document.getElementById('catalogo-titulo')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   if (!auction) {
     return (
@@ -234,7 +245,9 @@ export default function DetalleSubasta() {
               catálogo de bienes
             </Etiqueta>
             <h2 id="catalogo-titulo" className={styles.cantidad}>
-              {lotes.length === 0 ? 'Sin lotes todavía' : `${lotes.length} ${lotes.length === 1 ? 'lote' : 'lotes'}`}
+              {auction.lotCount === 0
+                ? 'Sin lotes todavía'
+                : `${auction.lotCount} ${auction.lotCount === 1 ? 'lote' : 'lotes'}`}
             </h2>
 
             {lotes.length > 0 && (
@@ -244,6 +257,14 @@ export default function DetalleSubasta() {
                 ))}
               </div>
             )}
+
+            <Paginacion
+              pagina={paginaLotes}
+              totalPaginas={paginaCatalogo?.pages ?? 1}
+              onCambiar={cambiarPaginaLotes}
+              etiqueta="Páginas del catálogo"
+              className={styles.paginacion}
+            />
           </div>
         </section>
       </div>

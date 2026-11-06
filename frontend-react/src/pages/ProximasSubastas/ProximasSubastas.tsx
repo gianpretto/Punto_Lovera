@@ -1,5 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import Etiqueta from '../../components/ui/Etiqueta';
+import Paginacion from '../../components/ui/Paginacion';
 import TarjetaSubasta from '../../components/tarjetas/TarjetaSubasta';
 import SubastaDestacada from '../../components/secciones/SubastaDestacada';
 import BannerRedes from '../../components/secciones/BannerRedes';
@@ -34,29 +35,7 @@ export default function ProximasSubastas() {
   const pagina = data?.auctions ?? [];
   const inicio = (currentPage - 1) * POR_PAGINA;
 
-  const visiblePages = useMemo((): (number | string)[] => {
-    const delta = 2;
-    const range: number[] = [];
-    for (let i = 1; i <= totalPages; i++) {
-      if (i === 1 || i === totalPages || (i >= currentPage - delta && i <= currentPage + delta) || i <= 3) {
-        range.push(i);
-      }
-    }
-    const conPuntos: (number | string)[] = [];
-    let l: number | undefined;
-    for (const i of range) {
-      if (l) {
-        if (i - l === 2) conPuntos.push(l + 1);
-        else if (i - l !== 1) conPuntos.push('...');
-      }
-      conPuntos.push(i);
-      l = i;
-    }
-    return conPuntos;
-  }, [currentPage, totalPages]);
-
   const setPage = (page: number) => {
-    if (page < 1 || page > totalPages) return;
     setCurrentPage(page);
     document.getElementById('titulo-proximas')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
@@ -104,35 +83,13 @@ export default function ProximasSubastas() {
           <p className={styles.sinSubastas}>No pudimos cargar las subastas. Probá de nuevo en un momento.</p>
         )}
 
-        {totalPages > 1 && (
-          <nav className={styles.paginacion} aria-label="Páginas de subastas">
-            {visiblePages.map((p, i) =>
-              typeof p === 'number' ? (
-                <button
-                  key={p}
-                  type="button"
-                  className={p === currentPage ? styles.actual : undefined}
-                  aria-current={p === currentPage ? 'page' : undefined}
-                  onClick={() => setPage(p)}
-                >
-                  {p}
-                </button>
-              ) : (
-                <span key={`puntos-${i}`} className={styles.puntos}>
-                  …
-                </span>
-              ),
-            )}
-            <button
-              type="button"
-              className={styles.siguiente}
-              onClick={() => setPage(currentPage + 1)}
-              disabled={currentPage === totalPages}
-            >
-              Siguiente →
-            </button>
-          </nav>
-        )}
+        <Paginacion
+          pagina={currentPage}
+          totalPaginas={totalPages}
+          onCambiar={setPage}
+          etiqueta="Páginas de subastas"
+          className={styles.paginacion}
+        />
 
         <div className={styles.redes}>
           <BannerRedes />

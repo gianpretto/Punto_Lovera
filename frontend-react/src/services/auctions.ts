@@ -32,6 +32,19 @@ export interface AuctionDetailApi extends AuctionApi {
   lots: LotApi[];
 }
 
+/** Ficha de la subasta sin los lotes (GET /subastas/:id?lots=false) */
+export interface AuctionSummaryApi extends AuctionApi {
+  lotCount: number;
+}
+
+export interface LotsPage {
+  lots: LotApi[];
+  total: number;
+  page: number;
+  pageSize: number;
+  pages: number;
+}
+
 // Texto del pill de estado, igual que en el diseño ("PRÓXIMA" con tilde)
 const ESTADO: Record<AuctionStatus, string> = {
   PROXIMA: 'PRÓXIMA',
@@ -131,14 +144,14 @@ export function useAuctions(statuses: AuctionStatus[], cantidad = 6) {
 }
 
 export function useAuction(id: string | undefined) {
-  const [auction, setAuction] = useState<AuctionDetailApi | null>(null);
+  const [auction, setAuction] = useState<AuctionSummaryApi | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!id) return;
     let cancel = false;
     api
-      .get<{ auction: AuctionDetailApi }>(`/subastas/${id}`)
+      .get<{ auction: AuctionSummaryApi }>(`/subastas/${id}?lots=false`)
       .then(({ auction }) => !cancel && setAuction(auction))
       .catch((err) => !cancel && setError(err instanceof Error ? err.message : 'No se pudo cargar la subasta'));
     return () => {
@@ -147,6 +160,29 @@ export function useAuction(id: string | undefined) {
   }, [id]);
 
   return { auction, error };
+}
+
+/**
+ * Una página del catálogo de bienes (GET /subastas/:id/lotes?page=N&pageSize=M),
+ * por número de lote y con sus fotos. Deja la página anterior a la vista
+ * mientras carga la siguiente.
+ */
+export function useAuctionLots(id: string | undefined, page: number, pageSize: number) {
+  const [data, setData] = useState<LotsPage | null>(null);
+
+  useEffect(() => {
+    if (!id) return;
+    let cancel = false;
+    api
+      .get<LotsPage>(`/subastas/${id}/lotes?page=${page}&pageSize=${pageSize}`)
+      .then((r) => !cancel && setData(r))
+      .catch(() => !cancel && setData({ lots: [], total: 0, page, pageSize, pages: 1 }));
+    return () => {
+      cancel = true;
+    };
+  }, [id, page, pageSize]);
+
+  return data;
 }
 
 export function lotImages(lot: LotApi): string[] {

@@ -34,9 +34,24 @@ export const list = asyncHandler(async (req: Request, res: Response) => {
   res.json(await auctionService.listAuctionsPage(status as AuctionStatus[] | undefined, page, pageSize));
 });
 
+// ?lots=false: sin los lotes (el catálogo los pide paginados en /:id/lotes)
 export const getOne = asyncHandler(async (req: Request, res: Response) => {
-  const auction = await auctionService.getAuctionById(req.params.id);
+  const auction =
+    req.query.lots === 'false'
+      ? await auctionService.getAuctionSummary(req.params.id)
+      : await auctionService.getAuctionById(req.params.id);
   res.json({ auction });
+});
+
+const lotsPageSchema = z.object({
+  page: z.coerce.number().int().min(1).max(10000).default(1),
+  pageSize: z.coerce.number().int().min(1).max(30).default(6),
+});
+
+// GET /subastas/:id/lotes?page=1&pageSize=6 (catálogo paginado)
+export const listLots = asyncHandler(async (req: Request, res: Response) => {
+  const { page, pageSize } = lotsPageSchema.parse(req.query);
+  res.json(await auctionService.listLotsPage(req.params.id, page, pageSize));
 });
 
 export const create = asyncHandler(async (req: Request, res: Response) => {

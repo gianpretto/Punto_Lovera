@@ -1,0 +1,46 @@
+@use '../../styles/tokens' as t;
+
+.paginacion {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+
+  button,
+  .puntos {
+    padding: 4px 8px;
+    border: 0;
+    background: none;
+    font-family: t.$font-destacada;
+    font-weight: 500;
+    font-size: 16px;
+    line-height: 22px;
+    color: t.$negro;
+  }
+
+  button {
+    cursor: pointer;
+
+    &:hover:not(:disabled) {
+      color: t.$verde;
+    }
+
+    &:focus-visible {
+      outline: 2px solid t.$verde;
+    }
+
+    &:disabled {
+      opacity: 0.35;
+      cursor: default;
+    }
+  }
+}
+
+.actual {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.siguiente {
+  margin-left: 3px;
+}
