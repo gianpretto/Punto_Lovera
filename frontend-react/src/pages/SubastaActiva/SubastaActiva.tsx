@@ -517,7 +517,7 @@ export default function SubastaActiva() {
               {id && (
                 <LivePlayer
                   auctionId={id}
-                  cameraId={auction?.cameraId ?? null}
+                  camaraPrendida={Boolean(auction?.cameraOn)}
                   token={user ? getToken() : null}
                   pase={pase}
                   placeholder={

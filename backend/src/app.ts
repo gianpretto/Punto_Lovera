@@ -21,6 +21,16 @@ app.use(helmet({ crossOriginResourcePolicy: false })); // permite servir /upload
 app.use(cors({ origin: env.frontendOrigins, credentials: true }));
 // Los JSON de la API son chicos (formularios); los archivos van por multer
 app.use(express.json({ limit: '100kb' }));
+
+// Red de seguridad: estos campos nunca salen en una respuesta JSON, aunque
+// algún endpoint devuelva la fila entera por error.
+// - cameraId: ES la clave de transmisión de OBS ("camera_<id>"); con ella
+//   cualquiera podría transmitir en la subasta. Se publica `cameraOn`
+//   (true/false) y el martillero recibe la clave solo por
+//   GET /subastas/:id/camara (streamKey).
+// - passwordHash, verificationToken, resetToken, googleId: datos de cuenta.
+const CAMPOS_PRIVADOS = new Set(['cameraId', 'passwordHash', 'verificationToken', 'resetToken', 'googleId']);
+app.set('json replacer', (key: string, value: unknown) => (CAMPOS_PRIVADOS.has(key) ? undefined : value));
 // En los tests de integración (NODE_ENV=test) el log de cada request es ruido
 if (env.nodeEnv !== 'test') app.use(morgan(env.isProd ? 'combined' : 'dev'));
 

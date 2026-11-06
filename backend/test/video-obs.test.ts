@@ -98,7 +98,26 @@ describe('Clave de transmisión', () => {
     expect(info.data.rtmpUrl).toMatch(/^rtmp:\/\//);
     expect(info.data.receiving).toBe(false);
 
-    await expect(room.waitFor('lot:change', (s) => Boolean(s.auction?.cameraId))).resolves.toBeTruthy();
+    await expect(room.waitFor('lot:change', (s) => s.auction?.cameraOn === true)).resolves.toBeTruthy();
+  });
+
+  it('la clave no aparece en ninguna respuesta pública ni en la sala', async () => {
+    const secreto = key.replace('camera_', '');
+    const respuestas = [
+      await app.api('GET', '/subastas'),
+      await app.api('GET', '/subastas?status=ACTIVA&page=1'),
+      await app.api('GET', `/subastas/${auctionId}`),
+      await app.api('GET', `/subastas/${auctionId}?lots=false`),
+      await app.api('GET', '/compras/mias', null, U),
+    ];
+    for (const r of respuestas) expect(JSON.stringify(r.data)).not.toContain(secreto);
+    expect((await app.api('GET', `/subastas/${auctionId}`)).data.auction.cameraOn).toBe(true);
+
+    const sala = app.room({ token: U });
+    sala.emit('auction:join', { auctionId });
+    const estado = await sala.waitFor('auction:state');
+    expect(JSON.stringify(estado)).not.toContain(secreto);
+    expect(estado.auction.cameraOn).toBe(true);
   });
 
   it('generar de nuevo reusa la misma clave', async () => {

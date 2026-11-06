@@ -155,7 +155,8 @@ export async function getRoomState(auctionId: string) {
       title: auction.title,
       location: auction.location,
       status: auction.status,
-      cameraId: auction.cameraId,
+      // Nunca la clave (camera_id): solo si la transmisión está habilitada
+      cameraOn: Boolean(auction.cameraId),
       martillero: auction.createdBy ? `${auction.createdBy.firstName} ${auction.createdBy.lastName}` : null,
     },
     lot: lot ? lotPayload(lot) : null,

@@ -26,7 +26,8 @@ export interface RoomState {
     title: string;
     location: string;
     status: 'PROXIMA' | 'ACTIVA' | 'FINALIZADA' | 'CANCELADA';
-    cameraId: string | null;
+    /** Transmisión habilitada (la clave de OBS nunca llega al navegador) */
+    cameraOn: boolean;
     martillero: string | null;
   };
   /** null = ya no quedan lotes sin vender */

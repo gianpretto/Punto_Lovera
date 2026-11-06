@@ -13,6 +13,10 @@ type AuctionStatus = (typeof auctions.$inferSelect)['status'];
 
 const ESTADOS = ['PROXIMA', 'ACTIVA', 'FINALIZADA', 'CANCELADA'] as const;
 
+// La clave de transmisión (cameraId) no se publica (la saca el json
+// replacer de app.ts); se agrega solo si está habilitada
+const conCamara = <T extends { cameraId: string | null }>(a: T) => ({ ...a, cameraOn: Boolean(a.cameraId) });
+
 // ?status=ACTIVA,PROXIMA (uno o varios) &page=1 &pageSize=6 (máx. 24).
 // Sin page devuelve la lista completa (la usa el admin).
 const listQuerySchema = z.object({
@@ -29,9 +33,10 @@ export const list = asyncHandler(async (req: Request, res: Response) => {
   const { status, page, pageSize } = listQuerySchema.parse(req.query);
   if (page === undefined) {
     const auctions = await auctionService.listAuctions(status as AuctionStatus[] | undefined);
-    return res.json({ auctions });
+    return res.json({ auctions: auctions.map(conCamara) });
   }
-  res.json(await auctionService.listAuctionsPage(status as AuctionStatus[] | undefined, page, pageSize));
+  const pagina = await auctionService.listAuctionsPage(status as AuctionStatus[] | undefined, page, pageSize);
+  res.json({ ...pagina, auctions: pagina.auctions.map(conCamara) });
 });
 
 // ?lots=false: sin los lotes (el catálogo los pide paginados en /:id/lotes)
@@ -40,7 +45,7 @@ export const getOne = asyncHandler(async (req: Request, res: Response) => {
     req.query.lots === 'false'
       ? await auctionService.getAuctionSummary(req.params.id)
       : await auctionService.getAuctionById(req.params.id);
-  res.json({ auction });
+  res.json({ auction: conCamara(auction) });
 });
 
 const lotsPageSchema = z.object({

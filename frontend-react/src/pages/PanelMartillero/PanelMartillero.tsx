@@ -27,14 +27,13 @@ interface AuctionApi {
   title: string;
   location: string;
   status: AuctionStatus;
-  cameraId: string | null;
+  cameraOn: boolean;
   lots: LotApi[];
 }
 
 // GET /api/subastas/:id/camara
 interface StreamInfo {
   mode: 'obs' | 'rtsp';
-  cameraId: string | null;
   rtmpUrl: string | null;
   streamKey: string | null;
   receiving: boolean;
@@ -140,15 +139,15 @@ export default function PanelMartillero() {
   useEffect(() => {
     if (!esMartillero) return;
     cargarStream();
-    if (!state?.auction.cameraId) return;
+    if (!state?.auction.cameraOn) return;
     const t = setInterval(cargarStream, 10000);
     return () => clearInterval(t);
-  }, [esMartillero, cargarStream, state?.auction.cameraId]);
+  }, [esMartillero, cargarStream, state?.auction.cameraOn]);
 
   // Se recarga cada vez que la sala cambia (lote nuevo, puja, cámara)
   useEffect(() => {
     if (esMartillero) cargarSubasta();
-  }, [esMartillero, cargarSubasta, lotActual?.id, lotActual?.currentPrice, state?.auction.cameraId]);
+  }, [esMartillero, cargarSubasta, lotActual?.id, lotActual?.currentPrice, state?.auction.cameraOn]);
 
   useEffect(() => {
     if (!id || !lotActual) {
@@ -266,7 +265,7 @@ export default function PanelMartillero() {
   if (!esMartillero || !id) return null;
 
   const status = auction?.status;
-  const cameraId = state?.auction.cameraId ?? auction?.cameraId ?? null;
+  const camaraPrendida = state?.auction.cameraOn ?? auction?.cameraOn ?? false;
 
   return (
     <div className={styles.panel}>
@@ -356,13 +355,13 @@ export default function PanelMartillero() {
           <div className={styles.preview}>
             <LivePlayer
               auctionId={id}
-              cameraId={cameraId}
+              camaraPrendida={camaraPrendida}
               token={token}
               placeholder={<div className={styles.sinVideo}>Sin cámara</div>}
             />
           </div>
           {stream?.mode === 'obs' ? (
-            cameraId && stream.streamKey ? (
+            camaraPrendida && stream.streamKey ? (
               <div className={styles.obsBox}>
                 <p className={stream.receiving ? styles.senalOk : styles.senalNo}>
                   {stream.receiving ? '● Recibiendo señal de OBS' : '○ Esperando que OBS empiece a transmitir'}
@@ -404,7 +403,7 @@ export default function PanelMartillero() {
                 </button>
               </>
             )
-          ) : cameraId ? (
+          ) : camaraPrendida ? (
             <button className={styles.btnGris} onClick={apagarCamara} disabled={busy}>
               Apagar cámara
             </button>

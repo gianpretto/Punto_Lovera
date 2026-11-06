@@ -12,8 +12,8 @@ import styles from './LivePlayer.module.scss';
 
 interface Props {
   auctionId: string;
-  /** null = la subasta no tiene cámara prendida */
-  cameraId: string | null;
+  /** Si la transmisión está habilitada (el backend nunca manda la clave) */
+  camaraPrendida: boolean;
   token: string | null;
   /** Pase de invitado: alternativa al token para ver el video */
   pase?: string | null;
@@ -25,13 +25,13 @@ type Estado = 'cargando' | 'en-vivo' | 'esperando';
 
 const REINTENTO_MS = 4000;
 
-export default function LivePlayer({ auctionId, cameraId, token, pase = null, placeholder }: Props) {
+export default function LivePlayer({ auctionId, camaraPrendida, token, pase = null, placeholder }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [estado, setEstado] = useState<Estado>('cargando');
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !cameraId || !(token || pase) || !Hls.isSupported()) return;
+    if (!video || !camaraPrendida || !(token || pase) || !Hls.isSupported()) return;
 
     const src = `${API_URL}/api/subastas/${auctionId}/vivo/hls/index.m3u8`;
     let hls: Hls | null = null;
@@ -74,9 +74,9 @@ export default function LivePlayer({ auctionId, cameraId, token, pase = null, pl
       clearTimeout(retry);
       hls?.destroy();
     };
-  }, [auctionId, cameraId, token, pase]);
+  }, [auctionId, camaraPrendida, token, pase]);
 
-  if (!cameraId) return <>{placeholder}</>;
+  if (!camaraPrendida) return <>{placeholder}</>;
 
   if (!token && !pase) {
     return (
