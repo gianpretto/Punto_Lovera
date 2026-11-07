@@ -25,6 +25,9 @@ export RTMP_AUTH_SECRET BACKEND_INTERNAL_URL DNS_RESOLVER
 envsubst '${BACKEND_INTERNAL_URL} ${RTMP_AUTH_SECRET} ${DNS_RESOLVER}' \
   < /etc/nginx/nginx.conf.template > /etc/nginx/nginx.conf
 
+# Sin restos de transmisiones anteriores al arrancar
+rm -rf /tmp/hls/*
+
 nginx -t
 echo "Servidor de video listo: RTMP en 1935, HLS en 8080 (DNS $DNS_RESOLVER)"
 exec nginx -g 'daemon off;'

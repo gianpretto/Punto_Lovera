@@ -36,9 +36,15 @@ rtmp {
             hls_fragment 2s;
             hls_playlist_length 12s;
             hls_cleanup on;
-            # La numeración de los segmentos sigue entre reconexiones de OBS
-            # (si no, vuelve a 0.ts y el reproductor puede mezclar segmentos)
-            hls_continuous on;
+            # Cada transmisión arranca de cero (0.ts...): con hls_continuous on
+            # nginx retomaba la playlist anterior y se colaban segmentos de la
+            # transmisión del día anterior. El caché viejo ya no es problema
+            # (el backend sirve todo con no-store).
+            hls_continuous off;
+
+            # Al cortar OBS se borran los segmentos de esa transmisión: no
+            # queda nada viejo para la próxima con la misma clave.
+            exec_publish_done /bin/rm -rf /tmp/hls/$name;
         }
     }
 }
