@@ -98,6 +98,17 @@ Settings → Environment Variables (Production) y después **Redeploy**.
 
 ## 4. Datos del negocio
 
+- [ ] **Decidir cómo se garantiza el pago de las ofertas** (definirlo con el
+      cliente según cómo lo hacen en sus remates presenciales). Hoy está
+      implementado **A**:
+      - **A. Crédito previo** (actual): carga plata antes, oferta hasta ese
+        monto, lo no usado se reintegra. Sin riesgo, pero mucha fricción.
+      - **B. Ofertar y pagar después**: el ganador paga en un plazo (seña +
+        saldo). Poca fricción; riesgo de que no pague u ofertas en joda.
+        Variante: el admin aprueba a cada postor antes de que pueda ofertar.
+      - **C. Garantía + pago después**: para ofertar deja una garantía (fija
+        o % del lote); si gana paga el resto, si no se le devuelve.
+
 - [ ] **Datos de transferencia** para cargar crédito: `TRANSFER_ALIAS`,
       `TRANSFER_CBU`, titular y cuenta (`TRANSFER_*` en Railway; ver
       `backend/.env.example`).
