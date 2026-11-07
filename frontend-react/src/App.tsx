@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Medicion from './components/layout/Medicion';
 import PantallaCarga from './components/layout/PantallaCarga';
@@ -32,7 +32,46 @@ const Contactanos = lazy(() => import('./pages/Contactanos/Contactanos'));
 const ComoParticipar = lazy(() => import('./pages/ComoParticipar/ComoParticipar'));
 const PreguntasFrecuentesPage = lazy(() => import('./pages/PreguntasFrecuentesPage'));
 
+// Después de que carga la primera página, en un momento libre se bajan las
+// demás (y el reproductor de video): así pasar de una sección a otra es
+// inmediato, sin esperar a descargar el código de la página nueva.
+function precargarPaginas() {
+  const paginas = [
+    () => import('./pages/ProximasSubastas/ProximasSubastas'),
+    () => import('./pages/DetalleSubasta/DetalleSubasta'),
+    () => import('./pages/SubastaActiva/SubastaActiva'),
+    () => import('./pages/PanelMartillero/PanelMartillero'),
+    () => import('./pages/IrAlPanel/IrAlPanel'),
+    () => import('./pages/AdminComprobantes/AdminComprobantes'),
+    () => import('./pages/AdminReintegros/AdminReintegros'),
+    () => import('./pages/AdminConsultas/AdminConsultas'),
+    () => import('./pages/AdminSubastas/AdminSubastas'),
+    () => import('./pages/AdminSubastas/EditarSubasta'),
+    () => import('./pages/Login/Login'),
+    () => import('./pages/ForgotPassword/ForgotPassword'),
+    () => import('./pages/Registro/Registro'),
+    () => import('./pages/ValidarMail/ValidarMail'),
+    () => import('./pages/DatosUsuario/DatosUsuario'),
+    () => import('./pages/PanelUsuario/PanelUsuario'),
+    () => import('./pages/Creditos/Creditos'),
+    () => import('./pages/ComprobanteExitoso/ComprobanteExitoso'),
+    () => import('./pages/Reintegro/Reintegro'),
+    () => import('./pages/QuienesSomos/QuienesSomos'),
+    () => import('./pages/QuieroComprar/QuieroComprar'),
+    () => import('./pages/QuieroVender/QuieroVender'),
+    () => import('./pages/Contactanos/Contactanos'),
+    () => import('./pages/ComoParticipar/ComoParticipar'),
+    () => import('./pages/PreguntasFrecuentesPage'),
+    () => import('./components/LivePlayer/LivePlayer'),
+  ];
+  const libre = (fn: () => void) =>
+    'requestIdleCallback' in window ? window.requestIdleCallback(fn, { timeout: 3000 }) : setTimeout(fn, 1500);
+  libre(() => paginas.forEach((cargar) => cargar().catch(() => undefined)));
+}
+
 export default function App() {
+  useEffect(precargarPaginas, []);
+
   return (
     <AuthProvider>
       <PantallaCarga />

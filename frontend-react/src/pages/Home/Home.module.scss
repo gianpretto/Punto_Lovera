@@ -363,32 +363,70 @@
   transform: scaleY(-1);
 }
 
-// Carrusel de marcas: se mueve solo, se pausa con el mouse y queda quieto
-// si el sistema pide reducir movimiento. Los bordes se desvanecen.
+// Carrusel de marcas (CarruselMarcas.tsx mueve la cinta): flechas a los
+// costados y los bordes de la cinta se desvanecen.
+.carruselMarco {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+
+  @include t.mobile {
+    gap: 4px;
+  }
+}
+
+.carruselFlecha {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0 0 4px;
+  border: 1px solid t.$gris-oscuro;
+  border-radius: 50%;
+  background: transparent;
+  color: t.$gris-oscuro;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background-color 0.15s ease, color 0.15s ease;
+
+  // Solo con mouse: en el celular el :hover queda "pegado" después de tocar
+  @media (hover: hover) {
+    &:hover {
+      background: t.$gris-oscuro;
+      color: t.$blanco;
+    }
+  }
+
+  &:active {
+    background: t.$gris-oscuro;
+    color: t.$blanco;
+  }
+
+  &:focus-visible {
+    outline: 2px solid t.$verde;
+    outline-offset: 2px;
+  }
+
+  @include t.mobile {
+    width: 36px;
+    height: 36px;
+    font-size: 24px;
+  }
+}
+
 .carrusel {
   overflow: hidden;
-  margin-top: 14px;
   mask-image: linear-gradient(90deg, transparent, #000 8%, #000 92%, transparent);
-
-  &:hover .cinta {
-    animation-play-state: paused;
-  }
 }
 
 .cinta {
   display: flex;
   width: max-content;
-  animation: carrusel-marcas 40s linear infinite;
-
-  @media (prefers-reduced-motion: reduce) {
-    animation: none;
-  }
-}
-
-@keyframes carrusel-marcas {
-  to {
-    transform: translateX(-50%);
-  }
+  will-change: transform;
 }
 
 .marcasLista {

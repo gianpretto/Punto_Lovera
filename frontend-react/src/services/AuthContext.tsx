@@ -48,7 +48,8 @@ interface AuthContextValue {
   currentUser: string | null;
   /** true mientras se valida el token guardado al cargar la app. */
   loading: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  /** `recordar`: "Recordarme" (sesión de 30 días en vez de 12 horas) */
+  login: (email: string, password: string, recordar?: boolean) => Promise<void>;
   /** Devuelve el usuario creado (emailVerified = true si el entorno no pide validar el mail) */
   register: (email: string, password: string, nombre: string, apellido: string) => Promise<User>;
   logout: () => void;
@@ -105,8 +106,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [refreshUser]);
 
-  const login = useCallback(async (email: string, password: string) => {
-    const { token, user } = await api.post<{ token: string; user: User }>('/auth/login', { email, password });
+  // El token venció en medio del uso (lo avisa api.ts): queda sin sesión
+  useEffect(() => {
+    const vencida = () => setUser(null);
+    window.addEventListener('sesion-vencida', vencida);
+    return () => window.removeEventListener('sesion-vencida', vencida);
+  }, []);
+
+  const login = useCallback(async (email: string, password: string, recordar = false) => {
+    const { token, user } = await api.post<{ token: string; user: User }>('/auth/login', {
+      email,
+      password,
+      remember: recordar,
+    });
     setToken(token);
     setUser(user);
   }, []);

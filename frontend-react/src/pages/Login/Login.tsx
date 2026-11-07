@@ -69,7 +69,7 @@ export default function Login() {
 
     setSending(true);
     try {
-      await login(email, password);
+      await login(email, password, rememberMe);
       registrarEvento('login', { method: 'email' });
       navigate(destino);
     } catch (err) {

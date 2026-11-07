@@ -116,14 +116,14 @@ export async function register(input: RegisterInput) {
   return publicUser(user);
 }
 
-export async function login(email: string, password: string) {
+export async function login(email: string, password: string, recordar = false) {
   const [user] = await db.select().from(users).where(eq(users.email, email));
 
   // Siempre se corre bcrypt (contra el hash descartable si no hay cuenta)
   const valid = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH);
   if (!user || !valid) throw Errors.badRequest('Email o contraseña incorrectos');
 
-  const token = signToken({ userId: user.id, role: user.role });
+  const token = signToken({ userId: user.id, role: user.role }, recordar);
   return { token, user: await publicUserWithCredit(user) };
 }
 
@@ -164,7 +164,8 @@ export async function loginWithGoogle(profile: GoogleProfile) {
     }
   }
 
-  const token = signToken({ userId: user.id, role: user.role });
+  // Google: sesión larga (como "Recordarme"; no hay casilla en el popup)
+  const token = signToken({ userId: user.id, role: user.role }, true);
   return { token, user: await publicUserWithCredit(user), isNew };
 }
 

@@ -6,10 +6,11 @@ export interface JwtPayload {
   role: 'USER' | 'MARTILLERO' | 'ADMIN';
 }
 
-export function signToken(payload: JwtPayload): string {
+/** `recordar`: sesión larga ("Recordarme" en el login, o ingreso con Google) */
+export function signToken(payload: JwtPayload, recordar = false): string {
   return jwt.sign(payload, env.jwtSecret, {
     algorithm: 'HS256',
-    expiresIn: env.jwtExpiresIn as jwt.SignOptions['expiresIn'],
+    expiresIn: (recordar ? env.jwtRememberExpiresIn : env.jwtExpiresIn) as jwt.SignOptions['expiresIn'],
   });
 }
 

@@ -25,6 +25,17 @@ describe('Auth y perfil', () => {
     U = res.data.token;
   });
 
+  it('la sesión es corta (JWT_EXPIRES_IN), o de 30 días con "Recordarme"', async () => {
+    const duracion = (token: string) => {
+      const { iat, exp } = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
+      return (exp - iat) / 3600;
+    };
+    const corta = await app.api('POST', '/auth/login', { email: 'usuario@test.com', password: 'user1234' });
+    const larga = await app.api('POST', '/auth/login', { email: 'usuario@test.com', password: 'user1234', remember: true });
+    expect(duracion(corta.data.token)).toBe(1); // JWT_EXPIRES_IN de los tests (setup-env)
+    expect(duracion(larga.data.token)).toBe(30 * 24);
+  });
+
   it('con contraseña incorrecta devuelve el mensaje del backend', async () => {
     const res = await app.api('POST', '/auth/login', { email: 'usuario@test.com', password: 'mal' });
     expect(res.status).toBe(400);

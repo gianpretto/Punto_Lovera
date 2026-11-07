@@ -24,8 +24,8 @@ export const register = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const login = asyncHandler(async (req: Request, res: Response) => {
-  const { email, password } = loginSchema.parse(req.body);
-  const result = await authService.login(email, password);
+  const { email, password, remember } = loginSchema.parse(req.body);
+  const result = await authService.login(email, password, remember);
   res.json(result);
 });
 

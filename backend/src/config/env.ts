@@ -32,7 +32,9 @@ export const env = {
   uploadDir: process.env.UPLOAD_DIR || '',
 
   jwtSecret: required('JWT_SECRET'),
-  jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '7d',
+  // Duración de la sesión: sin "Recordarme" (corta) y con "Recordarme" / Google
+  jwtExpiresIn: process.env.JWT_EXPIRES_IN ?? '12h',
+  jwtRememberExpiresIn: process.env.JWT_REMEMBER_EXPIRES_IN ?? '30d',
 
   smtp: {
     host: process.env.SMTP_HOST ?? '',

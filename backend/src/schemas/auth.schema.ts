@@ -23,6 +23,8 @@ export const registerSchema = z.object({
 export const loginSchema = z.object({
   email: email(),
   password: z.string().min(1).max(200),
+  /** "Recordarme": sesión de 30 días en lugar de 12 horas */
+  remember: z.boolean().optional(),
 });
 
 export const forgotPasswordSchema = z.object({

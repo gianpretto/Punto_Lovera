@@ -53,6 +53,11 @@ async function request<T>(method: Method, path: string, body?: unknown): Promise
   }
 
   const data = await res.json().catch(() => null);
+  // Sesión vencida (12 h sin "Recordarme"): se cierra y la app se entera
+  if (res.status === 401 && token) {
+    setToken(null);
+    window.dispatchEvent(new Event('sesion-vencida'));
+  }
   if (!res.ok) {
     // Si hay detalle de validación (zod), mostramos el primer mensaje concreto.
     const detail = data?.details?.[0]?.message as string | undefined;
