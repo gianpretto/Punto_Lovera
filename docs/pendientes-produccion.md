@@ -127,8 +127,6 @@ Settings → Environment Variables (Production) y después **Redeploy**.
 - [ ] ¿Los lotes llevan **categoría** (ej. "MOBILIARIO", como en el
       diseño)? Hoy la tarjeta muestra el precio base. Si sí, se agrega el
       campo al admin.
-- [ ] **Formato del ID de subasta** que quieren mostrar (hoy: 8
-      caracteres del identificador interno).
 - [ ] Revisar con la diseñadora las pantallas sin diseño final (login,
       registro, datos, perfil, créditos, sala en vivo, admin), que se
       hicieron siguiendo la línea de las pantallas finales.

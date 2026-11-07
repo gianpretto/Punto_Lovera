@@ -158,9 +158,6 @@ export default function DetalleSubasta() {
             <div className={styles.cabeceraGrilla}>
               <div className={styles.datos}>
                 <div className={styles.filaId}>
-                  <Etiqueta tamano="grande" className={styles.etiquetaVerde}>
-                    {`ID: ${auction.id.slice(0, 8).toUpperCase()}`}
-                  </Etiqueta>
                   <span className={`${styles.pastilla} ${estado === 'ACTIVA' ? styles.pastillaActiva : ''}`}>
                     <img src="/assets/figma/icono-martillo.svg" alt="" width={19} height={19} />
                     {pastilla}

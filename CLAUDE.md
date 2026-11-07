@@ -279,7 +279,7 @@ casi todo por datos reales y la fuente Nugros).
   Quiero vender, Contactanos (formulario → `POST /api/contacto`, guarda en
   `contact_messages` y avisa a `CONTACT_EMAIL`).
 - Pendiente de la diseñadora / cliente: matrícula de los martilleros; si los lotes llevan categoría (hoy la
-  tarjeta muestra el precio base); formato del ID de subasta; respuestas de
+  tarjeta muestra el precio base); respuestas de
   3 de las 4 preguntas de Home (borradores en `content/participar.ts`);
   textos de relleno de las tarjetas de Quiero comprar.
 - `hero-lineas.svg` está reconstruido a mano desde el render (no es export
