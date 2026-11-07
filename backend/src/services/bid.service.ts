@@ -50,7 +50,10 @@ export async function placeBid(lotId: string, userId: string, amount: number) {
     const currentPrice = Number(lot.currentPrice);
     const minNext = currentPrice + Number(lot.bidIncrement);
     if (amount < minNext) {
-      throw Errors.badRequest(`La puja mínima es $${minNext}`);
+      // En la sala casi siempre es porque otro ofertó un instante antes
+      throw Errors.badRequest(
+        `Alguien ofertó antes que vos. La oferta mínima ahora es ${pesos(minNext)}: ya te la dejamos cargada, ofertá de nuevo.`
+      );
     }
 
     const result = await db.transaction(async (tx) => {

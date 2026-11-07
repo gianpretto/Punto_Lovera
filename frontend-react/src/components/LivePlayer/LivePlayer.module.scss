@@ -52,21 +52,102 @@
   pointer-events: none;
 }
 
-// Controles propios (sin barra de tiempo): sonido y pantalla completa,
-// arriba a la izquierda debajo de "● EN VIVO" (abajo están los rótulos de la sala)
-.controles {
-  position: absolute;
-  top: 14px;
-  left: 14px;
-  display: flex;
-  gap: 8px;
+// Controles propios (sin barra de tiempo): barra abajo que aparece al mover
+// el mouse o tocar el video, y se esconde sola a los 2,5 s.
+.sinCursor {
+  cursor: none;
 }
 
-.control {
+.barra {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 28px 14px 10px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));
+  color: t.$blanco;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+
+  @include t.mobile {
+    gap: 6px;
+    padding: 22px 8px 6px;
+  }
+}
+
+.barraVisible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+
+  &:hover {
+    color: t.$verde-claro;
+  }
+
+  &:focus-visible {
+    outline: 2px solid t.$blanco;
+    outline-offset: 1px;
+  }
+}
+
+.derecha {
+  margin-left: auto;
+}
+
+.volumen {
+  width: 110px;
+  accent-color: t.$blanco;
+  cursor: pointer;
+
+  @include t.mobile {
+    width: 70px;
+  }
+}
+
+.textoSonido {
+  padding: 4px 10px;
+  border: 0;
+  background: rgba(0, 0, 0, 0.55);
+  color: t.$blanco;
+  font-family: t.$font-texto;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+
+  @include t.mobile {
+    display: none;
+  }
+}
+
+// "↻ Ir al vivo": arriba al centro, siempre visible cuando quedó atrás
+// (las esquinas las usan los rótulos de la sala)
+.irAlVivo {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 2;
   min-height: 34px;
   padding: 0 12px;
   border: 0;
-  background: rgba(0, 0, 0, 0.65);
+  background: t.$verde;
   color: t.$blanco;
   font-family: t.$font-texto;
   font-size: 14px;
@@ -74,31 +155,15 @@
   cursor: pointer;
 
   &:hover {
-    background: rgba(0, 0, 0, 0.85);
+    filter: brightness(0.92);
   }
 
   &:focus-visible {
     outline: 2px solid t.$blanco;
     outline-offset: 2px;
   }
-
-  @include t.mobile {
-    min-height: 30px;
-    padding: 0 10px;
-    font-size: 12px;
-  }
 }
 
 .playerWrapper:fullscreen .video {
   object-fit: contain;
-}
-
-// "↻ Ir al vivo": verde para que se note
-.irAlVivo {
-  background: t.$verde;
-
-  &:hover {
-    background: t.$verde;
-    filter: brightness(0.92);
-  }
 }
