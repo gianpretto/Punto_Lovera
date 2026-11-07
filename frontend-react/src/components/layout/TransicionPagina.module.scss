@@ -1,0 +1,36 @@
+@use '../../styles/tokens' as t;
+
+// Igual que #splash de index.html (logo latiendo sobre el fondo claro)
+.pantalla {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: t.$fondo;
+  opacity: 1;
+  transition: opacity 0.25s ease;
+
+  img {
+    width: 240px;
+    max-width: 60vw;
+    height: auto;
+    animation: latido 1.6s ease-in-out infinite;
+
+    @media (prefers-reduced-motion: reduce) {
+      animation: none;
+    }
+  }
+}
+
+.saliendo {
+  opacity: 0;
+  pointer-events: none;
+}
+
+@keyframes latido {
+  50% {
+    opacity: 0.45;
+  }
+}
