@@ -84,6 +84,13 @@ export const phoneCodeSchema = z.object({
   code: z.string().trim().regex(/^\d{6}$/, 'El código tiene 6 números'),
 });
 
+export const changePasswordSchema = z.object({
+  // Las cuentas creadas con Google no tienen contraseña actual
+  currentPassword: z.string().max(200).optional(),
+  newPassword,
+  remember: z.boolean().optional(),
+});
+
 // Dar de baja la cuenta: se confirma escribiendo la contraseña (si tiene)
 export const deleteAccountSchema = z.object({
   password: z.string().max(200).optional(),

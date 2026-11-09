@@ -26,6 +26,7 @@ router.post('/reset-password', resetPasswordLimiter, authController.resetPasswor
 router.get('/me', requireAuth, authController.me);
 router.patch('/me', requireAuth, authController.updateMe);
 router.delete('/me', requireAuth, loginLimiter, authController.deleteMe);
+router.post('/me/password', requireAuth, loginLimiter, authController.changePassword);
 router.post('/me/celular', requireAuth, phoneCodeLimiter, authController.setPhone);
 router.post('/me/celular/verificar', requireAuth, verifyEmailLimiter, authController.verifyPhone);
 

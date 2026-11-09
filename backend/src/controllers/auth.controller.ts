@@ -12,6 +12,7 @@ import {
   resendVerificationSchema,
   resetPasswordSchema,
   deleteAccountSchema,
+  changePasswordSchema,
   phoneCodeSchema,
   phoneSchema,
   updateProfileSchema,
@@ -101,4 +102,11 @@ export const deleteMe = asyncHandler(async (req: Request, res: Response) => {
   const { password } = deleteAccountSchema.parse(req.body ?? {});
   await accountService.deleteAccount(req.user!.userId, password);
   res.json({ message: 'Tu cuenta fue dada de baja' });
+});
+
+// Cambiar la contraseña: cierra las otras sesiones y devuelve un token nuevo
+export const changePassword = asyncHandler(async (req: Request, res: Response) => {
+  const { currentPassword, newPassword, remember } = changePasswordSchema.parse(req.body);
+  const result = await authService.changePassword(req.user!.userId, currentPassword, newPassword, remember);
+  res.json({ ...result, message: 'Contraseña actualizada. Cerramos tus otras sesiones.' });
 });

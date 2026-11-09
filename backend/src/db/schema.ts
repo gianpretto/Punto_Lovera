@@ -61,6 +61,10 @@ export const users = pgTable('users', {
   verificationToken: text('verification_token').unique(),
   verificationSentAt: timestamp('verification_sent_at'),
 
+  // Versión de las sesiones: va dentro del JWT y al subirla (cambio o
+  // recuperación de contraseña, baja) todos los tokens anteriores dejan de valer
+  sessionVersion: integer('session_version').notNull().default(0),
+
   resetToken: text('reset_token').unique(),
   resetTokenExpiry: timestamp('reset_token_expiry'),
 

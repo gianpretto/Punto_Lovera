@@ -1,5 +1,5 @@
 import { Server, Socket } from 'socket.io';
-import { verifyToken } from '../utils/jwt';
+import { authenticate } from '../services/session.service';
 import { validatePass } from '../services/pass.service';
 import {
   placeBidAndBroadcast,
@@ -94,13 +94,13 @@ interface AuthedSocket extends Socket {
  * conectar como espectador anónimo (puede mirar pero no pujar ni chatear).
  */
 export function registerBiddingHandlers(io: Server) {
-  io.use((socket: AuthedSocket, next) => {
-    const token = socket.handshake.auth?.token as string | undefined;
-    const pase = socket.handshake.auth?.pase as string | undefined;
-    if (pase) socket.pase = pase;
-    if (token) {
+  io.use(async (socket: AuthedSocket, next) => {
+    const token = socket.handshake.auth?.token;
+    const pase = socket.handshake.auth?.pase;
+    if (typeof pase === 'string' && pase.length <= 200) socket.pase = pase;
+    if (typeof token === 'string' && token.length <= 4096) {
       try {
-        socket.userId = verifyToken(token).userId;
+        socket.userId = (await authenticate(token)).userId;
         // En socket.data para encontrar sus sockets al sancionarlo (fetchSockets)
         socket.data.userId = socket.userId;
       } catch {

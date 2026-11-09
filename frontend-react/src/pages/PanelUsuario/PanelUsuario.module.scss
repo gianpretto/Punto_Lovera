@@ -416,6 +416,10 @@
 // ---------- Baja de la cuenta (discreta, al final)
 
 .bajaSeccion {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 16px;
   margin-top: 80px;
 }
 
@@ -439,6 +443,7 @@
   display: flex;
   flex-direction: column;
   gap: 20px;
+  width: 100%;
   max-width: 420px;
 
   p {

@@ -6,6 +6,7 @@ import Etiqueta from '../../components/ui/Etiqueta';
 import { useAuth } from '../../services/AuthContext';
 import { api } from '../../services/api';
 import BajaCuenta from './BajaCuenta';
+import CambiarPassword from './CambiarPassword';
 import styles from './PanelUsuario.module.scss';
 
 // /perfil — panel del usuario (wireframes 620:13052 escritorio y 620:15223
@@ -261,11 +262,10 @@ export default function PanelUsuario() {
           </div>
         </section>
 
-        {user?.role === 'USER' && (
-          <section className={`${styles.contenedor} ${styles.bajaSeccion}`}>
-            <BajaCuenta />
-          </section>
-        )}
+        <section className={`${styles.contenedor} ${styles.bajaSeccion}`}>
+          <CambiarPassword />
+          {user?.role === 'USER' && <BajaCuenta />}
+        </section>
       </div>
 
       <SeccionVender origen="perfil" />

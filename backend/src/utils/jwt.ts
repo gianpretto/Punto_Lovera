@@ -4,6 +4,8 @@ import { env } from '../config/env';
 export interface JwtPayload {
   userId: string;
   role: 'USER' | 'MARTILLERO' | 'ADMIN';
+  /** users.session_version al emitir el token (los viejos sin sv cuentan como 0) */
+  sv?: number;
 }
 
 /** `recordar`: sesión larga ("Recordarme" en el login, o ingreso con Google) */

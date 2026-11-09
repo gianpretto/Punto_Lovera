@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response } from 'express';
-import { verifyToken, JwtPayload } from '../utils/jwt';
+import type { JwtPayload } from '../utils/jwt';
+import { authenticate } from '../services/session.service';
 import { Errors } from '../utils/AppError';
 import { validatePass } from '../services/pass.service';
 
@@ -12,27 +13,32 @@ declare global {
   }
 }
 
-/** Exige un JWT válido en el header Authorization: Bearer <token> */
-export function requireAuth(req: Request, _res: Response, next: NextFunction) {
+const bearer = (req: Request) => {
   const header = req.headers.authorization;
-  const token = header?.startsWith('Bearer ') ? header.slice(7) : undefined;
-  if (!token) return next(Errors.unauthorized());
+  return header?.startsWith('Bearer ') ? header.slice(7) : undefined;
+};
 
+/**
+ * Exige un JWT válido en el header Authorization: Bearer <token>, de una
+ * sesión no cerrada (ver session.service: el rol sale de la base).
+ */
+export async function requireAuth(req: Request, _res: Response, next: NextFunction) {
+  const token = bearer(req);
+  if (!token) return next(Errors.unauthorized());
   try {
-    req.user = verifyToken(token);
+    req.user = await authenticate(token);
     next();
-  } catch {
-    next(Errors.unauthorized('Sesión inválida o expirada'));
+  } catch (err) {
+    next(err);
   }
 }
 
 /** Igual que requireAuth pero no falla si no hay token: solo lo adjunta si es válido. */
-export function optionalAuth(req: Request, _res: Response, next: NextFunction) {
-  const header = req.headers.authorization;
-  const token = header?.startsWith('Bearer ') ? header.slice(7) : undefined;
+export async function optionalAuth(req: Request, _res: Response, next: NextFunction) {
+  const token = bearer(req);
   if (token) {
     try {
-      req.user = verifyToken(token);
+      req.user = await authenticate(token);
     } catch {
       // token inválido: seguimos como anónimo
     }
@@ -56,11 +62,10 @@ export function requireRole(...roles: JwtPayload['role'][]) {
  */
 export function requireAuthOrPass(param = 'id') {
   return async (req: Request, _res: Response, next: NextFunction) => {
-    const header = req.headers.authorization;
-    const token = header?.startsWith('Bearer ') ? header.slice(7) : undefined;
+    const token = bearer(req);
     if (token) {
       try {
-        req.user = verifyToken(token);
+        req.user = await authenticate(token);
         return next();
       } catch {
         // sigue: puede venir también con pase

@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs';
 import { eq } from 'drizzle-orm';
 import { db } from '../config/db';
 import { users } from '../db/schema';
-import { signToken } from '../utils/jwt';
+import { revokeSessions, tokenFor } from './session.service';
 import { hashToken, randomToken } from '../utils/tokens';
 import { Errors } from '../utils/AppError';
 import { sendPasswordResetEmail, sendVerificationEmail } from './mail.service';
@@ -126,7 +126,7 @@ export async function login(email: string, password: string, recordar = false) {
   const valid = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH);
   if (!user || !valid || user.deletedAt) throw Errors.badRequest('Email o contraseña incorrectos');
 
-  const token = signToken({ userId: user.id, role: user.role }, recordar);
+  const token = tokenFor(user, recordar);
   return { token, user: await publicUserWithCredit(user) };
 }
 
@@ -169,7 +169,7 @@ export async function loginWithGoogle(profile: GoogleProfile) {
   }
 
   // Google: sesión larga (como "Recordarme"; no hay casilla en el popup)
-  const token = signToken({ userId: user.id, role: user.role }, true);
+  const token = tokenFor(user, true);
   return { token, user: await publicUserWithCredit(user), isNew };
 }
 
@@ -188,7 +188,7 @@ export async function verifyEmail(token: string) {
 
   // El link del mail prueba que es el dueño de la cuenta: lo dejamos logueado
   // para que siga directo a completar sus datos (diagrama de flujo).
-  const sessionToken = signToken({ userId: verified.id, role: verified.role });
+  const sessionToken = tokenFor(verified);
   return { token: sessionToken, user: await publicUserWithCredit(verified) };
 }
 
@@ -233,6 +233,26 @@ export async function resetPassword(token: string, newPassword: string) {
     .update(users)
     .set({ passwordHash, resetToken: null, resetTokenExpiry: null })
     .where(eq(users.id, user.id));
+  // Si alguien tenía la cuenta abierta (ej: le robaron la contraseña), se le cierra
+  await revokeSessions(user.id);
+}
+
+/**
+ * Cambiar la contraseña con la sesión iniciada: pide la actual (las cuentas
+ * de Google sin contraseña pueden poner una sin la actual), cierra todas
+ * las otras sesiones y devuelve un token nuevo para seguir en esta.
+ */
+export async function changePassword(userId: string, current: string | undefined, newPassword: string, recordar = false) {
+  const [user] = await db.select().from(users).where(eq(users.id, userId));
+  if (!user || user.deletedAt) throw Errors.unauthorized();
+  if (user.passwordHash && !(await bcrypt.compare(current ?? '', user.passwordHash))) {
+    throw Errors.badRequest('La contraseña actual no es correcta');
+  }
+
+  const passwordHash = await bcrypt.hash(newPassword, SALT_ROUNDS);
+  await db.update(users).set({ passwordHash, updatedAt: new Date() }).where(eq(users.id, userId));
+  const sv = (await revokeSessions(userId)) ?? user.sessionVersion + 1;
+  return { token: tokenFor({ ...user, sessionVersion: sv }, recordar) };
 }
 
 export async function getMe(userId: string) {

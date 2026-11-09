@@ -85,6 +85,13 @@
       "when": 1794207201196,
       "tag": "0011_chat_bid_id",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1794242600174,
+      "tag": "0012_session_version",
+      "breakpoints": true
     }
   ]
 }

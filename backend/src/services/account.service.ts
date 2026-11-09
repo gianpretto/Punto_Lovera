@@ -7,6 +7,7 @@ import { env } from '../config/env';
 import { Errors } from '../utils/AppError';
 import { hashToken } from '../utils/tokens';
 import { publicUserWithCredit } from './auth.service';
+import { revokeSessions } from './session.service';
 import { sendPhoneCode } from './whatsapp.service';
 
 // ---------- Celular (verificación por WhatsApp) ----------
@@ -156,4 +157,5 @@ export async function deleteAccount(userId: string, password: string | undefined
       updatedAt: new Date(),
     })
     .where(and(eq(users.id, userId), isNull(users.deletedAt)));
+  await revokeSessions(userId);
 }
