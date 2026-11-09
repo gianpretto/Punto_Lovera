@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from './AuthContext';
+import { destinoSeguro } from './destinoSeguro';
 
 /**
  * Login y Registro son solo para quien no tiene sesión: si al entrar ya está
@@ -19,6 +20,6 @@ export function useSoloSinSesion() {
     decidido.current = true;
     if (!user) return;
     const volver = searchParams.get('volver');
-    navigate(volver && volver.startsWith('/') && !volver.startsWith('//') ? volver : '/', { replace: true });
+    navigate(destinoSeguro(volver, '/'), { replace: true });
   }, [loading, user, navigate, searchParams]);
 }

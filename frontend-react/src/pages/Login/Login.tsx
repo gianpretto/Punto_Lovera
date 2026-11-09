@@ -11,6 +11,7 @@ import { useAuth } from '../../services/AuthContext';
 import { ApiError } from '../../services/api';
 import { registrarEvento } from '../../services/analytics';
 import { LARGOS } from '../../services/validaciones';
+import { destinoSeguro } from '../../services/destinoSeguro';
 
 function validarEmail(email: string) {
   return email.trim().length <= LARGOS.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
@@ -26,7 +27,7 @@ export default function Login() {
   const [searchParams] = useSearchParams();
   // Ej: la sala del remate manda acá con ?volver=/subastas/:id/activa
   const volver = searchParams.get('volver');
-  const destino = volver && volver.startsWith('/') && !volver.startsWith('//') ? volver : '/';
+  const destino = destinoSeguro(volver, '/');
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');

@@ -48,6 +48,11 @@ contraseñas ni secretos en chats.
       `JWT_SECRET` y `RTMP_AUTH_SECRET` (este último cambiarlo en los dos
       servicios: backend y media-server, mismo valor). Cambiar `JWT_SECRET`
       cierra todas las sesiones abiertas (es esperable).
+- [ ] **media-server sin dominio público**: en Railway → media-server →
+      Settings → Networking, que NO tenga "Public Domain" en el puerto 8080
+      (solo el TCP Proxy del 1935 para OBS). Su `/control` (cortar
+      transmisiones) y `/stat` no tienen contraseña: solo los debe ver el
+      backend por la red privada.
 - [ ] Las cuentas de prueba del seed (`admin1234` / `user1234`) existen
       solo en la rama dev: no usarlas en producción.
 
@@ -163,12 +168,9 @@ Settings → Environment Variables (Production) y después **Redeploy**.
 
 ## Mejoras técnicas para más adelante (no bloquean)
 
-- Migrar `zod` 3 → 4 en el backend: `npm audit` marca un aviso de zod 3
-  (memoria al validar listas enormes) que hoy no aplica (no validamos
-  listas y los pedidos están limitados a 100 KB), pero conviene hacerlo.
-
-- Sesiones revocables (hoy cambiar la contraseña no cierra las otras
-  sesiones abiertas).
+- Actualizar `vitest` 3 → 4 (herramienta de tests, no va a producción:
+  `npm audit --omit=dev` da 0). `npm install` falló con un bug de npm;
+  probar de nuevo con otra versión de npm.
 - Si el backend pasa a varias réplicas: contadores de rate limit en Redis.
 - Archivos subidos en un storage externo (S3/Cloudinary) en vez del
   Volume.

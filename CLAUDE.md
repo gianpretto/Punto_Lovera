@@ -139,8 +139,17 @@ vivo de YouTube embebido (lo ve cualquiera con el link).
     `maxHttpBufferSize` 16 KB.
   - Uploads: extensión según el mimetype (no el nombre del cliente);
     errores de multer → 400/413.
-  - Pendiente: JWT revocable (cambiar la contraseña no cierra sesiones),
-    el registro revela si un mail existe (decisión de producto), y las
+  - Sesiones revocables (nov 2026, `session.service.ts`): el JWT lleva
+    `sv` = `users.session_version`; cambiar (`POST /auth/me/password`) o
+    recuperar la contraseña y dar de baja la cuenta la suben y cierran
+    todas las sesiones. El rol sale de la base (caché en memoria de 30 s).
+  - Proxy de video: solo acepta nombres de archivo de stream (antes
+    `..%2F`/`%3F` llegaban al media-server: `/stat`, `/control/drop`).
+  - `?volver=` validado con `destinoSeguro` (rechaza `/\evil.com`).
+  - `test/exposicion-datos.test.ts` recorre endpoints y eventos de la sala
+    buscando datos personales de otros usuarios o internos: sumar ahí los
+    endpoints nuevos.
+  - Pendiente: el registro revela si un mail existe (decisión de producto), y las
     fechas `defaultNow()` dependen de la zona horaria de la conexión (Neon
     usa UTC: no cambiarla).
 - **Tests**: `cd backend && npm test` (vitest + PGlite en memoria, no

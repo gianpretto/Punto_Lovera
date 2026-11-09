@@ -38,8 +38,15 @@ export function minNextBidOf(lot: { currentPrice: string; bidIncrement: string; 
  * transacción para que dos pujas simultáneas en lotes distintos no puedan
  * usar la misma plata dos veces.
  */
+// Tope de una oferta: entra en decimal(12,2). Por HTTP lo valida zod; por
+// el socket llega cualquier número.
+const MAX_OFERTA = 9_999_999_999;
+
 export async function placeBid(lotId: string, userId: string, amount: number) {
   const MAX_RETRIES = 3;
+  if (!Number.isFinite(amount) || amount <= 0 || amount > MAX_OFERTA) {
+    throw Errors.badRequest('Monto de oferta inválido');
+  }
 
   for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
     const lot = await db.query.lots.findFirst({ where: eq(lots.id, lotId), with: { auction: true } });

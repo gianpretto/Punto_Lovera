@@ -33,7 +33,17 @@ app.use(express.json({ limit: '100kb' }));
 //   (true/false) y el martillero recibe la clave solo por
 //   GET /subastas/:id/camara (streamKey).
 // - passwordHash, verificationToken, resetToken, googleId: datos de cuenta.
-const CAMPOS_PRIVADOS = new Set(['cameraId', 'passwordHash', 'verificationToken', 'resetToken', 'googleId']);
+// - phoneCodeHash, sessionVersion: verificación del celular y sesiones.
+const CAMPOS_PRIVADOS = new Set([
+  'cameraId',
+  'passwordHash',
+  'verificationToken',
+  'resetToken',
+  'googleId',
+  'phoneCodeHash',
+  'phoneCodeAttempts',
+  'sessionVersion',
+]);
 app.set('json replacer', (key: string, value: unknown) => (CAMPOS_PRIVADOS.has(key) ? undefined : value));
 // En los tests de integración (NODE_ENV=test) el log de cada request es ruido
 if (env.nodeEnv !== 'test') app.use(morgan(env.isProd ? 'combined' : 'dev'));

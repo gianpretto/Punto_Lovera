@@ -66,6 +66,8 @@ export const rtmpPublish = asyncHandler(async (req: Request, res: Response) => {
 });
 
 const ALLOWED_PROTOCOLS = new Set(['hls', 'dash']);
+// Playlist/segmentos de HLS y DASH, sin subcarpetas ni nada raro
+const ARCHIVO_DE_STREAM = /^[A-Za-z0-9_-]{1,100}\.(m3u8|ts|mpd|m4s|m4a|m4v|mp4|aac)$/;
 
 /**
  * Proxy autenticado hacia el media server (nginx-rtmp de rtsp-manager).
@@ -81,6 +83,11 @@ export const proxyStream = asyncHandler(async (req: Request, res: Response) => {
   const paths = await liveService.getStreamPaths(req.params.id);
   const basePath = protocol === 'hls' ? paths.hls : paths.dash;
   const rest = req.params[0] ?? '';
+  // Solo nombres de archivo del stream (index.m3u8, 12.ts, ...). Express ya
+  // decodificó la URL: sin esto "..%2F" o "%3F" llegaban al media-server y
+  // se podía pedir cualquier cosa de él (ej. /stat, que lista las claves de
+  // OBS, o /control/drop, que corta la transmisión).
+  if (!ARCHIVO_DE_STREAM.test(rest)) throw Errors.badRequest('Archivo de video inválido');
 
   const upstreamUrl = `${env.rtsp.mediaUrl}${basePath}/${rest}`;
 

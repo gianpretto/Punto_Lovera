@@ -12,6 +12,7 @@ import { ApiError } from '../../services/api';
 import styles from './Registro.module.scss';
 import { registrarEvento } from '../../services/analytics';
 import * as v from '../../services/validaciones';
+import { destinoSeguro } from '../../services/destinoSeguro';
 
 interface Touched {
   nombre: boolean;
@@ -80,7 +81,7 @@ export default function Registro() {
       if (creado.emailVerified) {
         // Entorno sin validación de mail: entra directo y completa sus datos
         await login(email, password);
-        const destino = volver && volver.startsWith('/') && !volver.startsWith('//') ? volver : '/';
+        const destino = destinoSeguro(volver, '/');
         navigate(`/datos?volver=${encodeURIComponent(destino)}`);
         return;
       }
@@ -105,7 +106,7 @@ export default function Registro() {
       <BotonGoogle
         texto="signup_with"
         onIngreso={(u) => {
-          const destino = volver && volver.startsWith('/') && !volver.startsWith('//') ? volver : '/';
+          const destino = destinoSeguro(volver, '/');
           navigate(u.profileComplete ? destino : `/datos?volver=${encodeURIComponent(destino)}`);
         }}
       />

@@ -10,6 +10,7 @@ import { useAuth, type User } from '../../services/AuthContext';
 import { api, ApiError } from '../../services/api';
 import * as v from '../../services/validaciones';
 import styles from './DatosUsuario.module.scss';
+import { destinoSeguro } from '../../services/destinoSeguro';
 
 // /datos — "Cargá tus datos" (wireframes 620:12952 escritorio y 620:15133
 // celular; sin diseño final). Sigue el lenguaje de Contactanos: fondo claro
@@ -68,7 +69,7 @@ export default function DatosUsuario() {
   const [searchParams] = useSearchParams();
   // Ej: la sala del remate manda acá para completar datos antes de ofertar
   const volver = searchParams.get('volver');
-  const destino = volver && volver.startsWith('/') && !volver.startsWith('//') ? volver : '/perfil';
+  const destino = destinoSeguro(volver, '/perfil');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [form, setForm] = useState<FormState>(() => formDesdeUsuario(user));

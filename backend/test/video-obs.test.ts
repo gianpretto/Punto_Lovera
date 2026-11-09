@@ -149,6 +149,23 @@ describe('Clave de transmisión', () => {
     expect(Buffer.from(await seg.arrayBuffer()).equals(SEGMENT)).toBe(true);
   });
 
+  it('el proxy no deja salir de la carpeta del stream (ni cortar la transmisión)', async () => {
+    const intentos = [
+      '..%2F..%2Fcontrol%2Fdrop%2Fpublisher%3Fapp%3Dlive%26name%3D' + key,
+      '%2E%2E/%2E%2E/control/drop/publisher',
+      'index.m3u8%3Fx%3D1',
+      'seg0.ts%23',
+      'otra%2Findex.m3u8',
+    ];
+    for (const ruta of intentos) {
+      const res = await app.api('GET', `/subastas/${auctionId}/vivo/hls/${ruta}`, null, U);
+      // 400 (lo rechaza el proxy) o 404 (ni llega a la ruta)
+      expect([400, 404], ruta).toContain(res.status);
+    }
+    expect(dropped).not.toContain(key);
+    expect(publishing.has(key)).toBe(true);
+  });
+
   it('el panel del martillero muestra "recibiendo señal"', async () => {
     expect((await camara(A)).data.receiving).toBe(true);
   });
