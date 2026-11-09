@@ -22,7 +22,7 @@ export const LARGOS = {
 /** Nombre o apellido: letras (con tildes), espacios, apóstrofo, punto y guion */
 export const nombrePersona = (campo: string) =>
   z
-    .string({ required_error: `Falta el ${campo}` })
+    .string({ error: `Falta el ${campo}` })
     .trim()
     .min(1, `Falta el ${campo}`)
     .max(LARGOS.nombre, `El ${campo} puede tener como máximo ${LARGOS.nombre} caracteres`)

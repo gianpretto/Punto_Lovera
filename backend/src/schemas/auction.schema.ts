@@ -23,7 +23,7 @@ export const createAuctionSchema = z.object({
     .min(1, 'Indicá una descripción')
     .max(LARGOS.descripcion, `La descripción puede tener como máximo ${LARGOS.descripcion} caracteres`),
   location: z.string().trim().min(1, 'Indicá la ubicación').max(LARGOS.textoCorto, 'La ubicación es demasiado larga'),
-  startsAt: z.coerce.date({ invalid_type_error: 'Fecha de inicio inválida' }),
+  startsAt: z.coerce.date({ error: 'Fecha de inicio inválida' }),
   coverImageUrl: coverImageUrl.optional(),
 });
 

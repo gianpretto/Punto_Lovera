@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import path from 'path';
 import express from 'express';
 import cors from 'cors';
@@ -8,6 +9,9 @@ import routes from './routes';
 import { errorHandler, notFoundHandler } from './middleware/error.middleware';
 import { UPLOAD_ROOT } from './middleware/upload.middleware';
 import { apiLimiter } from './middleware/rateLimit.middleware';
+
+// Mensajes de validación por defecto en castellano (los propios ya lo están)
+z.config(z.locales.es());
 
 export const app = express();
 

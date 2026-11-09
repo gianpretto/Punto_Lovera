@@ -19,14 +19,14 @@ export const requestWithdrawalSchema = z.object({
   amount: monto,
   // Nombre que figura en la cuenta destino y su CUIT/CUIL (pedido del cliente)
   accountHolder: z
-    .string({ required_error: 'Falta el nombre del titular' })
+    .string({ error: 'Falta el nombre del titular' })
     .trim()
     .min(2, 'Falta el nombre del titular')
     .max(LARGOS.titular, 'El nombre del titular es demasiado largo'),
   cuit,
   // Aceptamos espacios/guiones al pegarlo y guardamos solo los dígitos
   cbu: z
-    .string({ required_error: 'Falta el CBU' })
+    .string({ error: 'Falta el CBU' })
     .transform((v) => v.replace(/[\s-]/g, ''))
     .pipe(z.string().regex(/^\d{22}$/, 'El CBU tiene que tener 22 dígitos')),
   alias: z
