@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../services/AuthContext';
 import { api, ApiError, openProtectedFile } from '../../services/api';
+import { LARGOS } from '../../services/validaciones';
 import styles from '../PanelMartillero/PanelMartillero.module.scss';
 
 // Pantalla interna (sin diseño de la diseñadora): el admin revisa los
@@ -52,6 +53,10 @@ export default function AdminComprobantes() {
     } else {
       reason = window.prompt(`¿Por qué se rechaza el comprobante de ${quien}? (le llega por mail)`)?.trim() ?? '';
       if (!reason) return;
+      if (reason.length > LARGOS.motivo) {
+        window.alert(`El motivo puede tener como máximo ${LARGOS.motivo} caracteres.`);
+        return;
+      }
     }
     setBusy(v.id);
     setError('');

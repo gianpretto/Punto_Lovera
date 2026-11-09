@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../services/AuthContext';
 import { api, ApiError } from '../../services/api';
+import { LARGOS } from '../../services/validaciones';
 import styles from '../PanelMartillero/PanelMartillero.module.scss';
 
 // Pantalla interna (sin diseño de la diseñadora): el admin ve los pedidos de
@@ -15,6 +16,9 @@ interface PendingWithdrawal {
   amount: string;
   cbu: string;
   alias: string | null;
+  /** Titular de la cuenta destino y su CUIT/CUIL (pedidos nuevos) */
+  accountHolder: string | null;
+  cuit: string | null;
   reason: string | null;
   createdAt: string;
   user: { firstName: string; lastName: string; email: string; dni: string | null };
@@ -62,6 +66,10 @@ export default function AdminReintegros() {
     } else {
       reason = window.prompt(`¿Por qué se rechaza el reintegro de ${quien}? (le llega por mail)`)?.trim() ?? '';
       if (!reason) return;
+      if (reason.length > LARGOS.motivo) {
+        window.alert(`El motivo puede tener como máximo ${LARGOS.motivo} caracteres.`);
+        return;
+      }
     }
     setBusy(w.id);
     setError('');
@@ -143,6 +151,8 @@ export default function AdminReintegros() {
                           Alias: {w.alias}
                         </div>
                       )}
+                      {w.accountHolder && <div className={styles.hora}>Titular: {w.accountHolder}</div>}
+                      {w.cuit && <div className={styles.hora}>CUIT/CUIL: {w.cuit}</div>}
                       {w.reason && <div className={styles.hora}>Motivo: {w.reason}</div>}
                     </td>
                     <td>

@@ -1,9 +1,10 @@
 import { z } from 'zod';
+import { LARGOS, codigoArea, codigoPostal, dniOCuil, nombrePersona, numeroCelular, texto } from './comunes';
 
 // Los mails se guardan y comparan siempre en minúsculas y sin espacios: así
 // "Juan@mail.com" y "juan@mail.com" son la misma cuenta (no se puede
 // registrar dos veces el mismo mail).
-const email = (msg?: string) => z.string().trim().toLowerCase().email(msg);
+const email = (msg?: string) => z.string().trim().toLowerCase().max(LARGOS.email, 'Email demasiado largo').email(msg);
 
 // bcrypt solo usa los primeros 72 bytes: más largo daría una falsa seguridad
 const newPassword = z
@@ -14,10 +15,8 @@ const newPassword = z
 export const registerSchema = z.object({
   email: email('Email inválido'),
   password: newPassword,
-  firstName: z.string().min(1, 'Falta el nombre'),
-  lastName: z.string().min(1, 'Falta el apellido'),
-  phone: z.string().optional(),
-  dni: z.string().optional(),
+  firstName: nombrePersona('nombre'),
+  lastName: nombrePersona('apellido'),
 });
 
 export const loginSchema = z.object({
@@ -32,19 +31,17 @@ export const forgotPasswordSchema = z.object({
 });
 
 export const resetPasswordSchema = z.object({
-  token: z.string().min(1),
+  token: z.string().min(1).max(200),
   password: newPassword,
 });
 
 export const verifyEmailSchema = z.object({
-  token: z.string().min(1),
+  token: z.string().min(1).max(200),
 });
 
 export const resendVerificationSchema = z.object({
   email: email(),
 });
-
-const soloNumeros = z.string().regex(/^[0-9]*$/, 'Solo números');
 
 /** Fecha real (no 31/02), desde 1900 y no en el futuro */
 function fechaDeNacimientoValida(iso: string) {
@@ -55,22 +52,41 @@ function fechaDeNacimientoValida(iso: string) {
 }
 
 // Todos opcionales: el front manda solo lo que se editó en /datos.
-// '' se acepta y se guarda como null (campo borrado).
+// '' se acepta y se guarda como null (campo borrado), salvo nombre y
+// apellido. El celular no va acá: se cambia con su código de verificación.
+const opcional = <T extends z.ZodTypeAny>(schema: T) => schema.or(z.literal('')).optional();
+
 export const updateProfileSchema = z.object({
-  firstName: z.string().trim().min(1, 'Falta el nombre').optional(),
-  lastName: z.string().trim().min(1, 'Falta el apellido').optional(),
-  phone: soloNumeros.optional(),
-  dni: soloNumeros.optional(),
+  firstName: nombrePersona('nombre').optional(),
+  lastName: nombrePersona('apellido').optional(),
+  dni: opcional(dniOCuil),
   birthDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha inválida (AAAA-MM-DD)')
     .refine(fechaDeNacimientoValida, 'Fecha de nacimiento inválida')
     .or(z.literal(''))
     .optional(),
-  address: z.string().trim().optional(),
-  city: z.string().trim().optional(),
-  province: z.string().trim().optional(),
-  zipCode: z.string().trim().optional(),
+  address: opcional(texto(LARGOS.direccion, 'La dirección')),
+  city: opcional(texto(LARGOS.ciudad, 'La ciudad')),
+  province: opcional(texto(LARGOS.provincia, 'La provincia')),
+  zipCode: opcional(codigoPostal),
+});
+
+// Celular: código de área (sin 0) + número (sin 15) = 10 dígitos
+export const phoneSchema = z
+  .object({ areaCode: codigoArea, phone: numeroCelular })
+  .refine((d) => d.areaCode.length + d.phone.length === 10, {
+    message: 'El código de área y el número tienen que sumar 10 números (ej. 11 + 12345678)',
+    path: ['phone'],
+  });
+
+export const phoneCodeSchema = z.object({
+  code: z.string().trim().regex(/^\d{6}$/, 'El código tiene 6 números'),
+});
+
+// Dar de baja la cuenta: se confirma escribiendo la contraseña (si tiene)
+export const deleteAccountSchema = z.object({
+  password: z.string().max(200).optional(),
 });
 
 // ID token que devuelve el botón de Google (JWT, ~1-2 KB)

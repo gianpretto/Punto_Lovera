@@ -71,6 +71,20 @@
       "when": 1793909519894,
       "tag": "0009_google_login",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794206453991,
+      "tag": "0010_cliente_nov",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794207201196,
+      "tag": "0011_chat_bid_id",
+      "breakpoints": true
     }
   ]
 }

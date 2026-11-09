@@ -6,6 +6,7 @@ import Aviso from '../../components/ui/Aviso';
 import Boton from '../../components/ui/Boton';
 import Campo from '../../components/ui/Campo';
 import Etiqueta from '../../components/ui/Etiqueta';
+import * as v from '../../services/validaciones';
 import styles from './Reintegro.module.scss';
 
 // Pedido de reintegro: el usuario pide que le devuelvan crédito que no usó.
@@ -23,6 +24,8 @@ export default function Reintegro() {
   const [monto, setMonto] = useState('');
   const [cbu, setCbu] = useState('');
   const [alias, setAlias] = useState('');
+  const [titular, setTitular] = useState('');
+  const [cuit, setCuit] = useState('');
   const [motivo, setMotivo] = useState('');
   const [submitted, setSubmitted] = useState(false);
   const [sending, setSending] = useState(false);
@@ -36,11 +39,14 @@ export default function Reintegro() {
   const montoNumero = Number(monto);
   const cbuDigitos = cbu.replace(/[\s-]/g, '');
   const errors = {
-    monto: monto === '' || !(montoNumero > 0) || montoNumero > disponible,
+    monto: monto === '' || !(montoNumero > 0) || montoNumero > disponible || montoNumero > v.MONTO_MAXIMO,
     cbu: !/^\d{22}$/.test(cbuDigitos),
-    alias: alias.trim() === '',
+    alias: v.requerido(alias, 'Indicá el alias.') ?? v.aliasCbu(alias),
+    titular: v.requerido(titular, 'Indicá el nombre que figura en la cuenta.') ?? v.largoMaximo(titular, v.LARGOS.titular),
+    cuit: v.cuit(cuit),
+    motivo: v.largoMaximo(motivo, v.LARGOS.motivo),
   };
-  const formInvalid = errors.monto || errors.cbu || errors.alias;
+  const formInvalid = Object.values(errors).some(Boolean);
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -54,6 +60,8 @@ export default function Reintegro() {
         amount: montoNumero,
         cbu: cbuDigitos,
         alias: alias.trim(),
+        accountHolder: titular.trim(),
+        cuit: cuit.replace(/\D/g, ''),
         reason: motivo.trim() || undefined,
       });
       // El disponible baja: el monto queda reservado mientras se procesa
@@ -85,7 +93,9 @@ export default function Reintegro() {
     : cbu.trim() !== ''
       ? 'El CBU tiene que tener 22 dígitos.'
       : 'Indicá el CBU.';
-  const errorAlias = submitted && errors.alias ? 'Indicá el alias.' : undefined;
+  const errorAlias = submitted ? errors.alias : undefined;
+  const errorTitular = submitted ? errors.titular : undefined;
+  const errorCuit = submitted ? errors.cuit : undefined;
 
   return (
     <div className={styles.pagina}>
@@ -113,6 +123,7 @@ export default function Reintegro() {
               etiqueta="Monto a reintegrar"
               type="number"
               min={1}
+              max={v.MONTO_MAXIMO}
               placeholder="$ 0.00"
               value={monto}
               error={errorMonto}
@@ -124,6 +135,7 @@ export default function Reintegro() {
               type="text"
               inputMode="numeric"
               placeholder="0000000000000000000000"
+              maxLength={v.LARGOS.cbu}
               value={cbu}
               error={errorCbu}
               onChange={(e) => setCbu(e.target.value)}
@@ -133,9 +145,31 @@ export default function Reintegro() {
               etiqueta="Alias"
               type="text"
               placeholder="mi.alias.pago"
+              maxLength={v.LARGOS.alias}
               value={alias}
               error={errorAlias}
               onChange={(e) => setAlias(e.target.value)}
+            />
+
+            <Campo
+              etiqueta="Nombre del titular de la cuenta"
+              type="text"
+              placeholder="Como figura en el banco"
+              maxLength={v.LARGOS.titular}
+              value={titular}
+              error={errorTitular}
+              onChange={(e) => setTitular(e.target.value)}
+            />
+
+            <Campo
+              etiqueta="CUIT / CUIL del titular"
+              type="text"
+              inputMode="numeric"
+              placeholder="20-12345678-6"
+              maxLength={v.LARGOS.cuit}
+              value={cuit}
+              error={errorCuit}
+              onChange={(e) => setCuit(e.target.value)}
             />
 
             <label className={styles.campo}>
@@ -143,7 +177,7 @@ export default function Reintegro() {
               <textarea
                 placeholder="¿Por qué solicitas el reintegro?"
                 value={motivo}
-                maxLength={500}
+                maxLength={v.LARGOS.motivo}
                 rows={2}
                 onChange={(e) => setMotivo(e.target.value)}
               />

@@ -1,6 +1,7 @@
 import { and, eq, inArray, ne, sql } from 'drizzle-orm';
 import { db } from '../config/db';
 import { auctions, creditWithdrawals, lots, users } from '../db/schema';
+import { factorDeCredito, getCreditConfig } from './settings.service';
 
 /**
  * Créditos "reservados" (hold): mientras un usuario va ganando un lote,
@@ -27,6 +28,9 @@ const ESTADOS_QUE_RETIENEN = ['PROXIMA', 'ACTIVA'] as const;
 
 /** Reservado en lotes que lidera (excludeLotId: no contar ese lote). */
 async function getHeldInLots(userId: string, exec: Executor, excludeLotId?: string): Promise<number> {
+  // Según el modo de créditos se reserva el precio entero, el % de garantía o nada
+  const factor = factorDeCredito(await getCreditConfig(exec));
+  if (factor === 0) return 0;
   const [row] = await exec
     .select({ total: sql<string>`coalesce(sum(${lots.currentPrice}), 0)` })
     .from(lots)
@@ -39,7 +43,7 @@ async function getHeldInLots(userId: string, exec: Executor, excludeLotId?: stri
         excludeLotId ? ne(lots.id, excludeLotId) : undefined
       )
     );
-  return Number(row?.total ?? 0);
+  return Math.ceil(Number(row?.total ?? 0) * factor);
 }
 
 /** Reservado por reintegros pendientes (cuenta siempre, se puje donde se puje). */

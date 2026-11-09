@@ -74,6 +74,20 @@ contraseñas ni secretos en chats.
       `http://localhost:5173`. Copiar el ID de cliente a
       `GOOGLE_CLIENT_ID` en Railway. El botón aparece solo.
 
+- [ ] **WhatsApp para verificar el celular** (obligatorio para ofertar).
+      En https://developers.facebook.com: app de tipo Empresa → producto
+      WhatsApp → número de Punto Lovera (no puede estar usado en la app
+      común de WhatsApp) → crear una plantilla de categoría
+      **Autenticación** con botón "Copiar código", nombre
+      `codigo_verificacion`, idioma Español (ARG), y esperar que la aprueben.
+      Variables en Railway: `WHATSAPP_TOKEN` (token permanente de un
+      usuario del sistema), `WHATSAPP_PHONE_NUMBER_ID`, y si cambian
+      `WHATSAPP_TEMPLATE` / `WHATSAPP_TEMPLATE_LANG`. Sin esto el código solo
+      aparece en los logs de Railway. Meta cobra cada mensaje de
+      autenticación (unos centavos de dólar).
+- [ ] **Sacar `SKIP_PHONE_VERIFICATION`** de Railway antes de abrir al
+      público (en pruebas deja el celular verificado sin código).
+
 ## 3 bis. Medición de visitas (Google Analytics y Clarity)
 
 Se cargan en **Vercel** (no en Railway): proyecto `frontend-react` →
@@ -98,20 +112,15 @@ Settings → Environment Variables (Production) y después **Redeploy**.
 
 ## 4. Datos del negocio
 
-- [ ] **Decidir cómo se garantiza el pago de las ofertas** (definirlo con el
-      cliente según cómo lo hacen en sus remates presenciales). Hoy está
-      implementado **A**:
-      - **A. Crédito previo** (actual): carga plata antes, oferta hasta ese
-        monto, lo no usado se reintegra. Sin riesgo, pero mucha fricción.
-      - **B. Ofertar y pagar después**: el ganador paga en un plazo (seña +
-        saldo). Poca fricción; riesgo de que no pague u ofertas en joda.
-        Variante: el admin aprueba a cada postor antes de que pueda ofertar.
-      - **C. Garantía + pago después**: para ofertar deja una garantía (fija
-        o % del lote); si gana paga el resto, si no se le devuelve.
+- [ ] **Elegir el sistema de créditos** en Admin → **Configuración**
+      (decisión nov 2026: arrancan **sin crédito**, todo de palabra y
+      manual). Opciones: con crédito (cargar antes), sin crédito (el pago se
+      arregla aparte) o híbrido (garantía de un % de la oferta). Hoy viene
+      "con crédito" por defecto.
+- [ ] **Datos de transferencia**: se cargan en Admin → Configuración
+      (alias, CBU, titular, CUIT/CUIL, cuenta). Las variables `TRANSFER_*`
+      quedan solo como valor inicial.
 
-- [ ] **Datos de transferencia** para cargar crédito: `TRANSFER_ALIAS`,
-      `TRANSFER_CBU`, titular y cuenta (`TRANSFER_*` en Railway; ver
-      `backend/.env.example`).
 - [ ] **QR de pago** (opcional): hoy no hay; si lo quieren, pasar la
       imagen y se agrega.
 - [ ] **Datos de facturación**: el cliente todavía no los definió.

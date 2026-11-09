@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { DATOS_COMPLETOS, formConArchivos, startTestApp, tokenDeVerificacion, type TestApp } from './helpers/app';
+import { DATOS_COMPLETOS, celularVerificado, formConArchivos, startTestApp, tokenDeVerificacion, type TestApp } from './helpers/app';
 
 // Endurecimiento: límites de intentos, mail verificado para pujar, links
 // de verificación que vencen, reglas de la sala (join, subasta activa,
@@ -49,6 +49,7 @@ describe('Verificación de mail', () => {
     await app.api('POST', '/auth/register', { email, password: 'nuevo12345', firstName: 'Sin', lastName: 'Verificar' });
     N = await app.login(email, 'nuevo12345'); // el login no exige mail verificado
     await app.sql('UPDATE users SET credit_balance = 1000000 WHERE email = $1', [email]);
+    await celularVerificado(app, email);
     await app.api('PATCH', '/auth/me', { ...DATOS_COMPLETOS, dni: '35123456' }, N);
     await app.api('PATCH', `/subastas/${auctionId}`, { status: 'ACTIVA' }, A);
   });

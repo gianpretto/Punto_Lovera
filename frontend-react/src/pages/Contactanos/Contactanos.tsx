@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react';
 import BannerRedes from '../../components/secciones/BannerRedes';
 import { api, ApiError } from '../../services/api';
+import { consulta, LARGOS } from '../../services/validaciones';
 import styles from './Contactanos.module.scss';
 import { registrarEvento } from '../../services/analytics';
 
@@ -21,6 +22,11 @@ export default function Contactanos() {
     if (enviando) return;
     setError('');
     setOk('');
+    const invalido = consulta({ nombre, email, mensaje });
+    if (invalido) {
+      setError(invalido);
+      return;
+    }
     setEnviando(true);
     try {
       const res = await api.post<{ message: string }>('/contacto', {
@@ -77,6 +83,7 @@ export default function Contactanos() {
                 placeholder="Tu e-mail"
                 autoComplete="email"
                 required
+                maxLength={LARGOS.email}
               />
             </label>
             <label className={`${styles.campo} ${styles.campoAncho}`}>
@@ -87,7 +94,7 @@ export default function Contactanos() {
                 placeholder="¿Qué te gustaría saber?"
                 required
                 rows={1}
-                maxLength={3000}
+                maxLength={LARGOS.mensaje}
               />
             </label>
 

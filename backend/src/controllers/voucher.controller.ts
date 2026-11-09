@@ -5,12 +5,13 @@ import { rejectVoucherSchema, submitVoucherSchema } from '../schemas/voucher.sch
 import path from 'path';
 import { toPublicUrl, UPLOAD_ROOT } from '../middleware/upload.middleware';
 import { Errors } from '../utils/AppError';
-import { env } from '../config/env';
+import { getTransferInfo } from '../services/settings.service';
 
 export const transferInfo = asyncHandler(async (_req: Request, res: Response) => {
   // Datos de transferencia que se muestran en /creditos — no hay pasarela
   // de pago integrada, el usuario transfiere y sube el comprobante.
-  res.json({ transfer: env.transfer });
+  // Los edita el admin en /admin/configuracion (si no, las variables TRANSFER_*)
+  res.json({ transfer: await getTransferInfo() });
 });
 
 export const submit = asyncHandler(async (req: Request, res: Response) => {

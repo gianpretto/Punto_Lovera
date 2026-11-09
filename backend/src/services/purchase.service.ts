@@ -1,7 +1,8 @@
-import { and, desc, eq, inArray, max, sql } from 'drizzle-orm';
+import { and, eq, inArray, isNull, max, sql } from 'drizzle-orm';
 import { db } from '../config/db';
 import { auctions, bids, lots, purchases, users } from '../db/schema';
 import { Errors } from '../utils/AppError';
+import { factorDeCredito, getCreditConfig } from './settings.service';
 
 function generateReference() {
   const date = new Date();
@@ -16,25 +17,29 @@ export async function closeLotAndCreatePurchase(lotId: string) {
   if (!lot) throw Errors.notFound('Lote');
   if (lot.sold) throw Errors.badRequest('Este lote ya fue cerrado');
 
-  const [winningBid] = await db
-    .select()
-    .from(bids)
-    .where(eq(bids.lotId, lotId))
-    .orderBy(desc(bids.amount))
-    .limit(1);
+  // Gana quien va ganando el lote al precio actual (leader_id/current_price):
+  // ya contemplan las ofertas que el martillero anuló o corrigió en vivo.
+  const winningBid = lot.leaderId ? { userId: lot.leaderId, amount: lot.currentPrice } : null;
   if (!winningBid) throw Errors.badRequest('Este lote no tiene pujas, no se puede cerrar con comprador');
 
   return db.transaction(async (tx) => {
     // El monto ya estaba reservado mientras iba ganando; ahora se descuenta
     // del saldo de verdad (y al quedar sold=true la reserva desaparece).
+    // Cuánto se descuenta depende del modo de créditos: el monto entero
+    // (CREDITO), el % de garantía como seña (GARANTIA) o nada (SIN_CREDITO:
+    // el pago se arregla fuera de la plataforma).
+    const descuento = Math.ceil(Number(winningBid.amount) * factorDeCredito(await getCreditConfig(tx)));
     const [winner] = await tx.select().from(users).where(eq(users.id, winningBid.userId)).for('update');
-    if (!winner || Number(winner.creditBalance) < Number(winningBid.amount)) {
-      throw Errors.badRequest('El ganador no tiene saldo suficiente para cubrir la compra');
+    if (!winner) throw Errors.badRequest('No se encontró al ganador');
+    if (descuento > 0) {
+      if (Number(winner.creditBalance) < descuento) {
+        throw Errors.badRequest('El ganador no tiene saldo suficiente para cubrir la compra');
+      }
+      await tx
+        .update(users)
+        .set({ creditBalance: sql`${users.creditBalance} - ${descuento}`, updatedAt: new Date() })
+        .where(eq(users.id, winner.id));
     }
-    await tx
-      .update(users)
-      .set({ creditBalance: sql`${users.creditBalance} - ${winningBid.amount}`, updatedAt: new Date() })
-      .where(eq(users.id, winner.id));
 
     await tx.update(lots).set({ sold: true, updatedAt: new Date() }).where(eq(lots.id, lotId));
     const [purchase] = await tx
@@ -78,7 +83,14 @@ export async function listMyActiveOffers(userId: string) {
     .from(bids)
     .innerJoin(lots, eq(bids.lotId, lots.id))
     .innerJoin(auctions, eq(lots.auctionId, auctions.id))
-    .where(and(eq(bids.userId, userId), eq(lots.sold, false), inArray(auctions.status, ['PROXIMA', 'ACTIVA'])))
+    .where(
+      and(
+        eq(bids.userId, userId),
+        isNull(bids.voidedAt),
+        eq(lots.sold, false),
+        inArray(auctions.status, ['PROXIMA', 'ACTIVA'])
+      )
+    )
     .groupBy(lots.id, auctions.id)
     .orderBy(auctions.title, lots.number);
 

@@ -1,16 +1,29 @@
 import { z } from 'zod';
+import { cuit, LARGOS } from './comunes';
+
+const monto = z.coerce
+  .number()
+  .positive('El monto tiene que ser mayor a 0')
+  .max(9_999_999_999, 'Monto demasiado grande');
 
 export const submitVoucherSchema = z.object({
-  amount: z.coerce.number().positive('El monto tiene que ser mayor a 0'),
+  amount: monto,
 });
 
 export const rejectVoucherSchema = z.object({
-  reason: z.string().min(1, 'Contá por qué se rechaza'),
+  reason: z.string().trim().min(1, 'Contá por qué se rechaza').max(LARGOS.motivo, 'El motivo es demasiado largo'),
 });
 
 // Pedido de reintegro (devolver crédito no usado a una cuenta bancaria)
 export const requestWithdrawalSchema = z.object({
-  amount: z.coerce.number().positive('El monto tiene que ser mayor a 0'),
+  amount: monto,
+  // Nombre que figura en la cuenta destino y su CUIT/CUIL (pedido del cliente)
+  accountHolder: z
+    .string({ required_error: 'Falta el nombre del titular' })
+    .trim()
+    .min(2, 'Falta el nombre del titular')
+    .max(LARGOS.titular, 'El nombre del titular es demasiado largo'),
+  cuit,
   // Aceptamos espacios/guiones al pegarlo y guardamos solo los dígitos
   cbu: z
     .string({ required_error: 'Falta el CBU' })
@@ -19,7 +32,7 @@ export const requestWithdrawalSchema = z.object({
   alias: z
     .string()
     .trim()
-    .max(60, 'El alias es demasiado largo')
+    .max(LARGOS.alias, 'El alias es demasiado largo')
     .optional()
     .transform((v) => v || null),
   reason: z
@@ -31,5 +44,5 @@ export const requestWithdrawalSchema = z.object({
 });
 
 export const rejectWithdrawalSchema = z.object({
-  reason: z.string().trim().min(1, 'Contá por qué se rechaza'),
+  reason: z.string().trim().min(1, 'Contá por qué se rechaza').max(LARGOS.motivo, 'El motivo es demasiado largo'),
 });

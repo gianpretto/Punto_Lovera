@@ -5,6 +5,7 @@ import Boton from '../../components/ui/Boton';
 import Etiqueta from '../../components/ui/Etiqueta';
 import { useAuth } from '../../services/AuthContext';
 import { api } from '../../services/api';
+import BajaCuenta from './BajaCuenta';
 import styles from './PanelUsuario.module.scss';
 
 // /perfil — panel del usuario (wireframes 620:13052 escritorio y 620:15223
@@ -100,7 +101,7 @@ export default function PanelUsuario() {
 
   const nombre = user?.firstName?.trim() ?? '';
   const apellido = user?.lastName?.trim() ?? '';
-  const userPhone = user?.phone ?? '';
+  const userPhone = user?.phone ? `(${user.phoneAreaCode ?? ''}) ${user.phone}` : '';
   const userDni = user?.dni ?? '';
   const userAddress = user?.address ?? '';
   const userCity = user?.city ?? '';
@@ -132,12 +133,12 @@ export default function PanelUsuario() {
                 'Usuario'
               )}
             </h1>
-            <p className={styles.telefono}>Teléfono: {userPhone || 'Sin cargar'}</p>
+            <p className={styles.telefono}>Celular: {userPhone || 'Sin cargar'}</p>
           </div>
 
           <div className={styles.facturacion}>
             <p className={styles.facturacionTitulo}>Datos de facturación</p>
-            {userDni && <p>DNI: {userDni}</p>}
+            {userDni && <p>DNI / CUIL: {userDni}</p>}
             {userAddress && <p>{userAddress}</p>}
             {userCity && <p>{userCity}</p>}
             {!userDni && !userAddress && <p>Sin datos cargados</p>}
@@ -259,6 +260,12 @@ export default function PanelUsuario() {
             </table>
           </div>
         </section>
+
+        {user?.role === 'USER' && (
+          <section className={`${styles.contenedor} ${styles.bajaSeccion}`}>
+            <BajaCuenta />
+          </section>
+        )}
       </div>
 
       <SeccionVender origen="perfil" />

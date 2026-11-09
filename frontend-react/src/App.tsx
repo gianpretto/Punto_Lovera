@@ -3,6 +3,7 @@ import { Routes, Route } from 'react-router-dom';
 import Medicion from './components/layout/Medicion';
 import PantallaCarga from './components/layout/PantallaCarga';
 import TransicionPagina from './components/layout/TransicionPagina';
+import ScrollArriba from './components/layout/ScrollArriba';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import { AuthProvider } from './services/AuthContext';
@@ -15,6 +16,7 @@ const IrAlPanel = lazy(() => import('./pages/IrAlPanel/IrAlPanel'));
 const AdminComprobantes = lazy(() => import('./pages/AdminComprobantes/AdminComprobantes'));
 const AdminReintegros = lazy(() => import('./pages/AdminReintegros/AdminReintegros'));
 const AdminConsultas = lazy(() => import('./pages/AdminConsultas/AdminConsultas'));
+const AdminConfiguracion = lazy(() => import('./pages/AdminConfiguracion/AdminConfiguracion'));
 const AdminSubastas = lazy(() => import('./pages/AdminSubastas/AdminSubastas'));
 const EditarSubasta = lazy(() => import('./pages/AdminSubastas/EditarSubasta'));
 const Login = lazy(() => import('./pages/Login/Login'));
@@ -46,6 +48,7 @@ function precargarPaginas() {
     () => import('./pages/AdminComprobantes/AdminComprobantes'),
     () => import('./pages/AdminReintegros/AdminReintegros'),
     () => import('./pages/AdminConsultas/AdminConsultas'),
+    () => import('./pages/AdminConfiguracion/AdminConfiguracion'),
     () => import('./pages/AdminSubastas/AdminSubastas'),
     () => import('./pages/AdminSubastas/EditarSubasta'),
     () => import('./pages/Login/Login'),
@@ -77,6 +80,7 @@ export default function App() {
     <AuthProvider>
       <PantallaCarga />
       <TransicionPagina />
+      <ScrollArriba />
       <Medicion />
       <Header />
 
@@ -109,6 +113,7 @@ export default function App() {
           <Route path="/admin/comprobantes" element={<AdminComprobantes />} />
           <Route path="/admin/reintegros" element={<AdminReintegros />} />
           <Route path="/admin/consultas" element={<AdminConsultas />} />
+          <Route path="/admin/configuracion" element={<AdminConfiguracion />} />
 
           {/* Administración de subastas y lotes (martillero / admin) */}
           <Route path="/admin/subastas" element={<AdminSubastas />} />

@@ -10,9 +10,10 @@ import { useSoloSinSesion } from '../../services/useSoloSinSesion';
 import { useAuth } from '../../services/AuthContext';
 import { ApiError } from '../../services/api';
 import { registrarEvento } from '../../services/analytics';
+import { LARGOS } from '../../services/validaciones';
 
 function validarEmail(email: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  return email.trim().length <= LARGOS.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
 // Login (wireframes "Log in" 620:12755 / 620:14958) con el layout común
@@ -103,6 +104,7 @@ export default function Login() {
           type="email"
           placeholder="tu@correo.com"
           autoComplete="email"
+          maxLength={LARGOS.email}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           error={errorEmail}
@@ -113,6 +115,7 @@ export default function Login() {
           type="password"
           placeholder="Tu contraseña"
           autoComplete="current-password"
+          maxLength={200}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           error={errorPassword}

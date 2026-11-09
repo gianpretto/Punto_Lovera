@@ -46,23 +46,26 @@ describe('Auth y perfil', () => {
     const res = await app.api(
       'PATCH',
       '/auth/me',
-      { phone: '1155554444', city: 'Castelar', birthDate: '1990-05-01', zipCode: '' },
+      { city: 'Castelar', birthDate: '1990-05-01', zipCode: '' },
       U
     );
     expect(res.status).toBe(200);
     expect(res.data.user.city).toBe('Castelar');
     expect(res.data.user.birthDate).toBe('1990-05-01');
     expect(res.data.user.zipCode).toBeNull();
-    // Sin código postal el perfil queda incompleto
-    expect(res.data.user.profileComplete).toBe(false);
-    const restored = await app.api('PATCH', '/auth/me', { zipCode: '1712' }, U);
+    // De la fecha de nacimiento para abajo es opcional: sigue completo
+    expect(res.data.user.profileComplete).toBe(true);
+    // Sin DNI/CUIL no
+    const sinDni = await app.api('PATCH', '/auth/me', { dni: '' }, U);
+    expect(sinDni.data.user.profileComplete).toBe(false);
+    const restored = await app.api('PATCH', '/auth/me', { dni: '30111222', zipCode: '1712' }, U);
     expect(restored.data.user.profileComplete).toBe(true);
   });
 
-  it('PATCH /auth/me valida el teléfono', async () => {
-    const res = await app.api('PATCH', '/auth/me', { phone: 'abc' }, U);
-    expect(res.status).toBe(400);
-    expect(res.data.details?.[0]?.message).toBe('Solo números');
+  it('PATCH /auth/me ya no cambia el celular (va con código)', async () => {
+    const res = await app.api('PATCH', '/auth/me', { phone: '1199998888' }, U);
+    expect(res.status).toBe(200);
+    expect(res.data.user.phone).toBe('55550000');
   });
 
   it('resend-verification no revela si el mail existe', async () => {

@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { api, ApiError } from '../../services/api';
+import { consulta, LARGOS } from '../../services/validaciones';
 import Etiqueta from '../ui/Etiqueta';
 import styles from './SeccionVender.module.scss';
 import { registrarEvento } from '../../services/analytics';
@@ -28,6 +29,11 @@ export default function SeccionVender({ origen, etiquetaGrande = false }: Props)
     if (enviando) return;
     setError('');
     setOk('');
+    const invalido = consulta({ nombre, email, mensaje });
+    if (invalido) {
+      setError(invalido);
+      return;
+    }
     setEnviando(true);
     try {
       const res = await api.post<{ message: string }>('/contacto', { name: nombre, email, message: mensaje, source: origen });
@@ -67,7 +73,7 @@ export default function SeccionVender({ origen, etiquetaGrande = false }: Props)
           </label>
           <label className={styles.campo}>
             <span>E-mail</span>
-            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Tu e-mail" required />
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="Tu e-mail" required maxLength={LARGOS.email} />
           </label>
           <label className={`${styles.campo} ${styles.campoAncho}`}>
             <span>Mensaje</span>
@@ -77,7 +83,7 @@ export default function SeccionVender({ origen, etiquetaGrande = false }: Props)
               placeholder="¿Qué te gustaría subastar?"
               required
               rows={1}
-              maxLength={3000}
+              maxLength={LARGOS.mensaje}
             />
           </label>
 

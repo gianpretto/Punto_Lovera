@@ -5,6 +5,7 @@ import voucherRoutes from './voucher.routes';
 import purchaseRoutes from './purchase.routes';
 import liveRoutes from './live.routes';
 import contactRoutes from './contact.routes';
+import { adminConfigRoutes, publicConfigRoutes } from './config.routes';
 
 const router = Router();
 
@@ -14,6 +15,8 @@ router.use('/creditos', voucherRoutes);
 router.use('/compras', purchaseRoutes);
 router.use('/live', liveRoutes);
 router.use('/contacto', contactRoutes);
+router.use('/config', publicConfigRoutes);
+router.use('/admin/configuracion', adminConfigRoutes);
 
 router.get('/health', (_req, res) => res.json({ ok: true }));
 

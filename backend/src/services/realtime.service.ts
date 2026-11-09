@@ -5,6 +5,8 @@ import { Errors } from '../utils/AppError';
 import * as auctionService from './auction.service';
 import * as bidService from './bid.service';
 import * as purchaseService from './purchase.service';
+import { hasSanction, type SanctionType } from './martillero.service';
+import { minNextBidOf } from './bid.service';
 import { getIo } from '../sockets/io';
 
 /**
@@ -28,6 +30,7 @@ export async function placeBidAndBroadcast(lotId: string, userId: string, amount
       userId,
       text: `ofreció $${Number(result.bid.amount).toLocaleString('es-AR')}`,
       isOffer: true,
+      bidId: result.bid.id,
     })
     .returning();
 
@@ -37,16 +40,18 @@ export async function placeBidAndBroadcast(lotId: string, userId: string, amount
     io.to(room).emit('bid:new', {
       lotId: result.lot.id,
       currentPrice: Number(result.lot.currentPrice),
-      minNextBid: Number(result.lot.currentPrice) + Number(result.lot.bidIncrement),
+      minNextBid: minNextBidOf(result.lot),
       leaderId: result.lot.leaderId,
       bid: { ...result.bid, amount: Number(result.bid.amount) },
     });
     io.to(room).emit('chat:message', {
       id: chatMessage.id,
+      userId,
       user: user ? `${user.firstName} ${user.lastName}` : 'Usuario',
       text: chatMessage.text,
       time: chatMessage.createdAt,
       isOffer: true,
+      bidId: result.bid.id,
     });
   }
 
@@ -61,6 +66,9 @@ export async function sendChatMessage(auctionId: string, userId: string, text: s
   const [auction] = await db.select({ status: auctions.status }).from(auctions).where(eq(auctions.id, auctionId));
   if (!auction) throw Errors.notFound('Subasta');
   if (auction.status !== 'ACTIVA') throw Errors.badRequest('El chat se habilita cuando el remate está en vivo');
+  if ((await hasSanction(auctionId, userId, 'SILENCIADO')) || (await hasSanction(auctionId, userId, 'EXPULSADO'))) {
+    throw Errors.forbidden('El martillero te silenció en este remate');
+  }
 
   const [user] = await db
     .select({ firstName: users.firstName, lastName: users.lastName })
@@ -74,6 +82,7 @@ export async function sendChatMessage(auctionId: string, userId: string, text: s
 
   const payload = {
     id: message.id,
+    userId,
     user: user ? `${user.firstName} ${user.lastName}` : 'Usuario',
     text: message.text,
     time: message.createdAt,
@@ -108,10 +117,12 @@ export async function getChatHistory(auctionId: string) {
   });
   return messages.reverse().map((m) => ({
     id: m.id,
+    userId: m.userId,
     user: `${m.user.firstName} ${m.user.lastName}`,
     text: m.text,
     time: m.createdAt,
     isOffer: m.isOffer,
+    bidId: m.bidId,
   }));
 }
 
@@ -130,7 +141,9 @@ function lotPayload(lot: CurrentLot) {
     startingPrice: Number(lot.startingPrice),
     currentPrice,
     bidIncrement,
-    minNextBid: currentPrice + bidIncrement,
+    minNextBid: minNextBidOf(lot),
+    // La mínima la fijó el martillero a mano (no es precio + incremento)
+    minNextBidManual: lot.nextMinBid != null,
     leaderId: lot.leaderId,
     images: lot.images.map((i) => i.url),
   };
@@ -199,4 +212,31 @@ export async function closeLotAndBroadcast(lotId: string) {
   await auctionService.setCurrentLot(lot.auctionId, null);
   await broadcastRoomState(lot.auctionId);
   return purchase;
+}
+
+// ---------- Moderación y controles del martillero ----------
+
+/** Una oferta anulada: la sala la saca de la lista y recibe el lote recalculado. */
+export async function broadcastBidVoided(auctionId: string, bidId: string, lotId: string) {
+  getIo()?.to(`auction:${auctionId}`).emit('bid:voided', { bidId, lotId });
+  return broadcastRoomState(auctionId);
+}
+
+/**
+ * Avisa al usuario sancionado (todas sus pestañas en esa sala). Si lo
+ * expulsan, además lo saca de la sala: no recibe más nada de ese remate.
+ */
+export async function notifySanction(auctionId: string, userId: string, type: SanctionType, active: boolean) {
+  const io = getIo();
+  if (!io) return;
+  const room = `auction:${auctionId}`;
+  const sockets = await io.in(room).fetchSockets();
+  for (const s of sockets) {
+    if (s.data.userId !== userId) continue;
+    s.emit('auction:sanction', { auctionId, type, active });
+    if (type === 'EXPULSADO' && active) {
+      s.emit('auction:error', { code: 'EXPULSADO', message: 'El martillero te expulsó de este remate' });
+      s.leave(room);
+    }
+  }
 }

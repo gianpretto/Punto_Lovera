@@ -9,6 +9,7 @@ import {
   getLotAuctionId,
 } from '../services/realtime.service';
 import { AppError } from '../utils/AppError';
+import { hasSanction } from '../services/martillero.service';
 
 /**
  * Límites anti-flood en la sala: como mucho N eventos en una ventana
@@ -84,7 +85,8 @@ interface AuthedSocket extends Socket {
  *
  * El servidor emite a la sala: 'auction:state' (al entrar), 'chat:history',
  * 'bid:new', 'chat:message', 'lot:change' (otro lote en remate) y
- * 'lot:sold' (lote adjudicado); y al socket que falla: 'bid:error',
+ * 'lot:sold' (lote adjudicado), 'bid:voided' (el martillero anuló una
+ * oferta); al usuario sancionado 'auction:sanction'; y al socket que falla: 'bid:error',
  * 'chat:error', 'auction:error'.
  *
  * Se autentica en la conexión (no en cada evento) para no repetir el
@@ -99,6 +101,8 @@ export function registerBiddingHandlers(io: Server) {
     if (token) {
       try {
         socket.userId = verifyToken(token).userId;
+        // En socket.data para encontrar sus sockets al sancionarlo (fetchSockets)
+        socket.data.userId = socket.userId;
       } catch {
         // token inválido: sigue como anónimo/espectador
       }
@@ -125,12 +129,20 @@ export function registerBiddingHandlers(io: Server) {
           });
           return;
         }
+        // Expulsado de este remate por el martillero: no entra
+        if (socket.userId && (await hasSanction(auctionId, socket.userId, 'EXPULSADO'))) {
+          socket.emit('auction:error', { code: 'EXPULSADO', message: 'El martillero te expulsó de este remate' });
+          return;
+        }
         // Primero el estado (valida que la subasta exista), después la sala
         const state = await getRoomState(auctionId);
         await socket.join(`auction:${auctionId}`);
         joined.add(auctionId);
         socket.emit('auction:state', state);
         socket.emit('chat:history', await getChatHistory(auctionId));
+        if (socket.userId && (await hasSanction(auctionId, socket.userId, 'SILENCIADO'))) {
+          socket.emit('auction:sanction', { auctionId, type: 'SILENCIADO', active: true });
+        }
       } catch (err) {
         socket.emit('auction:error', { message: clientMessage(err, 'No se pudo entrar a la subasta') });
       }

@@ -11,10 +11,7 @@ import { useAuth } from '../../services/AuthContext';
 import { ApiError } from '../../services/api';
 import styles from './Registro.module.scss';
 import { registrarEvento } from '../../services/analytics';
-
-function validarEmail(email: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-}
+import * as v from '../../services/validaciones';
 
 interface Touched {
   nombre: boolean;
@@ -51,45 +48,23 @@ export default function Registro() {
     confirmPassword: false,
   });
 
-  const errors = {
-    nombre: { required: nombre.trim() === '' },
-    apellido: { required: apellido.trim() === '' },
-    email: { required: email.trim() === '', email: email.trim() !== '' && !validarEmail(email) },
-    password: { required: password === '', minlength: password !== '' && password.length < 8 },
-    confirmPassword: {
-      required: confirmPassword === '',
-      mismatch: confirmPassword !== '' && confirmPassword !== password,
-    },
+  // Mensaje a mostrar debajo de cada campo (mismas reglas que el backend)
+  const mensajes: Record<keyof Touched, string | undefined> = {
+    nombre: v.nombrePersona(nombre, 'nombre'),
+    apellido: v.nombrePersona(apellido, 'apellido'),
+    email: v.email(email),
+    password: password === '' ? 'La contraseña es obligatoria' : v.passwordNueva(password),
+    confirmPassword:
+      confirmPassword === ''
+        ? 'Debes confirmar tu contraseña'
+        : confirmPassword !== password
+          ? 'Las contraseñas no coinciden'
+          : undefined,
   };
-
-  const hasError = (field: keyof Touched) => Object.values(errors[field]).some(Boolean);
-  const showError = (field: keyof Touched) => (submitted || touched[field]) && hasError(field);
 
   const markTouched = (field: keyof Touched) => setTouched((t) => ({ ...t, [field]: true }));
-
-  const formInvalid = (Object.keys(errors) as (keyof Touched)[]).some((f) => hasError(f));
-
-  // Mensaje a mostrar debajo de cada campo (el primero que aplique)
-  const mensajes: Record<keyof Touched, string | undefined> = {
-    nombre: errors.nombre.required ? 'El nombre es obligatorio' : undefined,
-    apellido: errors.apellido.required ? 'El apellido es obligatorio' : undefined,
-    email: errors.email.required
-      ? 'El correo es obligatorio'
-      : errors.email.email
-        ? 'Ingrese un correo válido'
-        : undefined,
-    password: errors.password.required
-      ? 'La contraseña es obligatoria'
-      : errors.password.minlength
-        ? 'Mínimo 8 caracteres'
-        : undefined,
-    confirmPassword: errors.confirmPassword.required
-      ? 'Debes confirmar tu contraseña'
-      : errors.confirmPassword.mismatch
-        ? 'Las contraseñas no coinciden'
-        : undefined,
-  };
-  const errorDe = (field: keyof Touched) => (showError(field) ? mensajes[field] : undefined);
+  const formInvalid = Object.values(mensajes).some(Boolean);
+  const errorDe = (field: keyof Touched) => ((submitted || touched[field]) && mensajes[field]) || undefined;
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -141,6 +116,7 @@ export default function Registro() {
           <Campo
             etiqueta="Nombre"
             autoComplete="given-name"
+            maxLength={v.LARGOS.nombre}
             value={nombre}
             onChange={(e) => setNombre(e.target.value)}
             onBlur={() => markTouched('nombre')}
@@ -149,6 +125,7 @@ export default function Registro() {
           <Campo
             etiqueta="Apellido"
             autoComplete="family-name"
+            maxLength={v.LARGOS.nombre}
             value={apellido}
             onChange={(e) => setApellido(e.target.value)}
             onBlur={() => markTouched('apellido')}
@@ -161,6 +138,7 @@ export default function Registro() {
           type="email"
           placeholder="tu@correo.com"
           autoComplete="email"
+          maxLength={v.LARGOS.email}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           onBlur={() => markTouched('email')}
@@ -172,6 +150,7 @@ export default function Registro() {
           type="password"
           placeholder="Mínimo 8 caracteres"
           autoComplete="new-password"
+          maxLength={v.LARGOS.password}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           onBlur={() => markTouched('password')}
@@ -182,6 +161,7 @@ export default function Registro() {
           etiqueta="Repite la contraseña"
           type="password"
           autoComplete="new-password"
+          maxLength={v.LARGOS.password}
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
           onBlur={() => markTouched('confirmPassword')}

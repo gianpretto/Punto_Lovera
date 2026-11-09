@@ -5,6 +5,7 @@ import {
   forgotPasswordLimiter,
   loginIpLimiter,
   loginLimiter,
+  phoneCodeLimiter,
   registerLimiter,
   resendVerificationLimiter,
   resetPasswordLimiter,
@@ -24,5 +25,8 @@ router.post('/forgot-password', forgotPasswordLimiter, authController.forgotPass
 router.post('/reset-password', resetPasswordLimiter, authController.resetPassword);
 router.get('/me', requireAuth, authController.me);
 router.patch('/me', requireAuth, authController.updateMe);
+router.delete('/me', requireAuth, loginLimiter, authController.deleteMe);
+router.post('/me/celular', requireAuth, phoneCodeLimiter, authController.setPhone);
+router.post('/me/celular/verificar', requireAuth, verifyEmailLimiter, authController.verifyPhone);
 
 export default router;

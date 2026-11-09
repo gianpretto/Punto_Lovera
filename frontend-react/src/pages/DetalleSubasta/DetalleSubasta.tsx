@@ -13,6 +13,7 @@ import {
 } from '../../services/auctions';
 import { uploadUrl } from '../../services/api';
 import { useAuth, type User } from '../../services/AuthContext';
+import { useConfigCreditos } from '../../services/config';
 import Boton from '../../components/ui/Boton';
 import Etiqueta from '../../components/ui/Etiqueta';
 import Paginacion from '../../components/ui/Paginacion';
@@ -79,10 +80,15 @@ interface Accion {
 /**
  * Botón de la cabecera según las reglas de ingreso (diagrama de flujo):
  * sin cuenta → registrarse; sin datos → perfil; sin crédito → cargar
- * crédito; con la subasta ACTIVA → entrar a la sala (con sesión o con el
+ * crédito (salvo que el admin haya elegido el modo sin crédito); con la subasta ACTIVA → entrar a la sala (con sesión o con el
  * pase de invitado `?pase=`). Pujar lo vuelve a validar la sala.
  */
-function accionIngreso(auction: AuctionSummaryApi, user: User | null, pase: string | null): Accion | null {
+function accionIngreso(
+  auction: AuctionSummaryApi,
+  user: User | null,
+  pase: string | null,
+  pideCredito: boolean
+): Accion | null {
   const sala = `/subastas/${auction.id}/activa`;
   const aqui = `/subastas/${auction.id}`;
   if (auction.status === 'FINALIZADA' || auction.status === 'CANCELADA') return null;
@@ -95,7 +101,7 @@ function accionIngreso(auction: AuctionSummaryApi, user: User | null, pase: stri
 
   if (!user) return { texto: 'Registrarme para ofertar', to: `/registro?volver=${encodeURIComponent(aqui)}` };
   if (!user.profileComplete) return { texto: 'Completar mis datos', to: `/datos?volver=${encodeURIComponent(aqui)}` };
-  if (user.availableCredit <= 0) return { texto: 'Cargar crédito', to: '/creditos' };
+  if (pideCredito && user.availableCredit <= 0) return { texto: 'Cargar crédito', to: '/creditos' };
   return {
     texto: '',
     nota: 'Ya estás listo para ofertar: la sala se abre cuando empiece la transmisión.',
@@ -110,6 +116,7 @@ export default function DetalleSubasta() {
   const { auction, error } = useAuction(id);
   const { user, loading } = useAuth();
   const now = useNow();
+  const configCreditos = useConfigCreditos();
   const [visor, setVisor] = useState<{ lote: LoteCatalogo; foto: number } | null>(null);
   const cerrarVisor = useCallback(() => setVisor(null), []);
 
@@ -142,7 +149,10 @@ export default function DetalleSubasta() {
   const estado = auction.status;
   const pastilla = estado === 'ACTIVA' ? 'ACTIVA' : estado === 'PROXIMA' ? 'PRÓXIMAMENTE' : estado;
   const cuenta = countdownTo(auction.startsAt, now);
-  const accion = loading ? null : accionIngreso(auction, user, user ? null : searchParams.get('pase'));
+  const accion =
+    loading || !configCreditos
+      ? null
+      : accionIngreso(auction, user, user ? null : searchParams.get('pase'), configCreditos.modo !== 'SIN_CREDITO');
   const ubicacion = auction.location.replace(/\.?\s*$/, '.');
   const tituloLargo = auction.title.length > 28;
 

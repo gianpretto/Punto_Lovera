@@ -26,20 +26,25 @@ export interface RegisterInput {
   password: string;
   firstName: string;
   lastName: string;
-  phone?: string;
-  dni?: string;
 }
 
 type UserRow = typeof users.$inferSelect;
 
 /**
- * "Cargó sus datos" (diagrama de flujo): lo que pide el formulario de
- * /datos. Sin esto no se puede pujar.
+ * "Cargó sus datos" (diagrama de flujo): nombre, apellido, celular
+ * verificado y DNI/CUIL. Sin esto no se puede pujar. De la fecha de
+ * nacimiento para abajo (dirección, ciudad, etc.) es opcional (cliente, nov 2026).
  */
 export function isProfileComplete(user: UserRow) {
-  return [user.firstName, user.lastName, user.phone, user.dni, user.address, user.city, user.province, user.zipCode].every(
-    (v) => typeof v === 'string' && v.trim() !== ''
+  return (
+    [user.firstName, user.lastName, user.dni].every((v) => typeof v === 'string' && v.trim() !== '') &&
+    celularVerificado(user)
   );
+}
+
+/** Celular cargado y verificado (o verificación salteada en entornos de prueba) */
+function celularVerificado(user: UserRow) {
+  return Boolean(user.phone) && (user.phoneVerified || env.skipPhoneVerification);
 }
 
 function publicUser(user: UserRow, heldCredit = 0) {
@@ -48,7 +53,9 @@ function publicUser(user: UserRow, heldCredit = 0) {
     email: user.email,
     firstName: user.firstName,
     lastName: user.lastName,
+    phoneAreaCode: user.phoneAreaCode,
     phone: user.phone,
+    phoneVerified: celularVerificado(user),
     dni: user.dni,
     birthDate: user.birthDate,
     address: user.address,
@@ -67,7 +74,7 @@ function publicUser(user: UserRow, heldCredit = 0) {
   };
 }
 
-async function publicUserWithCredit(user: UserRow) {
+export async function publicUserWithCredit(user: UserRow) {
   return publicUser(user, await getHeldCredit(user.id));
 }
 
@@ -86,8 +93,6 @@ export async function register(input: RegisterInput) {
         passwordHash,
         firstName: input.firstName,
         lastName: input.lastName,
-        phone: input.phone,
-        dni: input.dni,
         emailVerified: true,
       })
       .returning();
@@ -103,8 +108,6 @@ export async function register(input: RegisterInput) {
       passwordHash,
       firstName: input.firstName,
       lastName: input.lastName,
-      phone: input.phone,
-      dni: input.dni,
       // En la DB va el hash; el token crudo solo en el mail (ver hashToken)
       verificationToken: hashToken(verificationToken),
       verificationSentAt: new Date(),
@@ -121,7 +124,7 @@ export async function login(email: string, password: string, recordar = false) {
 
   // Siempre se corre bcrypt (contra el hash descartable si no hay cuenta)
   const valid = await bcrypt.compare(password, user?.passwordHash ?? DUMMY_HASH);
-  if (!user || !valid) throw Errors.badRequest('Email o contraseña incorrectos');
+  if (!user || !valid || user.deletedAt) throw Errors.badRequest('Email o contraseña incorrectos');
 
   const token = signToken({ userId: user.id, role: user.role }, recordar);
   return { token, user: await publicUserWithCredit(user) };
@@ -138,6 +141,7 @@ export async function login(email: string, password: string, recordar = false) {
 export async function loginWithGoogle(profile: GoogleProfile) {
   let [user] = await db.select().from(users).where(eq(users.googleId, profile.sub));
   let isNew = false;
+  if (user?.deletedAt) throw Errors.forbidden('Esta cuenta fue dada de baja');
 
   if (!user) {
     const [byEmail] = await db.select().from(users).where(eq(users.email, profile.email));
@@ -234,13 +238,14 @@ export async function resetPassword(token: string, newPassword: string) {
 export async function getMe(userId: string) {
   const [user] = await db.select().from(users).where(eq(users.id, userId));
   if (!user) throw Errors.notFound('Usuario');
+  // Cuenta dada de baja: el token que le quedaba ya no sirve
+  if (user.deletedAt) throw Errors.unauthorized('Esta cuenta fue dada de baja');
   return publicUserWithCredit(user);
 }
 
 export type UpdateProfileInput = Partial<{
   firstName: string;
   lastName: string;
-  phone: string;
   dni: string;
   birthDate: string;
   address: string;

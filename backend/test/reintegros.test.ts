@@ -11,7 +11,12 @@ let U: string; // usuario del seed: saldo 500.000
 
 const CBU = '0000003100000000000001';
 const pedir = (amount: number, token = U, extra: Record<string, unknown> = {}) =>
-  app.api('POST', '/creditos/reintegros', { amount, cbu: CBU, ...extra }, token);
+  app.api(
+    'POST',
+    '/creditos/reintegros',
+    { amount, cbu: CBU, accountHolder: 'Juan Pérez', cuit: '20-12345678-6', ...extra },
+    token
+  );
 const me = async () => (await app.api('GET', '/auth/me', null, U)).data.user;
 
 beforeAll(async () => {

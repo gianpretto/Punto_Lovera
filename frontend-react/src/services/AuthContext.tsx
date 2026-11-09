@@ -11,7 +11,12 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
+  /** Celular: código de área sin 0 + número sin 15 (10 dígitos) */
+  phoneAreaCode: string | null;
   phone: string | null;
+  /** Verificado con el código por WhatsApp (requisito para ofertar) */
+  phoneVerified: boolean;
+  /** DNI o CUIL */
   dni: string | null;
   birthDate: string | null;
   address: string | null;
@@ -26,14 +31,13 @@ export interface User {
   heldCredit: number;
   /** Lo que puede usar para pujar: creditBalance - heldCredit */
   availableCredit: number;
-  /** Cargó todos sus datos personales (requisito para ofertar) */
+  /** Nombre, apellido, DNI/CUIL y celular verificado (requisito para ofertar) */
   profileComplete: boolean;
 }
 
 export interface UpdateUserData {
   nombre?: string;
   apellido?: string;
-  telefono?: string;
   dni?: string;
   fechaNacimiento?: string;
   direccion?: string;
@@ -58,6 +62,8 @@ interface AuthContextValue {
   refreshUser: () => Promise<boolean>;
   /** Inicia sesión con un token ya emitido (ej: al verificar el mail). */
   setSession: (token: string, user: User) => void;
+  /** Reemplaza el usuario con el que devolvió el backend (ej: al verificar el celular). */
+  setUser: (user: User) => void;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -149,7 +155,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { user } = await api.patch<{ user: User }>('/auth/me', {
       firstName: data.nombre,
       lastName: data.apellido,
-      phone: data.telefono,
       dni: data.dni,
       birthDate: data.fechaNacimiento,
       address: data.direccion,
@@ -164,7 +169,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, currentUser, loading, login, register, logout, updateUserData, refreshUser, setSession }}
+      value={{ user, currentUser, loading, login, register, logout, updateUserData, refreshUser, setSession, setUser }}
     >
       {children}
     </AuthContext.Provider>

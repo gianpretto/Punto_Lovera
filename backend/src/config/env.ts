@@ -48,6 +48,18 @@ export const env = {
   // validado al registrarse y se puede ofertar sin validar. Nunca en producción.
   skipEmailVerification: process.env.SKIP_EMAIL_VERIFICATION === 'true',
 
+  // Verificación del celular por WhatsApp (API de WhatsApp Cloud de Meta).
+  // Sin token/número configurados el código solo se escribe en los logs.
+  whatsapp: {
+    token: process.env.WHATSAPP_TOKEN?.trim() ?? '',
+    phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID?.trim() ?? '',
+    // Plantilla de "autenticación" aprobada en Meta (con botón de copiar código)
+    template: process.env.WHATSAPP_TEMPLATE ?? 'codigo_verificacion',
+    templateLang: process.env.WHATSAPP_TEMPLATE_LANG ?? 'es_AR',
+  },
+  // SOLO pruebas: el celular queda verificado sin código (como SKIP_EMAIL_VERIFICATION)
+  skipPhoneVerification: process.env.SKIP_PHONE_VERIFICATION === 'true',
+
   // "Continuar con Google": Client ID web de Google Cloud (vacío = sin botón)
   googleClientId: process.env.GOOGLE_CLIENT_ID?.trim() ?? '',
 
@@ -58,6 +70,7 @@ export const env = {
     alias: process.env.TRANSFER_ALIAS ?? '',
     cbu: process.env.TRANSFER_CBU ?? '',
     holder: process.env.TRANSFER_HOLDER ?? '',
+    cuit: process.env.TRANSFER_CUIT ?? '',
     // Texto libre, ej: "Cuenta corriente en pesos 123-456/7 — Banco X"
     account: process.env.TRANSFER_ACCOUNT ?? '',
   },

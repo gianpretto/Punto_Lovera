@@ -1,6 +1,7 @@
 import { useState, type ChangeEvent, type FormEvent } from 'react';
 import { api, ApiError, uploadUrl } from '../../services/api';
 import panel from '../PanelMartillero/PanelMartillero.module.scss';
+import * as v from '../../services/validaciones';
 import styles from './AdminSubastas.module.scss';
 
 // Lotes de una subasta dentro de la pantalla de edición: lista, alta,
@@ -189,6 +190,21 @@ function LoteEditor({ auctionId, lote, siguienteNumero, onCerrar, onCreado, onCh
 
   const guardar = async (e: FormEvent) => {
     e.preventDefault();
+    const invalido = v.primero(
+      Number.isInteger(Number(number)) && Number(number) >= 1 && Number(number) <= 100_000
+        ? undefined
+        : 'El número de lote tiene que ser un entero entre 1 y 100.000.',
+      v.requerido(title, 'Indicá un título para el lote.'),
+      v.largoMaximo(title, v.LARGOS.titulo),
+      v.requerido(description, 'Indicá una descripción para el lote.'),
+      v.largoMaximo(description, v.LARGOS.descripcion),
+      precioBloqueado ? undefined : v.monto(startingPrice, 'El precio base'),
+      bidIncrement ? v.monto(bidIncrement, 'El incremento') : undefined
+    );
+    if (invalido) {
+      onError(invalido);
+      return;
+    }
     const datos = {
       number: Number(number),
       title: title.trim(),
@@ -259,6 +275,7 @@ function LoteEditor({ auctionId, lote, siguienteNumero, onCerrar, onCreado, onCh
             className={panel.input}
             type="number"
             min={1}
+            max={100000}
             step={1}
             value={number}
             onChange={(e) => setNumber(e.target.value)}
@@ -267,7 +284,7 @@ function LoteEditor({ auctionId, lote, siguienteNumero, onCerrar, onCreado, onCh
         </label>
         <label className={`${styles.campo} ${styles.loteTitulo}`}>
           <span>Título</span>
-          <input className={panel.input} value={title} onChange={(e) => setTitle(e.target.value)} required maxLength={200} />
+          <input className={panel.input} value={title} onChange={(e) => setTitle(e.target.value)} required maxLength={v.LARGOS.titulo} />
         </label>
         <label className={`${styles.campo} ${styles.campoAncho}`}>
           <span>Descripción</span>
@@ -277,6 +294,7 @@ function LoteEditor({ auctionId, lote, siguienteNumero, onCerrar, onCreado, onCh
             onChange={(e) => setDescription(e.target.value)}
             required
             rows={3}
+            maxLength={v.LARGOS.descripcion}
           />
         </label>
         <label className={`${styles.campo} ${styles.mitad}`}>
@@ -286,6 +304,7 @@ function LoteEditor({ auctionId, lote, siguienteNumero, onCerrar, onCreado, onCh
             type="number"
             min={1}
             step="any"
+            max={v.MONTO_MAXIMO}
             value={startingPrice}
             onChange={(e) => setStartingPrice(e.target.value)}
             required
@@ -300,6 +319,7 @@ function LoteEditor({ auctionId, lote, siguienteNumero, onCerrar, onCreado, onCh
             type="number"
             min={1}
             step="any"
+            max={v.MONTO_MAXIMO}
             value={bidIncrement}
             onChange={(e) => setBidIncrement(e.target.value)}
             placeholder="1000"

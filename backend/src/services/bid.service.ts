@@ -1,13 +1,23 @@
 import { and, eq } from 'drizzle-orm';
 import { db } from '../config/db';
-import { bids, lots, users } from '../db/schema';
+import { auctionSanctions, bids, lots, users } from '../db/schema';
 import { Errors } from '../utils/AppError';
 import { getCurrentLot } from './auction.service';
 import { getHeldCredit } from './credit.service';
 import { isProfileComplete } from './auth.service';
 import { env } from '../config/env';
+import { factorDeCredito, getCreditConfig } from './settings.service';
 
 const pesos = (n: number) => `$${n.toLocaleString('es-AR')}`;
+
+/**
+ * Próxima oferta mínima de un lote: la que fijó el martillero a mano (si
+ * fijó una) o precio actual + incremento.
+ */
+export function minNextBidOf(lot: { currentPrice: string; bidIncrement: string; nextMinBid: string | null }) {
+  if (lot.nextMinBid != null) return Number(lot.nextMinBid);
+  return Number(lot.currentPrice) + Number(lot.bidIncrement);
+}
 
 /**
  * Registra una puja sobre un lote.
@@ -47,8 +57,7 @@ export async function placeBid(lotId: string, userId: string, amount: number) {
       throw Errors.badRequest('Ya vas ganando este lote: esperá a que alguien te supere para volver a ofertar');
     }
 
-    const currentPrice = Number(lot.currentPrice);
-    const minNext = currentPrice + Number(lot.bidIncrement);
+    const minNext = minNextBidOf(lot);
     if (amount < minNext) {
       // En la sala casi siempre es porque otro ofertó un instante antes
       throw Errors.badRequest(
@@ -58,7 +67,7 @@ export async function placeBid(lotId: string, userId: string, amount: number) {
 
     const result = await db.transaction(async (tx) => {
       const [user] = await tx.select().from(users).where(eq(users.id, userId)).for('update');
-      if (!user) throw Errors.unauthorized();
+      if (!user || user.deletedAt) throw Errors.unauthorized();
       // El martillero y los administradores conducen el remate: no ofertan
       if (user.role !== 'USER') {
         throw Errors.forbidden('El martillero y los administradores no pueden ofertar');
@@ -74,19 +83,44 @@ export async function placeBid(lotId: string, userId: string, amount: number) {
         throw Errors.badRequest('Completá tus datos personales en "Mis datos" para poder ofertar');
       }
 
-      const heldElsewhere = await getHeldCredit(userId, tx, lotId);
-      const available = Number(user.creditBalance) - heldElsewhere;
-      if (amount > available) {
-        throw Errors.badRequest(
-          heldElsewhere > 0
-            ? `No tenés crédito disponible suficiente: te quedan ${pesos(available)} (tenés ${pesos(heldElsewhere)} reservados en lotes que vas ganando o reintegros pendientes). Cargá saldo en /creditos`
-            : 'No tenés crédito suficiente para esta puja. Cargá saldo en /creditos'
+      // Expulsado de este remate por el martillero
+      const [expulsado] = await tx
+        .select({ id: auctionSanctions.id })
+        .from(auctionSanctions)
+        .where(
+          and(
+            eq(auctionSanctions.auctionId, lot.auctionId),
+            eq(auctionSanctions.userId, userId),
+            eq(auctionSanctions.type, 'EXPULSADO')
+          )
         );
+      if (expulsado) throw Errors.forbidden('El martillero te expulsó de este remate');
+
+      // Crédito según el modo que eligió el admin: todo el monto (CREDITO),
+      // un % como garantía (GARANTIA) o nada (SIN_CREDITO)
+      const config = await getCreditConfig(tx);
+      const factor = factorDeCredito(config);
+      if (factor > 0) {
+        const needed = Math.ceil(amount * factor);
+        const heldElsewhere = await getHeldCredit(userId, tx, lotId);
+        const available = Number(user.creditBalance) - heldElsewhere;
+        if (needed > available) {
+          if (config.modo === 'GARANTIA') {
+            throw Errors.badRequest(
+              `Para esta oferta necesitás una garantía de ${pesos(needed)} (${config.porcentajeGarantia} % de la oferta) y tenés ${pesos(Math.max(available, 0))} disponibles. Cargá saldo en /creditos`
+            );
+          }
+          throw Errors.badRequest(
+            heldElsewhere > 0
+              ? `No tenés crédito disponible suficiente: te quedan ${pesos(available)} (tenés ${pesos(heldElsewhere)} reservados en lotes que vas ganando o reintegros pendientes). Cargá saldo en /creditos`
+              : 'No tenés crédito suficiente para esta puja. Cargá saldo en /creditos'
+          );
+        }
       }
 
       const updatedRows = await tx
         .update(lots)
-        .set({ currentPrice: String(amount), leaderId: userId, updatedAt: new Date() })
+        .set({ currentPrice: String(amount), leaderId: userId, nextMinBid: null, updatedAt: new Date() })
         .where(and(eq(lots.id, lotId), eq(lots.currentPrice, lot.currentPrice)))
         .returning();
 

@@ -2,6 +2,7 @@ import { Router } from 'express';
 import * as auctionController from '../controllers/auction.controller';
 import * as lotController from '../controllers/lot.controller';
 import * as liveController from '../controllers/live.controller';
+import * as martilleroController from '../controllers/martillero.controller';
 import { requireAuth, requireAuthOrPass, requireRole } from '../middleware/auth.middleware';
 import { handleUpload, uploadAuctionCover, uploadLotImages } from '../middleware/upload.middleware';
 
@@ -43,6 +44,15 @@ router.post(
   handleUpload(uploadAuctionCover.single('image')),
   auctionController.uploadCover
 );
+// Controles en vivo del martillero y moderación de la sala
+const staff = [requireAuth, requireRole('MARTILLERO', 'ADMIN')];
+router.patch('/:id/lotes/:lotId/vivo', ...staff, martilleroController.updateLiveLot);
+router.post('/:id/pujas/:bidId/anular', ...staff, martilleroController.voidBid);
+router.post('/:id/siguiente-lote', ...staff, martilleroController.nextLot);
+router.get('/:id/sanciones', ...staff, martilleroController.listSanctions);
+router.post('/:id/sanciones', ...staff, martilleroController.addSanction);
+router.delete('/:id/sanciones/:sanctionId', ...staff, martilleroController.removeSanction);
+
 router.patch(
   '/:id/lote-actual',
   requireAuth,

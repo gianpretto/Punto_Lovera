@@ -101,3 +101,11 @@ export const apiLimiter = limiter(1 * MIN, 600, 'Demasiadas solicitudes. Esperá
 export const contactLimiter = limiter(60 * MIN, 5, 'Ya recibimos varias consultas tuyas. Esperá un rato y probá de nuevo.', {
   keyGenerator: ipKey,
 });
+
+/**
+ * Código de verificación del celular por WhatsApp: 5 envíos por hora por
+ * usuario (cada mensaje le cuesta a Punto Lovera). Va después de requireAuth.
+ */
+export const phoneCodeLimiter = limiter(60 * MIN, 5, 'Pediste demasiados códigos. Probá de nuevo en una hora.', {
+  keyGenerator: (req) => req.user?.userId ?? ipKey(req),
+});

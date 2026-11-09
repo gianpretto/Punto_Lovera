@@ -8,6 +8,7 @@ import {
   date,
   decimal,
   integer,
+  jsonb,
   pgEnum,
   pgTable,
   text,
@@ -35,7 +36,16 @@ export const users = pgTable('users', {
   googleId: text('google_id').unique(),
   firstName: text('first_name').notNull(),
   lastName: text('last_name').notNull(),
+  // Celular: código de área (sin el 0) y número (sin el 15), 10 dígitos en
+  // total como en Argentina. Se verifica con un código por WhatsApp.
+  phoneAreaCode: text('phone_area_code'),
   phone: text('phone'),
+  phoneVerified: boolean('phone_verified').notNull().default(false),
+  // Código de verificación del celular (hash SHA-256, como los tokens)
+  phoneCodeHash: text('phone_code_hash'),
+  phoneCodeExpiry: timestamp('phone_code_expiry'),
+  phoneCodeAttempts: integer('phone_code_attempts').notNull().default(0),
+  // DNI (7-8 dígitos) o CUIL (11 dígitos)
   dni: text('dni'),
 
   // Datos personales que se completan en /datos (DatosUsuario)
@@ -58,7 +68,21 @@ export const users = pgTable('users', {
   // aprueba un comprobante subido en /creditos)
   creditBalance: decimal('credit_balance', { precision: 12, scale: 2 }).notNull().default('0'),
 
+  // Cuenta dada de baja por el usuario: los datos personales se borran y no
+  // puede volver a entrar; las pujas y compras quedan (son registros del remate)
+  deletedAt: timestamp('deleted_at'),
+
   createdAt: timestamp('created_at').notNull().defaultNow(),
+  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+});
+
+// ---------- Configuración general (la edita el admin) ----------
+
+// Clave/valor en JSON: modo de créditos, datos de transferencia, etc.
+// (settings.service.ts define las claves y sus valores por defecto)
+export const settings = pgTable('settings', {
+  key: text('key').primaryKey(),
+  value: jsonb('value').notNull(),
   updatedAt: timestamp('updated_at').notNull().defaultNow(),
 });
 
@@ -104,6 +128,9 @@ export const lots = pgTable(
     currentPrice: decimal('current_price', { precision: 12, scale: 2 }).notNull(),
     bidIncrement: decimal('bid_increment', { precision: 12, scale: 2 }).notNull().default('1000'),
     sold: boolean('sold').notNull().default(false),
+    // Próxima oferta mínima que fijó el martillero a mano (en vivo). Si está,
+    // reemplaza a precio actual + incremento; se borra con la próxima oferta.
+    nextMinBid: decimal('next_min_bid', { precision: 12, scale: 2 }),
 
     // Quién va ganando (la puja más alta). Sirve para reservar crédito: el
     // precio actual de los lotes que un usuario lidera queda retenido de
@@ -168,8 +195,33 @@ export const bids = pgTable('bids', {
     .notNull()
     .references(() => users.id),
   amount: decimal('amount', { precision: 12, scale: 2 }).notNull(),
+  // Oferta anulada por el martillero (ej: alguien que oferta en joda): no
+  // cuenta para el precio ni para quién va ganando, pero queda registrada
+  voidedAt: timestamp('voided_at'),
+  voidedById: uuid('voided_by_id'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
+
+// ---------- Moderación de la sala (por remate) ----------
+
+// SILENCIADO: no puede escribir en el chat. EXPULSADO: no puede entrar a la
+// sala ni ofertar. Valen solo para esa subasta.
+export const auctionSanctions = pgTable(
+  'auction_sanctions',
+  {
+    id: id(),
+    auctionId: uuid('auction_id')
+      .notNull()
+      .references(() => auctions.id, { onDelete: 'cascade' }),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    type: text('type').$type<'SILENCIADO' | 'EXPULSADO'>().notNull(),
+    createdById: uuid('created_by_id').references(() => users.id),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => [unique('auction_sanctions_unique').on(table.auctionId, table.userId, table.type)]
+);
 
 // ---------- Chat de la subasta en vivo ----------
 
@@ -183,6 +235,8 @@ export const chatMessages = pgTable('chat_messages', {
     .references(() => users.id),
   text: text('text').notNull(),
   isOffer: boolean('is_offer').notNull().default(false),
+  // En los mensajes de oferta: qué puja es (para tacharla si el martillero la anula)
+  bidId: uuid('bid_id'),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
@@ -217,6 +271,9 @@ export const creditWithdrawals = pgTable('credit_withdrawals', {
   amount: decimal('amount', { precision: 12, scale: 2 }).notNull(),
   cbu: text('cbu').notNull(),
   alias: text('alias'),
+  // Titular de la cuenta destino y su CUIT/CUIL
+  accountHolder: text('account_holder'),
+  cuit: text('cuit'),
   // Motivo opcional que escribe el usuario
   reason: text('reason'),
   status: voucherStatusEnum('status').notNull().default('PENDIENTE'),
@@ -291,4 +348,9 @@ export const creditWithdrawalsRelations = relations(creditWithdrawals, ({ one })
 export const purchasesRelations = relations(purchases, ({ one }) => ({
   user: one(users, { fields: [purchases.userId], references: [users.id] }),
   lot: one(lots, { fields: [purchases.lotId], references: [lots.id] }),
+}));
+
+export const auctionSanctionsRelations = relations(auctionSanctions, ({ one }) => ({
+  auction: one(auctions, { fields: [auctionSanctions.auctionId], references: [auctions.id] }),
+  user: one(users, { fields: [auctionSanctions.userId], references: [users.id] }),
 }));

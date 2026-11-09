@@ -23,7 +23,8 @@ import {
 } from "../../components/lotes/lote";
 import { useAuth } from "../../services/AuthContext";
 import { api, ApiError, getToken, uploadUrl } from "../../services/api";
-import { useAuctionRoom } from "../../services/useAuctionRoom";
+import { useAuctionRoom, type ChatMessage } from "../../services/useAuctionRoom";
+import { useConfigCreditos } from "../../services/config";
 import styles from "./SubastaActiva.module.scss";
 import { registrarEvento } from '../../services/analytics';
 import { NOMBRES_MARTILLEROS } from '../../content/martilleros';
@@ -61,6 +62,7 @@ export default function SubastaActiva() {
     messages,
     error,
     authRequired,
+    sanciones,
     placeBid,
     sendMessage: emitMessage,
   } = useAuctionRoom(
@@ -89,6 +91,22 @@ export default function SubastaActiva() {
   const paseVencido = invitado && authRequired;
   const minNextBid = lot?.minNextBid ?? 0;
   const increment = lot?.bidIncrement ?? 0;
+  const { silenciado, expulsado } = sanciones;
+
+  // Modo de créditos que eligió el admin: todo el monto (CREDITO), un % de
+  // garantía (GARANTIA) o nada (SIN_CREDITO). Mientras carga, como siempre.
+  const configCreditos = useConfigCreditos();
+  const modoCredito = configCreditos?.modo ?? "CREDITO";
+  const porcentajeGarantia = configCreditos?.porcentajeGarantia ?? 100;
+  const factorCredito =
+    modoCredito === "SIN_CREDITO"
+      ? 0
+      : modoCredito === "GARANTIA"
+        ? porcentajeGarantia / 100
+        : 1;
+  const usaCredito = factorCredito > 0;
+  /** Crédito que tiene que tener disponible para ofertar ese monto */
+  const creditoNecesario = (monto: number) => Math.ceil(monto * factorCredito);
 
   const [currentBid, setCurrentBid] = useState(0);
   // Crédito para pujar: lo disponible (saldo - reservas). Si ya va ganando
@@ -96,8 +114,9 @@ export default function SubastaActiva() {
   // que también cuenta para la validación.
   const userCredits = user?.availableCredit ?? 0;
   const vaGanando = Boolean(user && lot?.leaderId === user.id);
-  const creditoParaEsteLote =
-    userCredits + (vaGanando && lot ? lot.currentPrice : 0);
+  const reservadoEnEsteLote =
+    vaGanando && lot ? creditoNecesario(lot.currentPrice) : 0;
+  const creditoParaEsteLote = userCredits + reservadoEnEsteLote;
   const [visorAbierto, setVisorAbierto] = useState(false);
   const cerrarVisor = useCallback(() => setVisorAbierto(false), []);
   const [newMessage, setNewMessage] = useState("");
@@ -142,6 +161,66 @@ export default function SubastaActiva() {
     setAviso((a) => (a?.donde === "puja" ? null : a));
   }, [lot?.id]);
 
+  // Otro remate u otro lote: la oferta que estaba armando no sirve más,
+  // arranca de la oferta mínima del lote nuevo
+  const minimaRef = useRef(minNextBid);
+  useEffect(() => {
+    minimaRef.current = minNextBid;
+  });
+  useEffect(() => {
+    setCurrentBid(minimaRef.current);
+  }, [id, lot?.id]);
+
+  // Otro remate: sin avisos ni "te superaron" del anterior
+  useEffect(() => {
+    setAviso(null);
+    setSuperado(false);
+    setNewMessage("");
+  }, [id]);
+
+  // ---------- Moderación del chat (martillero / admin, solo este remate)
+  const [sancionados, setSancionados] = useState<Record<string, string[]>>({});
+  const cargarSanciones = useCallback(() => {
+    if (!id || !esMartillero) return;
+    api
+      .get<{ sanctions: { userId: string; type: string }[] }>(
+        `/subastas/${id}/sanciones`,
+      )
+      .then(({ sanctions }) => {
+        const porUsuario: Record<string, string[]> = {};
+        for (const s of sanctions)
+          (porUsuario[s.userId] ??= []).push(s.type);
+        setSancionados(porUsuario);
+      })
+      .catch(() => undefined);
+  }, [id, esMartillero]);
+  useEffect(() => {
+    cargarSanciones();
+  }, [cargarSanciones]);
+
+  const puedeModerar = (m: ChatMessage) =>
+    Boolean(m.id && m.userId && m.userId !== user?.id);
+
+  const sancionar = (m: ChatMessage, tipo: "SILENCIADO" | "EXPULSADO") => {
+    if (!id || !m.userId) return;
+    const pregunta =
+      tipo === "SILENCIADO"
+        ? `¿Silenciar a ${m.user}? No va a poder escribir en el chat de este remate.`
+        : `¿Expulsar a ${m.user}? No va a poder ofertar ni escribir en este remate.`;
+    if (!window.confirm(pregunta)) return;
+    ultimaAccion.current = "chat";
+    api
+      .post(`/subastas/${id}/sanciones`, { userId: m.userId, type: tipo })
+      .then(cargarSanciones)
+      .catch((err) =>
+        setAviso({
+          texto:
+            err instanceof ApiError ? err.message : "No se pudo aplicar la sanción.",
+          donde: "chat",
+        }),
+      );
+  };
+
   // Si alguien pujó y la oferta que estaba armando quedó por debajo del
   // mínimo, la subimos al mínimo nuevo
   useEffect(() => {
@@ -180,7 +259,7 @@ export default function SubastaActiva() {
   const ofertas = useMemo(
     () =>
       messages
-        .filter((m) => m.isOffer)
+        .filter((m) => m.isOffer && !m.anulada)
         .slice(-8)
         .reverse(),
     [messages],
@@ -188,6 +267,8 @@ export default function SubastaActiva() {
   const miNombre = user ? `${user.firstName} ${user.lastName}` : null;
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  // Video + barra de oferta: es lo que va a pantalla completa
+  const principalRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = scrollRef.current;
     if (el) el.scrollTop = el.scrollHeight;
@@ -257,7 +338,7 @@ export default function SubastaActiva() {
       navigate(`/datos?volver=${encodeURIComponent(aquiMismo)}`);
       return;
     }
-    if (creditoParaEsteLote <= 0) {
+    if (usaCredito && creditoParaEsteLote <= 0) {
       navigate("/creditos");
       return;
     }
@@ -275,9 +356,11 @@ export default function SubastaActiva() {
       return;
     }
 
-    if (amount > creditoParaEsteLote) {
+    if (usaCredito && creditoNecesario(amount) > creditoParaEsteLote) {
       errorPuja(
-        `No tenés crédito suficiente para esta oferta (disponible: ${pesos(creditoParaEsteLote)}).`,
+        modoCredito === "GARANTIA"
+          ? `Para esta oferta necesitás una garantía de ${pesos(creditoNecesario(amount))} (${porcentajeGarantia} % de la oferta); tenés ${pesos(creditoParaEsteLote)} disponibles.`
+          : `No tenés crédito suficiente para esta oferta (disponible: ${pesos(creditoParaEsteLote)}).`,
       );
       return;
     }
@@ -302,6 +385,7 @@ export default function SubastaActiva() {
       });
       return;
     }
+    if (silenciado || expulsado) return;
     setAviso((a) => (a?.donde === "chat" ? null : a));
     // El mensaje vuelve por el socket a toda la sala (incluido uno mismo)
     emitMessage(newMessage);
@@ -355,6 +439,18 @@ export default function SubastaActiva() {
   const renderRequisito = () => {
     // Martillero / admin: no ofertan (los controles quedan grises)
     if (esMartillero) return null;
+    if (expulsado) {
+      return (
+        <Requisito
+          titulo="El martillero te expulsó de este remate"
+          texto="Ya no podés ofertar ni escribir en el chat de esta subasta."
+        >
+          <Boton variante="contorno" to="/subastas">
+            Ver otras subastas
+          </Boton>
+        </Requisito>
+      );
+    }
     if (paseVencido) {
       return (
         <Requisito
@@ -426,7 +522,23 @@ export default function SubastaActiva() {
         </Requisito>
       );
     }
-    if (creditoParaEsteLote <= 0) {
+    if (
+      modoCredito === "GARANTIA" &&
+      lot &&
+      creditoParaEsteLote < creditoNecesario(minNextBid)
+    ) {
+      return (
+        <Requisito
+          titulo="Necesitás crédito de garantía"
+          texto={`Para ofertar tenés que tener disponible el ${porcentajeGarantia} % de la oferta (${pesos(creditoNecesario(minNextBid))} para la oferta mínima).`}
+        >
+          <Boton variante="verde" flecha to="/creditos">
+            Cargar crédito
+          </Boton>
+        </Requisito>
+      );
+    }
+    if (modoCredito === "CREDITO" && creditoParaEsteLote <= 0) {
       return (
         <Requisito
           titulo="No tenés crédito disponible"
@@ -457,7 +569,9 @@ export default function SubastaActiva() {
           <nav className={styles.migas} aria-label="Ubicación">
             <Link to="/">Inicio</Link> / <Link to="/subastas">Subastas</Link> /{" "}
             {id && (
-              <Link to={`/subastas/${id}`}>{auction?.title ?? "Catálogo"}</Link>
+              <Link to={`/subastas/${id}`} target="_blank" rel="noopener noreferrer">
+                {auction?.title ?? "Catálogo"}
+              </Link>
             )}
           </nav>
 
@@ -501,8 +615,9 @@ export default function SubastaActiva() {
                   Panel del martillero
                 </Boton>
               )}
+              {/* En otra pestaña: así no se sale de la sala en vivo */}
               {id && (
-                <Boton variante="contorno" to={`/subastas/${id}`}>
+                <Boton variante="contorno" href={`/subastas/${id}`}>
                   Ver catálogo
                 </Boton>
               )}
@@ -514,11 +629,12 @@ export default function SubastaActiva() {
             chat a la derecha con la misma altura. Pensado para que en una
             pantalla de escritorio se vea todo junto sin scrollear. */}
         <div className={styles.escenario}>
-          <div className={styles.principal}>
+          <div className={styles.principal} ref={principalRef}>
             <section className={styles.video} aria-label="Transmisión en vivo">
               {id && (
                 <LivePlayer
                   auctionId={id}
+                  pantallaCompletaDe={principalRef}
                   camaraPrendida={Boolean(auction?.cameraOn)}
                   token={user ? getToken() : null}
                   pase={pase}
@@ -635,7 +751,7 @@ export default function SubastaActiva() {
                     <div className={styles.selector}>
                       <button
                         type="button"
-                        className={styles.paso}
+                        className={`${styles.paso} ${styles.pasoMenos}`}
                         onClick={decreaseBid}
                         disabled={
                           !puedeArmarOferta || currentBid - increment < minNextBid
@@ -671,7 +787,7 @@ export default function SubastaActiva() {
                       </div>
                       <button
                         type="button"
-                        className={styles.paso}
+                        className={`${styles.paso} ${styles.pasoMas}`}
                         onClick={increaseBid}
                         disabled={!puedeArmarOferta}
                         aria-label={`Subir ${pesos(increment)}`}
@@ -691,13 +807,13 @@ export default function SubastaActiva() {
                   </div>
                 )}
 
-                {user && !esMartillero && (
+                {user && !esMartillero && usaCredito && !expulsado && (
                   <p className={styles.creditos}>
                     Tus créditos: <strong>{pesos(userCredits)}</strong>
                     {vaGanando && lot && (
                       <span>
                         {" "}
-                        · {pesos(lot.currentPrice)} reservados en este lote
+                        · {pesos(reservadoEnEsteLote)} reservados en este lote
                       </span>
                     )}
                   </p>
@@ -730,12 +846,41 @@ export default function SubastaActiva() {
                 )}
                 {messages.map((msg, i) => (
                   <p
-                    className={`${styles.mensaje} ${msg.isOffer ? styles.mensajeOferta : ""} ${!msg.id ? styles.mensajeSistema : ""}`}
+                    className={`${styles.mensaje} ${msg.isOffer ? styles.mensajeOferta : ""} ${!msg.id ? styles.mensajeSistema : ""} ${msg.anulada ? styles.mensajeAnulado : ""}`}
                     key={msg.id ?? `local-${i}`}
                   >
                     <span className={styles.mensajeUsuario}>{msg.user}</span>
-                    <span className={styles.mensajeTexto}>{msg.text}</span>
+                    <span className={styles.mensajeTexto}>
+                      {msg.text}
+                      {msg.anulada && " (anulada)"}
+                    </span>
                     <span className={styles.mensajeHora}>{msg.time}</span>
+                    {esMartillero && puedeModerar(msg) && (
+                      <span className={styles.moderar}>
+                        {sancionados[msg.userId!]?.includes("EXPULSADO") ? (
+                          <span>Expulsado</span>
+                        ) : (
+                          <>
+                            {sancionados[msg.userId!]?.includes("SILENCIADO") ? (
+                              <span>Silenciado</span>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => sancionar(msg, "SILENCIADO")}
+                              >
+                                Silenciar
+                              </button>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => sancionar(msg, "EXPULSADO")}
+                            >
+                              Expulsar
+                            </button>
+                          </>
+                        )}
+                      </span>
+                    )}
                   </p>
                 ))}
               </div>
@@ -752,19 +897,25 @@ export default function SubastaActiva() {
                   id="mensaje-chat"
                   type="text"
                   placeholder={
-                    user ? "Tu mensaje…" : "Solo lectura como invitado"
+                    expulsado
+                      ? "El martillero te expulsó de este remate"
+                      : silenciado
+                        ? "El martillero te silenció en este remate"
+                        : user
+                          ? "Tu mensaje…"
+                          : "Solo lectura como invitado"
                   }
                   value={newMessage}
                   maxLength={500}
                   onChange={(e) => setNewMessage(e.target.value)}
                   onKeyDown={onChatKeyDown}
-                  disabled={!user}
+                  disabled={!user || silenciado || expulsado}
                 />
                 <button
                   type="button"
                   className={styles.enviar}
                   onClick={sendMessage}
-                  disabled={!user}
+                  disabled={!user || silenciado || expulsado}
                   aria-label="Enviar mensaje"
                 >
                   <svg

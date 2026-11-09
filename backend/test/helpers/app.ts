@@ -151,9 +151,11 @@ function connectRoom(baseUrl: string, auth: { token?: string; pase?: string }) {
   };
 }
 
-/** Completa los datos personales (sin esto no se puede pujar). */
+/**
+ * Datos personales (con DNI, obligatorio para pujar). El celular no va por
+ * PATCH /auth/me: se verifica con código (ver celularVerificado).
+ */
 export const DATOS_COMPLETOS = {
-  phone: '1144443333',
   dni: '28999888',
   address: 'Calle 1',
   city: 'Moron',
@@ -168,9 +170,18 @@ export const DATOS_COMPLETOS = {
 export async function crearPostor(app: TestApp, email: string, password: string, saldo: number) {
   await app.api('POST', '/auth/register', { email, password, firstName: 'Postor', lastName: 'Dos' });
   await app.sql('UPDATE users SET credit_balance = $1, email_verified = true WHERE email = $2', [saldo, email]);
+  await celularVerificado(app, email);
   const token = await app.login(email, password);
   await app.api('PATCH', '/auth/me', DATOS_COMPLETOS, token);
   return token;
+}
+
+/** Deja el celular cargado y verificado directo en la base (como si hubiera puesto el código). */
+export async function celularVerificado(app: TestApp, email: string) {
+  await app.sql(
+    "UPDATE users SET phone_area_code = '11', phone = '44443333', phone_verified = true WHERE email = $1",
+    [email]
+  );
 }
 
 /**

@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
-import { DATOS_COMPLETOS, startTestApp, tokenDeVerificacion, type TestApp } from './helpers/app';
+import { DATOS_COMPLETOS, celularVerificado, startTestApp, tokenDeVerificacion, type TestApp } from './helpers/app';
 
 // Pases de invitado (link para mirar sin cuenta), reglas para ingresar al
 // remate y requisitos para pujar (datos completos + crédito).
@@ -150,6 +150,7 @@ describe('Requisitos para pujar', () => {
   });
 
   it('al completar los datos queda profileComplete = true y ya puede pujar', async () => {
+    await celularVerificado(app, email);
     const upd = await app.api('PATCH', '/auth/me', { ...DATOS_COMPLETOS, dni: '40111222' }, N);
     expect(upd.data.user.profileComplete).toBe(true);
     expect((await app.api('POST', `/subastas/${auctionId}/lotes/${lot.id}/pujas`, { amount: next }, N)).status).toBe(201);

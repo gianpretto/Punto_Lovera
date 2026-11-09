@@ -290,6 +290,20 @@ $una-columna: 900px;
   }
 }
 
+// Con el video angosto no entran al lado de "SE VENDE EN": van abajo de ese recuadro
+@container (max-width: 760px) {
+  .martilleros {
+    top: 64px;
+  }
+}
+@include t.mobile {
+  @container (max-width: 760px) {
+    .martilleros {
+      top: 46px;
+    }
+  }
+}
+
 .martillerosLabel {
   font-size: 10px;
   letter-spacing: 0.06em;
@@ -1271,5 +1285,86 @@ $una-columna: 900px;
 
   .escenario {
     margin-top: 14px;
+  }
+}
+
+// ---------- Selector de monto: "−" en rojo y "+" en verde (pedido del cliente)
+.paso.pasoMenos,
+.paso.pasoMas {
+  color: t.$blanco;
+  font-weight: 700;
+
+  &:hover:not(:disabled) {
+    filter: brightness(0.9);
+  }
+
+  &:disabled {
+    background: t.$fondo;
+    color: t.$gris-medio;
+  }
+}
+
+.paso.pasoMenos {
+  background: #b3261e;
+
+  &:hover:not(:disabled) {
+    background: #b3261e;
+  }
+}
+
+.paso.pasoMas {
+  background: t.$verde;
+
+  &:hover:not(:disabled) {
+    background: t.$verde;
+  }
+}
+
+// ---------- Moderación del chat (solo martillero / admin)
+.moderar {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 12px;
+  margin-top: 2px;
+  font-size: 12px;
+  line-height: 16px;
+  color: t.$gris-medio;
+
+  button {
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    color: t.$gris-texto;
+    text-decoration: underline;
+    cursor: pointer;
+
+    &:hover {
+      color: $error;
+    }
+  }
+}
+
+// Oferta anulada por el martillero
+.mensajeAnulado .mensajeTexto {
+  text-decoration: line-through;
+  color: t.$gris-medio;
+}
+
+// ---------- Pantalla completa: video arriba y la barra para ofertar abajo,
+// así se puede seguir ofertando sin salir
+.principal:fullscreen {
+  background: t.$negro;
+  justify-content: flex-end;
+
+  .video {
+    flex: 1;
+    height: auto;
+    min-height: 0;
+    box-shadow: none;
+  }
+
+  .ofertar {
+    box-shadow: none;
   }
 }

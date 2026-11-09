@@ -196,6 +196,46 @@ configurarlo: Google Cloud Console → ID de cliente de OAuth tipo
 "Aplicación web" con orígenes autorizados `https://punto-lovera.vercel.app`
 y `http://localhost:5173`.
 
+## Pedidos del cliente (reunión nov 2026, implementado)
+
+- **Mis datos**: obligatorios nombre, apellido, DNI/CUIL (7-8 dígitos o
+  CUIL con verificador) y **celular verificado**. De fecha de nacimiento
+  para abajo es opcional. Celular = código de área sin 0 + número sin 15
+  (10 dígitos); se verifica con un código de 6 dígitos por **WhatsApp**
+  (WhatsApp Cloud API de Meta, `whatsapp.service.ts`; sin `WHATSAPP_*` va a
+  los logs; `SKIP_PHONE_VERIFICATION=true` solo pruebas). Endpoints
+  `POST /auth/me/celular` y `/auth/me/celular/verificar` (5 intentos por
+  código, vence a los 10 min). `PATCH /auth/me` ya no cambia el celular.
+- **Baja de cuenta** (`DELETE /auth/me`, `account.service.ts`): borra los
+  datos personales, libera el mail y bloquea el login; no se borra la fila
+  (pujas/compras). No se puede con crédito, liderando un lote o con
+  pendientes.
+- **Validaciones**: largos máximos y formatos en todos los formularios,
+  iguales en `backend/src/schemas/comunes.ts` y
+  `frontend-react/src/services/validaciones.ts` (cambiar las dos).
+- **Sistema de créditos configurable** (`settings` tabla clave/JSON,
+  `settings.service.ts`, Admin → `/admin/configuracion`): `CREDITO`
+  (como antes), `SIN_CREDITO` (no pide ni descuenta nada) o `GARANTIA`
+  (alcanza con el % de la oferta; se reserva y se descuenta ese %). Es
+  global. Ahí también se editan los datos de transferencia (+ CUIT).
+- **Reintegro**: pide además titular de la cuenta y CUIT/CUIL.
+- **Controles del martillero en vivo** (`martillero.service.ts`):
+  `PATCH /subastas/:id/lotes/:lotId/vivo` (precio actual, ganador entre los
+  que ofertaron, incremento, próxima mínima a mano en `lots.next_min_bid`,
+  que se borra con la próxima oferta), `POST /subastas/:id/pujas/:bidId/anular`
+  (`bids.voided_at`; recalcula precio/ganador) y
+  `POST /subastas/:id/siguiente-lote`. Adjudicar usa `leader_id` y
+  `current_price` del lote (no la puja más alta).
+- **Moderación** (`auction_sanctions`, por remate): SILENCIADO (no chatea)
+  y EXPULSADO (no entra, no oferta, no chatea); desde el chat de la sala
+  (staff) y se quitan en el panel. Socket `auction:sanction` y `bid:voided`;
+  los mensajes de chat traen `userId` y `bidId`.
+- **Sala**: "Ver catálogo" abre en otra pestaña; el monto se resetea al
+  cambiar de remate/lote; pantalla completa incluye la barra de oferta
+  (en iPhone Safari solo el video); − rojo / + verde.
+- Sin "¿Tenés bienes para vender?" en login/registro; cada vista arranca
+  arriba (`ScrollArriba`).
+
 ## Pendiente de seguridad antes de producción
 
 La contraseña de Neon (`neondb_owner`, ramas dev y production), el

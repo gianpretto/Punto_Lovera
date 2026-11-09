@@ -171,3 +171,57 @@
 .acciones {
   margin-top: 17px;
 }
+
+// Verificación del celular: ayuda, botón / código y estado
+.celular {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 12px;
+  margin-top: -16px;
+}
+
+.ayuda {
+  margin: 0;
+  font-size: 14px;
+  line-height: 20px;
+  opacity: 0.75;
+}
+
+.verificado {
+  margin: 0;
+  font-weight: 700;
+  color: t.$verde;
+}
+
+.codigo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 16px 24px;
+
+  > :first-child {
+    width: 180px;
+  }
+}
+
+.enlace {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: t.$verde;
+  text-decoration: underline;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: default;
+  }
+}
+
+.errorCelular {
+  margin: 0;
+  font-size: 14px;
+  color: #a32727;
+}

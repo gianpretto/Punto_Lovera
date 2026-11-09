@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode, type RefObject } from 'react';
 import Hls from 'hls.js';
 import { API_URL } from '../../services/api';
 import styles from './LivePlayer.module.scss';
@@ -24,6 +24,12 @@ interface Props {
    * "Conectando..." / "Esperando la señal..." (Home: la foto de la subasta)
    */
   placeholderSinSenal?: boolean;
+  /**
+   * Qué se pone en pantalla completa (por defecto, solo el video). La sala
+   * pasa el contenedor de video + barra de oferta, para poder seguir
+   * ofertando en pantalla completa.
+   */
+  pantallaCompletaDe?: RefObject<HTMLElement | null>;
 }
 
 type Estado = 'cargando' | 'en-vivo' | 'esperando';
@@ -37,6 +43,7 @@ export default function LivePlayer({
   pase = null,
   placeholder,
   placeholderSinSenal = false,
+  pantallaCompletaDe,
 }: Props) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const contenedorRef = useRef<HTMLDivElement>(null);
@@ -90,7 +97,7 @@ export default function LivePlayer({
   };
 
   const pantallaCompleta = () => {
-    const el = contenedorRef.current;
+    const el = pantallaCompletaDe?.current ?? contenedorRef.current;
     if (!el) return;
     if (document.fullscreenElement) document.exitFullscreen().catch(() => undefined);
     else el.requestFullscreen?.().catch(() => undefined);

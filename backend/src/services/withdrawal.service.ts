@@ -34,7 +34,7 @@ async function notify(fn: () => Promise<void>) {
 
 export async function requestWithdrawal(
   userId: string,
-  data: { amount: number; cbu: string; alias: string | null; reason: string | null }
+  data: { amount: number; cbu: string; alias: string | null; reason: string | null; accountHolder: string; cuit: string }
 ) {
   return db.transaction(async (tx) => {
     // Fila del usuario bloqueada (como en bid.service): dos pedidos
@@ -55,7 +55,15 @@ export async function requestWithdrawal(
 
     const [withdrawal] = await tx
       .insert(creditWithdrawals)
-      .values({ userId, amount: String(data.amount), cbu: data.cbu, alias: data.alias, reason: data.reason })
+      .values({
+        userId,
+        amount: String(data.amount),
+        cbu: data.cbu,
+        alias: data.alias,
+        reason: data.reason,
+        accountHolder: data.accountHolder,
+        cuit: data.cuit,
+      })
       .returning();
     return withdrawal;
   });

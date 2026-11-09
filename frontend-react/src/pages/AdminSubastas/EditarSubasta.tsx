@@ -5,6 +5,7 @@ import { api, ApiError, uploadUrl } from '../../services/api';
 import type { AuctionStatus } from '../../services/auctions';
 import LotesSubasta, { type LotAdmin } from './LotesSubasta';
 import panel from '../PanelMartillero/PanelMartillero.module.scss';
+import * as v from '../../services/validaciones';
 import styles from './AdminSubastas.module.scss';
 
 // Alta / edición de una subasta (pantalla interna, sin diseño de la
@@ -116,6 +117,18 @@ export default function EditarSubasta() {
     const fecha = new Date(form.startsAt);
     if (!form.startsAt || Number.isNaN(fecha.getTime())) {
       setError('Indicá la fecha y hora de inicio');
+      return;
+    }
+    const invalido = v.primero(
+      v.requerido(form.title, 'Indicá un título.'),
+      v.largoMaximo(form.title, v.LARGOS.titulo),
+      v.requerido(form.description, 'Indicá una descripción.'),
+      v.largoMaximo(form.description, v.LARGOS.descripcion),
+      v.requerido(form.location, 'Indicá la ubicación.'),
+      v.largoMaximo(form.location, v.LARGOS.textoCorto)
+    );
+    if (invalido) {
+      setError(invalido);
       return;
     }
     const datos = {
@@ -264,11 +277,18 @@ export default function EditarSubasta() {
             <form className={styles.form} onSubmit={guardar}>
               <label className={`${styles.campo} ${styles.campoAncho}`}>
                 <span>Título</span>
-                <input className={panel.input} value={form.title} onChange={set('title')} required maxLength={200} />
+                <input className={panel.input} value={form.title} onChange={set('title')} required maxLength={v.LARGOS.titulo} />
               </label>
               <label className={`${styles.campo} ${styles.campoAncho}`}>
                 <span>Descripción</span>
-                <textarea className={panel.input} value={form.description} onChange={set('description')} required rows={4} />
+                <textarea
+                  className={panel.input}
+                  value={form.description}
+                  onChange={set('description')}
+                  required
+                  rows={4}
+                  maxLength={v.LARGOS.descripcion}
+                />
               </label>
               <label className={styles.campo}>
                 <span>Ubicación</span>
@@ -277,6 +297,7 @@ export default function EditarSubasta() {
                   value={form.location}
                   onChange={set('location')}
                   required
+                  maxLength={v.LARGOS.textoCorto}
                   placeholder="Ej: Castelar, Morón"
                 />
               </label>

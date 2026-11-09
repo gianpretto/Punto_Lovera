@@ -8,6 +8,7 @@ import Etiqueta from '../../components/ui/Etiqueta';
 import EstadoPastilla from '../../components/ui/EstadoPastilla';
 import { useAuth } from '../../services/AuthContext';
 import { api, ApiError, openProtectedFile } from '../../services/api';
+import { useConfigCreditos } from '../../services/config';
 import styles from './Creditos.module.scss';
 
 // Créditos (wireframes 620:13189 escritorio / 620:15358 celular), en la
@@ -39,6 +40,7 @@ interface TransferInfo {
   alias: string;
   cbu: string;
   holder: string;
+  cuit?: string;
   account: string;
 }
 
@@ -98,6 +100,8 @@ export default function Creditos() {
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([]);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
+  // Modo de créditos que eligió el admin (con crédito / sin crédito / garantía)
+  const configCreditos = useConfigCreditos();
 
   useEffect(() => {
     if (!loading && !user) navigate('/login');
@@ -148,6 +152,10 @@ export default function Creditos() {
     if (!voucherFile || sending) return;
     if (!montoNumero) {
       setError('Indicá el monto que transferiste.');
+      return;
+    }
+    if (montoNumero > 9_999_999_999) {
+      setError('El monto es demasiado grande.');
       return;
     }
     const form = new FormData();
@@ -207,6 +215,17 @@ export default function Creditos() {
           <h2 id="titulo-carga" className={styles.tituloSeccion}>
             Transferí y <em>subí el comprobante.</em>
           </h2>
+          {configCreditos?.modo === 'SIN_CREDITO' && (
+            <p className={styles.aviso}>
+              Por ahora no hace falta cargar crédito para ofertar: el pago se arregla directamente con Punto Lovera.
+            </p>
+          )}
+          {configCreditos?.modo === 'GARANTIA' && (
+            <p className={styles.aviso}>
+              Para ofertar alcanza con tener crédito por el {configCreditos.porcentajeGarantia} % de tu oferta, como
+              garantía.
+            </p>
+          )}
 
           <div className={styles.cargaGrilla}>
             <div className={styles.datos}>
@@ -230,6 +249,12 @@ export default function Creditos() {
                   <dt>Nombre</dt>
                   <dd>{transfer?.holder || '—'}</dd>
                 </div>
+                {transfer?.cuit && (
+                  <div>
+                    <dt>CUIT/CUIL</dt>
+                    <dd>{transfer.cuit}</dd>
+                  </div>
+                )}
               </dl>
               <p className={styles.datosNota}>La inscripción se hará efectiva una vez cargado el comprobante de pago.</p>
             </div>
@@ -257,6 +282,7 @@ export default function Creditos() {
               <Campo
                 etiqueta="Monto transferido"
                 inputMode="numeric"
+                maxLength={16}
                 placeholder="$ 0"
                 value={montoNumero ? montoNumero.toLocaleString('es-AR') : monto.replace(/\D/g, '')}
                 onChange={(e) => setMonto(e.target.value)}

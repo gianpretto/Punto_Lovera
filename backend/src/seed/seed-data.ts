@@ -34,7 +34,9 @@ export async function seedDatabase() {
       emailVerified: true,
       creditBalance: '500000',
       // Datos completos: sin esto no puede pujar
-      phone: '1155550000',
+      phoneAreaCode: '11',
+      phone: '55550000',
+      phoneVerified: true,
       dni: '30111222',
       address: 'Av. Rivadavia 1234',
       city: 'Castelar',

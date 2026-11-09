@@ -6,9 +6,10 @@ import Aviso from '../../components/ui/Aviso';
 import Boton from '../../components/ui/Boton';
 import Campo from '../../components/ui/Campo';
 import { api, ApiError } from '../../services/api';
+import { LARGOS, passwordNueva } from '../../services/validaciones';
 
 function validarEmail(email: string) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  return email.trim().length <= LARGOS.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
 }
 
 // Dos usos (sin wireframe: usan el mismo layout que Login):
@@ -108,8 +109,9 @@ function NuevaPassword({ token }: { token: string }) {
   const [done, setDone] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
+  const errorPassword = passwordNueva(password);
   const errors = {
-    minlength: password.length < 8,
+    minlength: Boolean(errorPassword),
     mismatch: confirmPassword !== password,
   };
 
@@ -157,15 +159,17 @@ function NuevaPassword({ token }: { token: string }) {
             type="password"
             placeholder="Mínimo 8 caracteres"
             autoComplete="new-password"
+            maxLength={LARGOS.password}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
-            error={submitted && errors.minlength ? 'Mínimo 8 caracteres' : undefined}
+            error={submitted ? errorPassword : undefined}
           />
 
           <Campo
             etiqueta="Repite la contraseña"
             type="password"
             autoComplete="new-password"
+            maxLength={LARGOS.password}
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             error={submitted && errors.mismatch ? 'Las contraseñas no coinciden' : undefined}

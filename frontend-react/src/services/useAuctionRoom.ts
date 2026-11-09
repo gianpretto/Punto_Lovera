@@ -36,18 +36,32 @@ export interface RoomState {
 
 export interface ChatMessage {
   id?: string;
+  /** Quién lo escribió (null/ausente = aviso del sistema) */
+  userId?: string | null;
   user: string;
   text: string;
   time: string;
   isOffer?: boolean;
+  /** Oferta: id de la puja (si el backend lo manda), para marcarla anulada */
+  bidId?: string;
+  /** Oferta anulada por el martillero */
+  anulada?: boolean;
 }
 
 interface ServerMessage {
   id: string;
+  userId?: string | null;
   user: string;
   text: string;
   time: string;
   isOffer: boolean;
+  bidId?: string;
+}
+
+/** Sanciones del martillero sobre el usuario en este remate */
+export interface Sanciones {
+  silenciado: boolean;
+  expulsado: boolean;
 }
 
 interface Handlers {
@@ -60,6 +74,8 @@ const formatTime = (iso: string) =>
 
 const toChat = (m: ServerMessage): ChatMessage => ({
   id: m.id,
+  userId: m.userId ?? null,
+  bidId: m.bidId,
   user: m.user,
   text: m.text,
   time: formatTime(m.time),
@@ -85,6 +101,9 @@ export function useAuctionRoom(
   const [error, setError] = useState<string | null>(null);
   /** El backend no lo dejó entrar: sin sesión y sin pase válido */
   const [authRequired, setAuthRequired] = useState(false);
+  const [sanciones, setSanciones] = useState<Sanciones>({ silenciado: false, expulsado: false });
+  // Expulsado: no se vuelve a entrar al reconectar
+  const expulsadoRef = useRef(false);
 
   const socketRef = useRef<Socket | null>(null);
   const handlersRef = useRef(handlers);
@@ -93,6 +112,13 @@ export function useAuctionRoom(
   });
 
   useEffect(() => {
+    // Otra subasta (o se cerró la sesión): nada de la sala anterior
+    setState(null);
+    setMessages([]);
+    setError(null);
+    setAuthRequired(false);
+    setSanciones({ silenciado: false, expulsado: false });
+    expulsadoRef.current = false;
     if (!auctionId) return;
 
     // Mismo origen en dev (Vite proxea /socket.io) o VITE_API_URL en prod
@@ -104,6 +130,7 @@ export function useAuctionRoom(
 
     socket.on('connect', () => {
       setConnected(true);
+      if (expulsadoRef.current) return;
       setError(null);
       // Al reconectar se vuelve a entrar a la sala y se resincroniza todo
       socket.emit('auction:join', { auctionId });
@@ -119,6 +146,29 @@ export function useAuctionRoom(
     socket.on('auction:error', ({ message, code }: { message: string; code?: string }) => {
       setError(message);
       if (code === 'AUTH_REQUIRED') setAuthRequired(true);
+      if (code === 'EXPULSADO') {
+        expulsadoRef.current = true;
+        setSanciones((s) => ({ ...s, expulsado: true }));
+      }
+    });
+
+    socket.on(
+      'auction:sanction',
+      (s: { auctionId: string; type: 'SILENCIADO' | 'EXPULSADO'; active: boolean }) => {
+        if (s.auctionId !== auctionId) return;
+        if (s.type === 'EXPULSADO') {
+          expulsadoRef.current = s.active;
+          setSanciones((prev) => ({ ...prev, expulsado: s.active }));
+        } else {
+          setSanciones((prev) => ({ ...prev, silenciado: s.active }));
+        }
+      }
+    );
+
+    // El martillero anuló una oferta: queda tachada en el historial (el
+    // precio y quién va ganando llegan recalculados por lot:change)
+    socket.on('bid:voided', (v: { bidId: string; lotId: string }) => {
+      setMessages((prev) => prev.map((m) => (m.isOffer && m.bidId === v.bidId ? { ...m, anulada: true } : m)));
     });
 
     socket.on('chat:history', (history: ServerMessage[]) => setMessages(recortar(history.map(toChat))));
@@ -170,5 +220,5 @@ export function useAuctionRoom(
     [auctionId]
   );
 
-  return { state, messages, connected, error, authRequired, placeBid, sendMessage };
+  return { state, messages, connected, error, authRequired, sanciones, placeBid, sendMessage };
 }

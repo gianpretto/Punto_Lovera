@@ -35,6 +35,7 @@ export default function Header() {
           { to: '/admin/comprobantes', label: 'Comprobantes a revisar' },
           { to: '/admin/reintegros', label: 'Reintegros a pagar' },
           { to: '/admin/consultas', label: 'Consultas recibidas' },
+          { to: '/admin/configuracion', label: 'Configuración' },
         ]
       : []),
     ...(user?.role === 'MARTILLERO' || user?.role === 'ADMIN'

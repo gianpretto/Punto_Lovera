@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { asyncHandler } from '../utils/asyncHandler';
 import * as authService from '../services/auth.service';
+import * as accountService from '../services/account.service';
 import { verifyGoogleCredential } from '../services/google.service';
 import { env } from '../config/env';
 import {
@@ -10,6 +11,9 @@ import {
   registerSchema,
   resendVerificationSchema,
   resetPasswordSchema,
+  deleteAccountSchema,
+  phoneCodeSchema,
+  phoneSchema,
   updateProfileSchema,
   verifyEmailSchema,
 } from '../schemas/auth.schema';
@@ -75,4 +79,26 @@ export const updateMe = asyncHandler(async (req: Request, res: Response) => {
   const input = updateProfileSchema.parse(req.body);
   const user = await authService.updateProfile(req.user!.userId, input);
   res.json({ user });
+});
+
+// Celular: guarda el número y manda el código por WhatsApp
+export const setPhone = asyncHandler(async (req: Request, res: Response) => {
+  const { areaCode, phone } = phoneSchema.parse(req.body);
+  const result = await accountService.setPhone(req.user!.userId, areaCode, phone);
+  res.json({
+    ...result,
+    message: result.codeSent ? 'Te mandamos un código por WhatsApp' : 'Celular guardado',
+  });
+});
+
+export const verifyPhone = asyncHandler(async (req: Request, res: Response) => {
+  const { code } = phoneCodeSchema.parse(req.body);
+  const user = await accountService.verifyPhone(req.user!.userId, code);
+  res.json({ user, message: 'Celular verificado' });
+});
+
+export const deleteMe = asyncHandler(async (req: Request, res: Response) => {
+  const { password } = deleteAccountSchema.parse(req.body ?? {});
+  await accountService.deleteAccount(req.user!.userId, password);
+  res.json({ message: 'Tu cuenta fue dada de baja' });
 });
