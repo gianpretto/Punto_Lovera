@@ -9,7 +9,7 @@ let app: TestApp;
 let A: string; // admin / martillero
 let U: string; // usuario con saldo y datos completos
 let auctionId: string;
-let lot1: { id: string; title: string };
+let lot1: { id: string; title: string; startingPrice: string };
 let lot2: { id: string; title: string };
 let user: ReturnType<TestApp['room']>;
 let spectator: ReturnType<TestApp['room']>;
