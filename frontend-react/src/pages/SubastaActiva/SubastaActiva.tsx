@@ -13,6 +13,9 @@ import {
   useSearchParams,
 } from "react-router-dom";
 import LivePlayer from "../../components/LivePlayer/LivePlayer";
+import CamaraVivo from "../../components/CamaraVivo/CamaraVivo";
+import CarruselFotos from "../../components/lotes/CarruselFotos";
+import { useCamaraEspectador } from "../../services/camara";
 import Boton from "../../components/ui/Boton";
 import Etiqueta from "../../components/ui/Etiqueta";
 import Aviso from "../../components/ui/Aviso";
@@ -66,6 +69,7 @@ export default function SubastaActiva() {
     sanciones,
     placeBid,
     sendMessage: emitMessage,
+    socket,
   } = useAuctionRoom(
     id,
     user ? getToken() : null,
@@ -118,8 +122,9 @@ export default function SubastaActiva() {
   const reservadoEnEsteLote =
     vaGanando && lot ? creditoNecesario(lot.currentPrice ?? 0) : 0;
   const creditoParaEsteLote = userCredits + reservadoEnEsteLote;
-  const [visorAbierto, setVisorAbierto] = useState(false);
-  const cerrarVisor = useCallback(() => setVisorAbierto(false), []);
+  // Visor de fotos del lote: en qué foto se abrió (null = cerrado)
+  const [visorFoto, setVisorFoto] = useState<number | null>(null);
+  const cerrarVisor = useCallback(() => setVisorFoto(null), []);
   const [newMessage, setNewMessage] = useState("");
   // Usuario: el próximo mensaje va solo al martillero
   const [privado, setPrivado] = useState(false);
@@ -162,7 +167,7 @@ export default function SubastaActiva() {
 
   // Cambió el lote en remate: cerrar el visor y limpiar el aviso de puja
   useEffect(() => {
-    setVisorAbierto(false);
+    setVisorFoto(null);
     setAviso((a) => (a?.donde === "puja" ? null : a));
   }, [lot?.id]);
 
@@ -280,8 +285,17 @@ export default function SubastaActiva() {
   const miNombre = user ? `${user.firstName} ${user.lastName}` : null;
 
   const scrollRef = useRef<HTMLDivElement>(null);
-  // Video + barra de oferta: es lo que va a pantalla completa
-  const principalRef = useRef<HTMLDivElement>(null);
+  // Toda la sala (fotos, cámara, chat y barra de oferta) va a pantalla completa
+  const escenarioRef = useRef<HTMLDivElement>(null);
+  const puedePantallaCompleta = typeof document !== "undefined" && document.fullscreenEnabled;
+  const pantallaCompleta = () => {
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => undefined);
+    else escenarioRef.current?.requestFullscreen?.().catch(() => undefined);
+  };
+
+  // Cámara del martillero: por WebRTC (casi sin demora) o, con OBS/rtsp, HLS
+  const videoHls = auction?.videoMode === "obs" || auction?.videoMode === "rtsp";
+  const camara = useCamaraEspectador(videoHls ? null : socket, id);
   useEffect(() => {
     const el = scrollRef.current;
     if (el) el.scrollTop = el.scrollHeight;
@@ -644,49 +658,49 @@ export default function SubastaActiva() {
           </div>
         </header>
 
-        {/* ---------- Escenario: video + panel para ofertar a la izquierda,
-            chat a la derecha con la misma altura. Pensado para que en una
-            pantalla de escritorio se vea todo junto sin scrollear. */}
-        <div className={styles.escenario}>
-          <div className={styles.principal} ref={principalRef}>
-            <section className={styles.video} aria-label="Transmisión en vivo">
-              {id && (
-                <LivePlayer
-                  auctionId={id}
-                  pantallaCompletaDe={principalRef}
-                  camaraPrendida={Boolean(auction?.cameraOn)}
-                  token={user ? getToken() : null}
-                  pase={pase}
-                  placeholder={
-                    <div className={styles.sinVideo}>
-                      <svg
-                        width="56"
-                        height="56"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth={1.2}
-                        aria-hidden="true"
-                      >
-                        <path d="M15 10l4.55-2.28A1 1 0 0 1 21 8.62v6.76a1 1 0 0 1-1.45.9L15 14" />
-                        <rect x="3" y="6" width="12" height="12" rx="1" />
-                      </svg>
-                      <p className={styles.sinVideoTitulo}>
-                        La cámara está apagada
-                      </p>
-                      <p className={styles.sinVideoTexto}>
-                        El video aparece solo cuando el martillero empiece a
-                        transmitir.
-                      </p>
-                    </div>
-                  }
-                />
-              )}
-
-              <p className={styles.martilleros}>
-                <span className={styles.martillerosLabel}>Martilleros</span>
-                <span>{NOMBRES_MARTILLEROS}</span>
+        {/* ---------- Escenario (pedido del cliente, nov 2026): descripción
+            del lote | fotos del lote en carrusel | cámara del martillero y
+            chat; abajo la barra para ofertar. En el celular: cámara → fotos
+            → ofertar → chat → descripción. */}
+        <div className={styles.escenario} ref={escenarioRef}>
+          <aside className={styles.descripcion} aria-labelledby="titulo-lote">
+            {lot ? (
+              <>
+                <p className={styles.loteEtiquetas}>
+                  <span>Lote {textoNumeroLote(lot.number, lot.bis)}</span>
+                  {/* La base solo la ve el martillero/admin; el público, "sin base" */}
+                  <span>
+                    {lot.startingPrice != null ? `Base ${pesos(lot.startingPrice)}` : "Sin base"}
+                  </span>
+                </p>
+                <h2 id="titulo-lote" className={styles.loteTitulo}>
+                  {lot.title}
+                </h2>
+                {descripcion?.resumen && (
+                  <p className={styles.loteResumen}>{descripcion.resumen}</p>
+                )}
+                {descripcion?.detalle.map((parrafo, i) => (
+                  <p key={i} className={styles.loteDetalle}>
+                    {parrafo}
+                  </p>
+                ))}
+              </>
+            ) : (
+              <p className={styles.salaMensaje} role="status">
+                {mensajeSala}
               </p>
+            )}
+          </aside>
+
+          <section className={styles.video} aria-label="Fotos del lote en remate">
+            {lot && (
+              <CarruselFotos
+                key={lot.id}
+                imagenes={imagenes}
+                titulo={lot.title}
+                onAbrir={setVisorFoto}
+              />
+            )}
 
               {adjudicacion && adjudicacionVisible === adjudicacion.clave && (
                 <p className={styles.adjudicado} role="status">
@@ -714,6 +728,41 @@ export default function SubastaActiva() {
                   </span>
                 </p>
               )}
+              {puedePantallaCompleta && (
+                <button
+                  type="button"
+                  className={styles.pantallaCompleta}
+                  onClick={pantallaCompleta}
+                  aria-label="Pantalla completa"
+                  title="Pantalla completa"
+                >
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} aria-hidden="true">
+                    <path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" />
+                  </svg>
+                </button>
+              )}
+            </section>
+
+            {/* ---------- Cámara del martillero (arriba del chat) */}
+            <section className={styles.camara} aria-label="Cámara del martillero">
+              {videoHls ? (
+                id && (
+                  <LivePlayer
+                    auctionId={id}
+                    pantallaCompletaDe={escenarioRef}
+                    camaraPrendida={Boolean(auction?.cameraOn)}
+                    token={user ? getToken() : null}
+                    pase={pase}
+                    placeholder={<CamaraApagada />}
+                  />
+                )
+              ) : (
+                <CamaraVivo stream={camara.stream} placeholder={<CamaraApagada />} />
+              )}
+              <p className={styles.martilleros}>
+                <span className={styles.martillerosLabel}>Martilleros</span>
+                <span>{NOMBRES_MARTILLEROS}</span>
+              </p>
             </section>
 
             {/* ---------- Panel para ofertar (barra debajo del video) */}
@@ -851,9 +900,8 @@ export default function SubastaActiva() {
                 </Aviso>
               )}
             </section>
-          </div>
 
-          {/* ---------- Chat, alineado con el video y la barra de ofertar */}
+          {/* ---------- Chat, debajo de la cámara */}
           <aside className={styles.lateral}>
             <section className={styles.chat} aria-labelledby="titulo-chat">
               <h2 id="titulo-chat" className={styles.chatTitulo}>
@@ -998,55 +1046,6 @@ export default function SubastaActiva() {
 
         {/* ---------- Debajo: detalle del lote en remate y últimas ofertas */}
         <div className={styles.inferior}>
-          {lot && (
-            <section className={styles.lote} aria-labelledby="titulo-lote">
-              <div className={styles.loteMedia}>
-                {imagenes.length > 0 ? (
-                  <button
-                    type="button"
-                    className={styles.loteFotoBoton}
-                    onClick={() => setVisorAbierto(true)}
-                    aria-label={`Ampliar fotos de ${lot.title}`}
-                  >
-                    <img className={styles.loteFoto} src={imagenes[0]} alt="" />
-                    {imagenes.length > 1 && (
-                      <span className={styles.loteCantidad}>
-                        {imagenes.length} fotos
-                      </span>
-                    )}
-                  </button>
-                ) : (
-                  <span className={styles.sinFotos}>Sin fotos todavía</span>
-                )}
-              </div>
-              <div className={styles.loteCuerpo}>
-                <p className={styles.loteEtiquetas}>
-                  <span>Lote {textoNumeroLote(lot.number, lot.bis)}</span>
-                  {/* La base solo la ve el martillero/admin; el público, "sin base" */}
-                  <span>
-                    {lot.startingPrice != null ? `Base ${pesos(lot.startingPrice)}` : "Sin base"}
-                  </span>
-                </p>
-                <h2 id="titulo-lote" className={styles.loteTitulo}>
-                  {lot.title}
-                </h2>
-                {descripcion?.resumen && (
-                  <p className={styles.loteResumen}>{descripcion.resumen}</p>
-                )}
-                <button
-                  type="button"
-                  className={styles.verFotos}
-                  onClick={() => setVisorAbierto(true)}
-                >
-                  <span>
-                    {imagenes.length > 0 ? "Ver fotos y detalle" : "Ver detalle"}
-                  </span>
-                  <span aria-hidden="true">→</span>
-                </button>
-              </div>
-            </section>
-          )}
-
           <section
             className={styles.historial}
             aria-labelledby="titulo-historial"
@@ -1086,9 +1085,22 @@ export default function SubastaActiva() {
         </div>
       </div>
 
-      {visorAbierto && loteVisor && (
-        <VisorLote lote={loteVisor} onCerrar={cerrarVisor} />
+      {visorFoto !== null && loteVisor && (
+        <VisorLote lote={loteVisor} fotoInicial={visorFoto} onCerrar={cerrarVisor} />
       )}
+    </div>
+  );
+}
+
+/** Recuadro de la cámara cuando el martillero no está transmitiendo. */
+function CamaraApagada() {
+  return (
+    <div className={styles.sinVideo}>
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.2} aria-hidden="true">
+        <path d="M15 10l4.55-2.28A1 1 0 0 1 21 8.62v6.76a1 1 0 0 1-1.45.9L15 14" />
+        <rect x="3" y="6" width="12" height="12" rx="1" />
+      </svg>
+      <p className={styles.sinVideoTitulo}>La cámara está apagada</p>
     </div>
   );
 }

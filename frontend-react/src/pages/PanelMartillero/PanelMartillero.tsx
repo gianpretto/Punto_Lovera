@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import LivePlayer from '../../components/LivePlayer/LivePlayer';
+import CamaraVivo from '../../components/CamaraVivo/CamaraVivo';
+import { useCamaraEmisor } from '../../services/camara';
 import { useAuth } from '../../services/AuthContext';
 import { api, ApiError, getToken } from '../../services/api';
 import { useAuctionRoom } from '../../services/useAuctionRoom';
@@ -34,7 +36,7 @@ interface AuctionApi {
 
 // GET /api/subastas/:id/camara
 interface StreamInfo {
-  mode: 'obs' | 'rtsp';
+  mode: 'webrtc' | 'obs' | 'rtsp';
   rtmpUrl: string | null;
   streamKey: string | null;
   receiving: boolean;
@@ -116,6 +118,8 @@ export default function PanelMartillero() {
   const token = user ? getToken() : null;
 
   const { state, connected } = useAuctionRoom(esMartillero ? id : undefined, token);
+  // Cámara de este dispositivo directo a la sala (VIDEO_MODE=webrtc)
+  const emisor = useCamaraEmisor(esMartillero ? id : undefined, token);
   const lotActual = state?.lot ?? null;
 
   const [auction, setAuction] = useState<AuctionApi | null>(null);
@@ -654,15 +658,53 @@ export default function PanelMartillero() {
           {status !== 'ACTIVA' && <p className={styles.nota}>Solo se puede pujar con la subasta abierta.</p>}
 
           <h2 className={styles.mt}>Cámara</h2>
-          <div className={styles.preview}>
-            <LivePlayer
-              auctionId={id}
-              camaraPrendida={camaraPrendida}
-              token={token}
-              placeholder={<div className={styles.sinVideo}>Sin cámara</div>}
-            />
-          </div>
-          {stream?.mode === 'obs' ? (
+          {!stream || stream.mode === 'webrtc' ? (
+            <>
+              <div className={styles.preview}>
+                <CamaraVivo
+                  stream={emisor.local}
+                  vistaPrevia
+                  placeholder={<div className={styles.sinVideo}>Cámara apagada</div>}
+                />
+              </div>
+              {emisor.estado === 'en-vivo' && (
+                <p className={styles.senalOk}>
+                  ● Transmitiendo · {emisor.espectadores}{' '}
+                  {emisor.espectadores === 1 ? 'persona mirando' : 'personas mirando'}
+                </p>
+              )}
+              {(emisor.estado === 'pidiendo' || emisor.estado === 'conectando') && (
+                <p className={styles.senalNo}>○ Conectando…</p>
+              )}
+              {emisor.error && <p className={styles.senalNo}>{emisor.error}</p>}
+              {emisor.estado === 'apagada' || emisor.estado === 'error' ? (
+                <button className={styles.btnNegro} onClick={emisor.prender} disabled={!stream}>
+                  Prender cámara
+                </button>
+              ) : (
+                <button
+                  className={styles.btnGris}
+                  onClick={() => window.confirm('¿Apagar la cámara? La sala deja de verte.') && emisor.apagar()}
+                >
+                  Apagar cámara
+                </button>
+              )}
+              <p className={styles.nota}>
+                Usa la cámara y el micrófono de este dispositivo. Dejá esta pestaña abierta mientras transmitís. Si
+                la subasta está próxima, se abre sola al prender la cámara (desde 2 h antes del horario).
+              </p>
+            </>
+          ) : (
+            <div className={styles.preview}>
+              <LivePlayer
+                auctionId={id}
+                camaraPrendida={camaraPrendida}
+                token={token}
+                placeholder={<div className={styles.sinVideo}>Sin cámara</div>}
+              />
+            </div>
+          )}
+          {stream?.mode === 'webrtc' || !stream ? null : stream.mode === 'obs' ? (
             camaraPrendida && stream.streamKey ? (
               <div className={styles.obsBox}>
                 <p className={stream.receiving ? styles.senalOk : styles.senalNo}>

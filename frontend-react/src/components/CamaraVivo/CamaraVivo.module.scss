@@ -1,0 +1,34 @@
+.camara {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #000;
+}
+
+.video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+
+  // display: block le gana al atributo hidden
+  &[hidden] {
+    display: none;
+  }
+}
+
+.sonido {
+  position: absolute;
+  left: 50%;
+  bottom: 10px;
+  transform: translateX(-50%);
+  padding: 6px 12px;
+  border: 0;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #111;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}

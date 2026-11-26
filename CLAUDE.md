@@ -114,6 +114,29 @@ valida vía `http://127.0.0.1:8080/auth/publish` (proxy_pass por variable +
 nueva) rompía las transmisiones. Último recurso si OBS falla:
 vivo de YouTube embebido (lo ve cualquiera con el link).
 
+## Cámara del martillero por WebRTC (nov 2026, implementado, modo por defecto)
+
+El cliente dejó OBS/stream (5-15 s de demora por HLS) y pidió algo simple
+y casi sin demora: la cámara del martillero en un recuadro y en el centro
+las fotos del lote en remate. `VIDEO_MODE=webrtc` (default): el martillero
+toca "Prender cámara" en su panel (`useCamaraEmisor`, `services/camara.ts`)
+y su navegador manda video+audio **directo a cada espectador** (P2P,
+640x360, 600 kbps; pensado para menos de ~30 espectadores, el cliente
+estimó menos de 30). El backend solo hace la señalización
+(`sockets/camara.socket.ts`: `cam:start/stop/watch/signal`, `cam:on/off/viewer`;
+solo reenvía entre el emisor y sockets de esa sala; emisor en memoria, una
+réplica) y abre la subasta al prender la cámara como hacía OBS. La pestaña
+del panel tiene que quedar abierta. STUN de Google por defecto; si hay
+celulares que no conectan, cargar un TURN en `WEBRTC_ICE_SERVERS`. Para
+más espectadores: SFU (LiveKit Cloud). `VIDEO_MODE=obs` sigue funcionando
+igual que antes (la sala usa `LivePlayer` en el recuadro de la cámara).
+`vercel.json` permite `camera=(self), microphone=(self)`.
+
+Sala (`SubastaActiva`): grilla descripción | fotos del lote
+(`components/lotes/CarruselFotos`, tocar abre `VisorLote` en esa foto) |
+cámara + chat, barra de oferta abajo; pantalla completa = toda la sala.
+Celular: cámara → fotos → ofertar → chat → descripción.
+
 ## Administración, reintegros y seguridad (oct 2026)
 
 - **Admin de subastas** (MARTILLERO/ADMIN): `/admin/subastas` (lista),

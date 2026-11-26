@@ -34,6 +34,8 @@ export interface RoomState {
     status: 'PROXIMA' | 'ACTIVA' | 'FINALIZADA' | 'CANCELADA';
     /** Transmisión habilitada (la clave de OBS nunca llega al navegador) */
     cameraOn: boolean;
+    /** webrtc: cámara del martillero desde su navegador; obs/rtsp: HLS */
+    videoMode?: 'webrtc' | 'obs' | 'rtsp';
     martillero: string | null;
   };
   /** null = ya no quedan lotes sin vender */
@@ -120,6 +122,8 @@ export function useAuctionRoom(
   const expulsadoRef = useRef(false);
 
   const socketRef = useRef<Socket | null>(null);
+  // El mismo socket lo usa la cámara en vivo (services/camara.ts)
+  const [socket, setSocket] = useState<Socket | null>(null);
   const handlersRef = useRef(handlers);
   useEffect(() => {
     handlersRef.current = handlers;
@@ -141,6 +145,7 @@ export function useAuctionRoom(
       transports: ['websocket', 'polling'],
     });
     socketRef.current = socket;
+    setSocket(socket);
 
     socket.on('connect', () => {
       setConnected(true);
@@ -219,6 +224,7 @@ export function useAuctionRoom(
       socket.emit('auction:leave', { auctionId });
       socket.disconnect();
       socketRef.current = null;
+      setSocket(null);
     };
   }, [auctionId, token, pase]);
 
@@ -238,5 +244,5 @@ export function useAuctionRoom(
     [auctionId]
   );
 
-  return { state, messages, connected, error, authRequired, sanciones, placeBid, sendMessage };
+  return { state, messages, connected, error, authRequired, sanciones, placeBid, sendMessage, socket };
 }

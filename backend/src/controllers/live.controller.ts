@@ -9,6 +9,8 @@ import { Errors } from '../utils/AppError';
 import { broadcastRoomState } from '../services/realtime.service';
 
 export const startCamera = asyncHandler(async (req: Request, res: Response) => {
+  // Con la cámara del navegador se prende desde el panel (socket), no acá
+  if (env.video.mode === 'webrtc') throw Errors.badRequest('La cámara se prende desde el panel del martillero');
   let auction;
   if (env.video.mode === 'obs') {
     // OBS: "prender la cámara" = habilitar la clave de transmisión
@@ -23,6 +25,7 @@ export const startCamera = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const stopCamera = asyncHandler(async (req: Request, res: Response) => {
+  if (env.video.mode === 'webrtc') throw Errors.badRequest('La cámara se apaga desde el panel del martillero');
   const auction =
     env.video.mode === 'obs'
       ? await liveService.disableObsStream(req.params.id)

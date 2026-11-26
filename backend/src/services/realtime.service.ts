@@ -8,6 +8,8 @@ import * as purchaseService from './purchase.service';
 import { hasSanction, type SanctionType } from './martillero.service';
 import { minNextBidOf } from './bid.service';
 import { getIo } from '../sockets/io';
+import { env } from '../config/env';
+import { camaraSacarEspectador, camaraTransmitiendo } from '../sockets/camara.socket';
 
 /**
  * Camino único para registrar una puja, sea que llegue por HTTP (fallback /
@@ -239,7 +241,9 @@ export async function getRoomState(auctionId: string, staff = false) {
       status: auction.status,
       published: auction.published,
       // Nunca la clave (camera_id): solo si la transmisión está habilitada
-      cameraOn: Boolean(auction.cameraId),
+      cameraOn: env.video.mode === 'webrtc' ? camaraTransmitiendo(auctionId) : Boolean(auction.cameraId),
+      // Cómo llega el video: cámara del navegador (webrtc) u OBS/rtsp (HLS)
+      videoMode: env.video.mode,
       martillero: auction.createdBy ? `${auction.createdBy.firstName} ${auction.createdBy.lastName}` : null,
     },
     lot: lot ? lotPayload(lot, staff) : null,
@@ -311,6 +315,7 @@ export async function notifySanction(auctionId: string, userId: string, type: Sa
     if (type === 'EXPULSADO' && active) {
       s.emit('auction:error', { code: 'EXPULSADO', message: 'El martillero te expulsó de este remate' });
       s.leave(room);
+      camaraSacarEspectador(io, auctionId, s.id);
     }
   }
 }

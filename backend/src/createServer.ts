@@ -4,6 +4,7 @@ import { app } from './app';
 import { env } from './config/env';
 import { setIo } from './sockets/io';
 import { registerBiddingHandlers } from './sockets/bidding.socket';
+import { registerCamaraHandlers } from './sockets/camara.socket';
 
 /**
  * Arma el http server (Express) + Socket.io sin ponerlo a escuchar.
@@ -19,6 +20,7 @@ export function createServer() {
   });
   setIo(io);
   registerBiddingHandlers(io);
+  registerCamaraHandlers(io);
 
   return { server, io };
 }

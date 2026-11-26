@@ -14,6 +14,22 @@ function withRtmpScheme(url: string) {
   return /^rtmps?:\/\//i.test(u) ? u : `rtmp://${u}`;
 }
 
+/** WEBRTC_ICE_SERVERS: JSON con RTCIceServer[]; por defecto el STUN público de Google. */
+function parseIceServers(raw: string | undefined): { urls: string | string[]; username?: string; credential?: string }[] {
+  const porDefecto = [{ urls: 'stun:stun.l.google.com:19302' }];
+  if (!raw?.trim()) return porDefecto;
+  try {
+    const lista = JSON.parse(raw);
+    if (Array.isArray(lista) && lista.every((s) => s && (typeof s.urls === 'string' || Array.isArray(s.urls)))) {
+      return lista;
+    }
+  } catch {
+    // cae al aviso de abajo
+  }
+  console.warn('[video] WEBRTC_ICE_SERVERS no es un JSON válido (RTCIceServer[]): se usa solo STUN');
+  return porDefecto;
+}
+
 export const env = {
   nodeEnv: process.env.NODE_ENV ?? 'development',
   port: Number(process.env.PORT ?? 4000),
@@ -86,11 +102,18 @@ export const env = {
     mediaUrl: process.env.MEDIA_SERVER_URL ?? process.env.RTSP_MEDIA_URL ?? 'http://localhost:8080',
   },
 
-  // Video en vivo (decisión oct 2026): "obs" = el martillero transmite desde
-  // OBS al media-server con una clave por subasta. "rtsp" = modo anterior
-  // con rtsp-manager tomando una cámara IP.
+  // Video en vivo: "webrtc" (por defecto, nov 2026) = la cámara del
+  // martillero desde el navegador del panel, P2P y casi sin demora
+  // (sockets/camara.socket.ts). "obs" = OBS → media-server → HLS (oct 2026,
+  // 5-15 s de demora). "rtsp" = modo anterior con rtsp-manager.
   video: {
-    mode: (process.env.VIDEO_MODE === 'rtsp' ? 'rtsp' : 'obs') as 'obs' | 'rtsp',
+    mode: (['obs', 'rtsp'].includes(process.env.VIDEO_MODE ?? '') ? process.env.VIDEO_MODE : 'webrtc') as
+      | 'webrtc'
+      | 'obs'
+      | 'rtsp',
+    // Servidores STUN/TURN para WebRTC (JSON, formato RTCIceServer[]). Sin
+    // TURN, algunos celulares con datos móviles no logran conectarse.
+    iceServers: parseIceServers(process.env.WEBRTC_ICE_SERVERS),
     // Lo que el martillero pega en OBS como "Servidor", ej:
     // rtmp://xxxx.proxy.rlwy.net:12345/live (TCP Proxy de Railway al 1935)
     rtmpPublicUrl: withRtmpScheme(process.env.RTMP_PUBLIC_URL ?? 'rtmp://localhost:1935/live'),

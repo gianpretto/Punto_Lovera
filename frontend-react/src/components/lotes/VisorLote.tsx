@@ -203,6 +203,7 @@ export default function VisorLote({ lote, fotoInicial = 0, onCerrar }: Props) {
         </div>
       )}
     </div>,
-    document.body,
+    // En pantalla completa (sala en vivo) solo se ve ese elemento: el visor va adentro
+    document.fullscreenElement ?? document.body,
   );
 }
