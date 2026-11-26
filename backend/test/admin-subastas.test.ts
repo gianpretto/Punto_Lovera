@@ -142,12 +142,12 @@ describe('Reglas cuando ya hay ofertas', () => {
   let sinOferta: string;
 
   beforeAll(async () => {
-    const lots = (await app.api('GET', `/subastas/${auctionId}`)).data.auction.lots;
+    const lots = (await app.api('GET', `/subastas/${auctionId}`, null, A)).data.auction.lots;
     conOferta = lots[0].id;
     sinOferta = (
       await app.api('POST', `/subastas/${auctionId}/lotes`, { number: 2, title: 'Amasadora', description: 'd', startingPrice: 50000 }, A)
     ).data.lot.id;
-    await app.api('PATCH', `/subastas/${auctionId}`, { status: 'ACTIVA' }, A);
+    await app.api('PATCH', `/subastas/${auctionId}`, { status: 'ACTIVA', published: true }, A);
     await app.api('PATCH', `/subastas/${auctionId}/lote-actual`, { lotId: conOferta }, A);
     const puja = await app.api('POST', `/subastas/${auctionId}/lotes/${conOferta}/pujas`, { amount: 190000 }, U);
     expect(puja.status).toBe(201);
