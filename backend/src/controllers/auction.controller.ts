@@ -5,6 +5,7 @@ import * as auctionService from '../services/auction.service';
 import { createAuctionSchema, createPassSchema, setCurrentLotSchema, updateAuctionSchema } from '../schemas/auction.schema';
 import * as passService from '../services/pass.service';
 import { Errors } from '../utils/AppError';
+import { assertVisible, esStaff, lotePublico } from '../services/visibilidad';
 import { broadcastRoomState, setCurrentLotAndBroadcast } from '../services/realtime.service';
 import { auctions } from '../db/schema';
 import { removeUploadedFile, toPublicUrl } from '../middleware/upload.middleware';
@@ -27,25 +28,37 @@ const listQuerySchema = z.object({
     .pipe(z.array(z.enum(ESTADOS)).max(4).optional()),
   page: z.coerce.number().int().min(1).max(10000).optional(),
   pageSize: z.coerce.number().int().min(1).max(24).default(6),
+  // ?ocultas=1: el admin ve también las no publicadas
+  ocultas: z.literal('1').optional(),
 });
 
 export const list = asyncHandler(async (req: Request, res: Response) => {
-  const { status, page, pageSize } = listQuerySchema.parse(req.query);
+  const { status, page, pageSize, ocultas } = listQuerySchema.parse(req.query);
+  const incluirOcultas = ocultas === '1' && esStaff(req.user);
   if (page === undefined) {
-    const auctions = await auctionService.listAuctions(status as AuctionStatus[] | undefined);
+    const auctions = await auctionService.listAuctions(status as AuctionStatus[] | undefined, incluirOcultas);
     return res.json({ auctions: auctions.map(conCamara) });
   }
-  const pagina = await auctionService.listAuctionsPage(status as AuctionStatus[] | undefined, page, pageSize);
+  const pagina = await auctionService.listAuctionsPage(
+    status as AuctionStatus[] | undefined,
+    page,
+    pageSize,
+    incluirOcultas
+  );
   res.json({ ...pagina, auctions: pagina.auctions.map(conCamara) });
 });
 
 // ?lots=false: sin los lotes (el catálogo los pide paginados en /:id/lotes)
 export const getOne = asyncHandler(async (req: Request, res: Response) => {
-  const auction =
-    req.query.lots === 'false'
-      ? await auctionService.getAuctionSummary(req.params.id)
-      : await auctionService.getAuctionById(req.params.id);
-  res.json({ auction: conCamara(auction) });
+  const staff = esStaff(req.user);
+  if (req.query.lots === 'false') {
+    const auction = await auctionService.getAuctionSummary(req.params.id);
+    assertVisible(auction, staff);
+    return res.json({ auction: conCamara(auction) });
+  }
+  const auction = await auctionService.getAuctionById(req.params.id);
+  assertVisible(auction, staff);
+  res.json({ auction: conCamara({ ...auction, lots: auction.lots.map((l) => lotePublico(l, staff)) }) });
 });
 
 const lotsPageSchema = z.object({
@@ -56,7 +69,9 @@ const lotsPageSchema = z.object({
 // GET /subastas/:id/lotes?page=1&pageSize=6 (catálogo paginado)
 export const listLots = asyncHandler(async (req: Request, res: Response) => {
   const { page, pageSize } = lotsPageSchema.parse(req.query);
-  res.json(await auctionService.listLotsPage(req.params.id, page, pageSize));
+  const staff = esStaff(req.user);
+  const pagina = await auctionService.listLotsPage(req.params.id, page, pageSize, staff);
+  res.json({ ...pagina, lots: pagina.lots.map((l) => lotePublico(l, staff)) });
 });
 
 export const create = asyncHandler(async (req: Request, res: Response) => {

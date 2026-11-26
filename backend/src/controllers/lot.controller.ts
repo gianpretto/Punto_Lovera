@@ -5,6 +5,7 @@ import * as bidService from '../services/bid.service';
 import { broadcastRoomState, placeBidAndBroadcast } from '../services/realtime.service';
 import { createLotSchema, placeBidSchema, updateLotSchema } from '../schemas/auction.schema';
 import { removeUploadedFile, toPublicUrl } from '../middleware/upload.middleware';
+import { assertVisible, esStaff, lotePublico } from '../services/visibilidad';
 
 // Si la sala está abierta, que vea el cambio (precio base, título, fotos)
 // sin recargar. Es best-effort: un error acá no debe romper la edición.
@@ -14,7 +15,9 @@ function refreshRoom(auctionId: string) {
 
 export const getOne = asyncHandler(async (req: Request, res: Response) => {
   const lot = await lotService.getLotById(req.params.lotId, req.params.auctionId);
-  res.json({ lot });
+  const staff = esStaff(req.user);
+  assertVisible(lot.auction, staff);
+  res.json({ lot: lotePublico(lot, staff) });
 });
 
 export const create = asyncHandler(async (req: Request, res: Response) => {

@@ -7,9 +7,19 @@ import { Errors } from '../utils/AppError';
 type AuctionStatus = (typeof auctions.$inferSelect)['status'];
 
 /** Lista completa (admin y compatibilidad): por fecha de inicio. */
-export async function listAuctions(statuses?: AuctionStatus[]) {
+// Orden de los lotes: por número, y el "bis" justo después de su número
+export const ORDEN_LOTES = [asc(lots.number), asc(lots.bis)];
+
+// incluirOcultas: solo para el martillero/admin (las no publicadas)
+const filtro = (statuses: AuctionStatus[] | undefined, incluirOcultas: boolean) =>
+  and(
+    statuses?.length ? inArray(auctions.status, statuses) : undefined,
+    incluirOcultas ? undefined : eq(auctions.published, true)
+  );
+
+export async function listAuctions(statuses?: AuctionStatus[], incluirOcultas = false) {
   return db.query.auctions.findMany({
-    where: statuses?.length ? inArray(auctions.status, statuses) : undefined,
+    where: filtro(statuses, incluirOcultas),
     orderBy: (a, { asc }) => asc(a.startsAt),
     with: { lots: { columns: { id: true } } },
   });
@@ -21,8 +31,13 @@ export async function listAuctions(statuses?: AuctionStatus[]) {
  * final las terminadas (la más reciente primero). La base devuelve solo esa
  * página (LIMIT/OFFSET) y el total para el paginador.
  */
-export async function listAuctionsPage(statuses: AuctionStatus[] | undefined, page: number, pageSize: number) {
-  const where = statuses?.length ? inArray(auctions.status, statuses) : undefined;
+export async function listAuctionsPage(
+  statuses: AuctionStatus[] | undefined,
+  page: number,
+  pageSize: number,
+  incluirOcultas = false
+) {
+  const where = filtro(statuses, incluirOcultas);
   const [{ total }] = await db.select({ total: count() }).from(auctions).where(where);
   const pages = Math.max(1, Math.ceil(total / pageSize));
 
@@ -48,7 +63,7 @@ export async function getAuctionById(id: string) {
     with: {
       lots: {
         with: { images: true },
-        orderBy: (l, { asc }) => asc(l.number),
+        orderBy: ORDEN_LOTES,
       },
     },
   });
@@ -65,14 +80,18 @@ export async function getAuctionSummary(id: string) {
 }
 
 /** Una página de lotes de una subasta (por número), con sus fotos. */
-export async function listLotsPage(auctionId: string, page: number, pageSize: number) {
-  const [auction] = await db.select({ id: auctions.id }).from(auctions).where(eq(auctions.id, auctionId));
+export async function listLotsPage(auctionId: string, page: number, pageSize: number, incluirOcultas = false) {
+  const [auction] = await db
+    .select({ id: auctions.id, published: auctions.published })
+    .from(auctions)
+    .where(eq(auctions.id, auctionId));
   if (!auction) throw Errors.notFound('Subasta');
+  if (!auction.published && !incluirOcultas) throw Errors.notFound('Subasta');
 
   const [{ total }] = await db.select({ total: count() }).from(lots).where(eq(lots.auctionId, auctionId));
   const items = await db.query.lots.findMany({
     where: eq(lots.auctionId, auctionId),
-    orderBy: (l, { asc }) => asc(l.number),
+    orderBy: ORDEN_LOTES,
     limit: pageSize,
     offset: (page - 1) * pageSize,
     with: { images: { orderBy: (i, { asc }) => asc(i.position) } },
@@ -101,7 +120,7 @@ export async function getCurrentLot(auctionId: string) {
 
   const next = await db.query.lots.findFirst({
     where: and(eq(lots.auctionId, auctionId), eq(lots.sold, false)),
-    orderBy: asc(lots.number),
+    orderBy: ORDEN_LOTES,
     with: { images: { orderBy: (i, { asc }) => asc(i.position) } },
   });
   return next ?? null;
@@ -126,7 +145,7 @@ export async function setCurrentLot(auctionId: string, lotId: string | null) {
 
 export async function createAuction(
   createdById: string,
-  data: { title: string; description: string; location: string; startsAt: Date; coverImageUrl?: string }
+  data: { title: string; description: string; location: string; startsAt: Date; coverImageUrl?: string; published?: boolean }
 ) {
   const [auction] = await db.insert(auctions).values({ ...data, createdById }).returning();
   return auction;
@@ -141,6 +160,7 @@ export async function updateAuction(
     startsAt: Date;
     coverImageUrl: string | null;
     status: AuctionStatus;
+    published: boolean;
   }>
 ) {
   const before = await getAuctionById(id);

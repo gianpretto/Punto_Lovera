@@ -10,8 +10,8 @@ beforeAll(async () => {
   app = await startTestApp();
   auctionId = crypto.randomUUID();
   await app.sql(
-    `INSERT INTO auctions (id, title, description, location, starts_at, status)
-     VALUES ($1, 'Catálogo grande', 'desc', 'Morón', now() + interval '1 day', 'PROXIMA')`,
+    `INSERT INTO auctions (id, title, description, location, starts_at, status, published)
+     VALUES ($1, 'Catálogo grande', 'desc', 'Morón', now() + interval '1 day', 'PROXIMA', true)`,
     [auctionId]
   );
   // 8 lotes cargados desordenados; el 3 con dos fotos (posición 1 y 0)

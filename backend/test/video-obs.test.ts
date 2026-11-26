@@ -193,7 +193,7 @@ describe('La subasta se abre sola cuando empieza la transmisión', () => {
   /** Subasta PROXIMA nueva, con clave de transmisión, que empieza en `horas`. */
   async function subastaConClave(horas: number) {
     const startsAt = new Date(Date.now() + horas * 60 * 60 * 1000).toISOString();
-    const { data } = await app.api('POST', '/subastas', { title: `Remate en ${horas} h`, description: 'd', location: 'l', startsAt }, A);
+    const { data } = await app.api('POST', '/subastas', { title: `Remate en ${horas} h`, description: 'd', location: 'l', startsAt, published: true }, A);
     const id = data.auction.id as string;
     await app.api('POST', `/subastas/${id}/camara`, {}, A);
     const key = (await app.api('GET', `/subastas/${id}/camara`, null, A)).data.streamKey as string;

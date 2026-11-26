@@ -12,8 +12,8 @@ beforeAll(async () => {
   await app.sql('DELETE FROM auctions');
   const crear = (titulo: string, estado: string, dias: number) =>
     app.sql(
-      `INSERT INTO auctions (id, title, description, location, starts_at, status)
-       VALUES ($1, $2, 'desc', 'Morón', $3, $4)`,
+      `INSERT INTO auctions (id, title, description, location, starts_at, status, published)
+       VALUES ($1, $2, 'desc', 'Morón', $3, $4, true)`,
       [crypto.randomUUID(), titulo, new Date(Date.now() + dias * DIA).toISOString().slice(0, 23), estado]
     );
   await crear('Próxima lejana', 'PROXIMA', 20);

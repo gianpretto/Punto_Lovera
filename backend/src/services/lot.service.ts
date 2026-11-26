@@ -26,36 +26,57 @@ async function lotHasBids(lotId: string) {
   return Boolean(bid);
 }
 
-// El número de lote es único dentro de la subasta (constraint
-// lots_auction_number_unique): lo chequeamos antes para dar un error claro.
-async function assertNumberFree(auctionId: string, number: number, exceptLotId?: string) {
-  const [dup] = await db
+/** "12" o "12 bis" */
+export const nombreLote = (number: number, bis: boolean) => `${number}${bis ? ' bis' : ''}`;
+
+async function lotWithNumber(auctionId: string, number: number, bis: boolean, exceptLotId?: string) {
+  const [lot] = await db
     .select({ id: lots.id })
     .from(lots)
     .where(
       and(
         eq(lots.auctionId, auctionId),
         eq(lots.number, number),
+        eq(lots.bis, bis),
         exceptLotId ? ne(lots.id, exceptLotId) : undefined
       )
     )
     .limit(1);
-  if (dup) throw Errors.badRequest(`Ya existe el lote número ${number} en esta subasta`);
+  return lot;
+}
+
+/**
+ * El número (+ bis) es único dentro de la subasta (constraint
+ * lots_auction_number_bis_unique): lo chequeamos antes para dar un error
+ * claro. Un "bis" va pegado a su número: el lote sin bis tiene que existir.
+ */
+async function assertNumberFree(auctionId: string, number: number, bis: boolean, exceptLotId?: string) {
+  if (await lotWithNumber(auctionId, number, bis, exceptLotId)) {
+    throw Errors.badRequest(
+      bis
+        ? `El lote ${number} ya tiene un bis (solo puede haber uno por número)`
+        : `Ya existe el lote número ${number} en esta subasta`
+    );
+  }
+  if (bis && !(await lotWithNumber(auctionId, number, false, exceptLotId))) {
+    throw Errors.badRequest(`Para cargar el ${number} bis primero tiene que existir el lote ${number}`);
+  }
 }
 
 export async function createLot(
   auctionId: string,
-  data: { number: number; title: string; description: string; startingPrice: number; bidIncrement?: number }
+  data: { number: number; bis?: boolean; title: string; description: string; startingPrice: number; bidIncrement?: number }
 ) {
   const [auction] = await db.select().from(auctions).where(eq(auctions.id, auctionId));
   if (!auction) throw Errors.notFound('Subasta');
-  await assertNumberFree(auctionId, data.number);
+  await assertNumberFree(auctionId, data.number, data.bis ?? false);
 
   const [lot] = await db
     .insert(lots)
     .values({
       auctionId,
       number: data.number,
+      bis: data.bis ?? false,
       title: data.title,
       description: data.description,
       // Sin ofertas todavía: el precio actual arranca en el precio base
@@ -70,7 +91,7 @@ export async function createLot(
 export async function updateLot(
   auctionId: string,
   id: string,
-  data: Partial<{ number: number; title: string; description: string; startingPrice: number; bidIncrement: number }>
+  data: Partial<{ number: number; bis: boolean; title: string; description: string; startingPrice: number; bidIncrement: number }>
 ) {
   const current = await getLotById(id, auctionId);
   const { startingPrice, bidIncrement, ...rest } = data;
@@ -82,8 +103,14 @@ export async function updateLot(
       throw Errors.badRequest('No se puede cambiar el precio base de un lote que ya recibió ofertas');
     }
   }
-  if (rest.number !== undefined && rest.number !== current.number) {
-    await assertNumberFree(auctionId, rest.number, id);
+  const number = rest.number ?? current.number;
+  const bis = rest.bis ?? current.bis;
+  if (number !== current.number || bis !== current.bis) {
+    await assertNumberFree(auctionId, number, bis, id);
+    // Si deja de ser "N" y tiene un "N bis", el bis quedaría huérfano
+    if (!current.bis && (await lotWithNumber(auctionId, current.number, true))) {
+      throw Errors.badRequest(`El lote ${current.number} tiene un bis: cambiá primero el bis`);
+    }
   }
 
   const [lot] = await db
@@ -104,6 +131,9 @@ export async function deleteLot(auctionId: string, id: string) {
   const lot = await getLotById(id, auctionId);
   if (lot.sold) throw Errors.badRequest('No se puede borrar un lote vendido');
   if (await lotHasBids(id)) throw Errors.badRequest('No se puede borrar un lote que ya recibió ofertas');
+  if (!lot.bis && (await lotWithNumber(auctionId, lot.number, true))) {
+    throw Errors.badRequest(`El lote ${lot.number} tiene un bis: borrá primero el ${lot.number} bis`);
+  }
 
   await db.transaction(async (tx) => {
     // Si era el lote elegido en la sala, la sala vuelve al primero sin vender

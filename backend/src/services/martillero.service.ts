@@ -1,8 +1,8 @@
-import { and, asc, desc, eq, gt, isNull } from 'drizzle-orm';
+import { and, asc, desc, eq, isNull } from 'drizzle-orm';
 import { db } from '../config/db';
 import { auctionSanctions, bids, lots, users } from '../db/schema';
 import { Errors } from '../utils/AppError';
-import { getCurrentLot } from './auction.service';
+import { getCurrentLot, ORDEN_LOTES } from './auction.service';
 
 /**
  * Controles del martillero en vivo (pedido del cliente, nov 2026): corregir
@@ -89,18 +89,24 @@ export async function voidBid(auctionId: string, bidId: string, reviewerId: stri
   });
 }
 
-/** Siguiente lote sin vender (por número) después del que está en remate. */
-export async function nextLotId(auctionId: string) {
+/**
+ * Lote sin vender siguiente (o anterior) al que está en remate, en el orden
+ * del catálogo (número y el "bis" después de su número).
+ */
+export async function adjacentLotId(auctionId: string, direccion: 1 | -1) {
   const current = await getCurrentLot(auctionId);
   if (!current) throw Errors.badRequest('No quedan lotes sin adjudicar');
-  const [next] = await db
+  const pendientes = await db
     .select({ id: lots.id })
     .from(lots)
-    .where(and(eq(lots.auctionId, auctionId), eq(lots.sold, false), gt(lots.number, current.number)))
-    .orderBy(asc(lots.number))
-    .limit(1);
-  if (!next) throw Errors.badRequest('Este es el último lote sin adjudicar');
-  return next.id;
+    .where(and(eq(lots.auctionId, auctionId), eq(lots.sold, false)))
+    .orderBy(...ORDEN_LOTES);
+  const i = pendientes.findIndex((l) => l.id === current.id);
+  const otro = pendientes[i + direccion];
+  if (!otro) {
+    throw Errors.badRequest(direccion === 1 ? 'Este es el último lote sin adjudicar' : 'Este es el primer lote sin adjudicar');
+  }
+  return otro.id;
 }
 
 // ---------- Moderación (silenciar / expulsar, solo en ese remate) ----------

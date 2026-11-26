@@ -1,7 +1,10 @@
 import { env } from './config/env';
 import { createServer } from './createServer';
+import { iniciarAperturaAutomatica } from './services/apertura.service';
 
 const { server } = createServer();
+// Subastas cuya cuenta regresiva llegó a cero → ACTIVA
+iniciarAperturaAutomatica();
 
 server.listen(env.port, () => {
   console.log(`🚀 Punto Lovera API escuchando en http://localhost:${env.port}`);

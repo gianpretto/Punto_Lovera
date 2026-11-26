@@ -25,6 +25,8 @@ export const createAuctionSchema = z.object({
   location: z.string().trim().min(1, 'Indicá la ubicación').max(LARGOS.textoCorto, 'La ubicación es demasiado larga'),
   startsAt: z.coerce.date({ error: 'Fecha de inicio inválida' }),
   coverImageUrl: coverImageUrl.optional(),
+  // Publicada (la ve el público). Por defecto se crea oculta.
+  published: z.boolean().optional(),
 });
 
 export const updateAuctionSchema = createAuctionSchema.partial().extend({
@@ -34,6 +36,8 @@ export const updateAuctionSchema = createAuctionSchema.partial().extend({
 });
 
 export const createLotSchema = z.object({
+  // "1 bis": un solo bis por número, y el número sin bis tiene que existir
+  bis: z.boolean().optional(),
   number: z.coerce
     .number()
     .int('El número de lote debe ser entero')

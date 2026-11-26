@@ -7,7 +7,10 @@ import {
   getChatHistory,
   getRoomState,
   getLotAuctionId,
+  salaStaff,
+  salaUsuario,
 } from '../services/realtime.service';
+import { esStaff } from '../services/visibilidad';
 import { AppError } from '../utils/AppError';
 import { hasSanction } from '../services/martillero.service';
 
@@ -100,7 +103,9 @@ export function registerBiddingHandlers(io: Server) {
     if (typeof pase === 'string' && pase.length <= 200) socket.pase = pase;
     if (typeof token === 'string' && token.length <= 4096) {
       try {
-        socket.userId = (await authenticate(token)).userId;
+        const sesion = await authenticate(token);
+        socket.userId = sesion.userId;
+        socket.data.role = sesion.role;
         // En socket.data para encontrar sus sockets al sancionarlo (fetchSockets)
         socket.data.userId = socket.userId;
       } catch {
@@ -135,11 +140,20 @@ export function registerBiddingHandlers(io: Server) {
           return;
         }
         // Primero el estado (valida que la subasta exista), después la sala
-        const state = await getRoomState(auctionId);
+        const staff = esStaff({ role: socket.data.role });
+        const state = await getRoomState(auctionId, staff);
+        // Subasta oculta (sin publicar): solo el martillero/admin
+        if (!state.auction.published && !staff) {
+          socket.emit('auction:error', { message: 'No encontramos esta subasta' });
+          return;
+        }
         await socket.join(`auction:${auctionId}`);
+        // Salas para los mensajes privados con el martillero
+        if (staff) await socket.join(salaStaff(auctionId));
+        else if (socket.userId) await socket.join(salaUsuario(auctionId, socket.userId));
         joined.add(auctionId);
         socket.emit('auction:state', state);
-        socket.emit('chat:history', await getChatHistory(auctionId));
+        socket.emit('chat:history', await getChatHistory(auctionId, { userId: socket.userId, staff }));
         if (socket.userId && (await hasSanction(auctionId, socket.userId, 'SILENCIADO'))) {
           socket.emit('auction:sanction', { auctionId, type: 'SILENCIADO', active: true });
         }
@@ -189,6 +203,9 @@ export function registerBiddingHandlers(io: Server) {
       }
       const auctionId = str(field(payload, 'auctionId'));
       const text = field(payload, 'text');
+      // privado: true → solo al martillero; paraUserId → el martillero contesta en privado
+      const privado = field(payload, 'privado') === true;
+      const paraUserId = str(field(payload, 'paraUserId'));
       if (!auctionId || typeof text !== 'string' || !text.trim()) return;
       if (!joined.has(auctionId)) {
         return socket.emit('chat:error', { message: 'Entrá a la sala del remate para poder chatear' });
@@ -199,7 +216,7 @@ export function registerBiddingHandlers(io: Server) {
         });
       }
       try {
-        await sendChatMessage(auctionId, socket.userId, text);
+        await sendChatMessage(auctionId, socket.userId, text, { privado, paraUserId });
       } catch (err) {
         socket.emit('chat:error', { message: clientMessage(err, 'No se pudo enviar el mensaje') });
       }

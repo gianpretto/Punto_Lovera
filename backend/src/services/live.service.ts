@@ -107,6 +107,8 @@ export async function autoOpenOnStream(auctionId: string) {
       and(
         eq(auctions.id, auctionId),
         eq(auctions.status, 'PROXIMA'),
+        // Una subasta oculta (sin publicar) no se abre sola: OBS solo prueba
+        eq(auctions.published, true),
         lte(auctions.startsAt, new Date(Date.now() + windowMs))
       )
     )

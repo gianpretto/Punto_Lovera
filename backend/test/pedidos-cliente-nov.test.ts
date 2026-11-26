@@ -24,7 +24,7 @@ beforeAll(async () => {
   U1 = await app.login('usuario@test.com', 'user1234');
   U2 = await crearPostor(app, 'postor2@test.com', 'postor1234', 1_000_000);
   auctionId = (await app.api('GET', '/subastas')).data.auctions[0].id;
-  lots = (await app.api('GET', `/subastas/${auctionId}`)).data.auction.lots;
+  lots = (await app.api('GET', `/subastas/${auctionId}`, null, A)).data.auction.lots;
   // Lotes extra para los controles en vivo y la moderación
   for (const number of [91, 92, 93]) {
     await app.api(
@@ -34,7 +34,7 @@ beforeAll(async () => {
       A
     );
   }
-  lots = (await app.api('GET', `/subastas/${auctionId}`)).data.auction.lots;
+  lots = (await app.api('GET', `/subastas/${auctionId}`, null, A)).data.auction.lots;
   await app.api('PATCH', `/subastas/${auctionId}`, { status: 'ACTIVA' }, A);
 });
 afterAll(async () => {

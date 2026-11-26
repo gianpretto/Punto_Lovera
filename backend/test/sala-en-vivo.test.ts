@@ -22,7 +22,7 @@ beforeAll(async () => {
   U = await app.login('usuario@test.com', 'user1234');
 
   auctionId = (await app.api('GET', '/subastas')).data.auctions[0].id;
-  [lot1, lot2] = (await app.api('GET', `/subastas/${auctionId}`)).data.auction.lots;
+  [lot1, lot2] = (await app.api('GET', `/subastas/${auctionId}`, null, A)).data.auction.lots;
   await app.api('PATCH', `/subastas/${auctionId}`, { status: 'ACTIVA' }, A);
   // Sin cuenta solo se entra a mirar con un pase de invitado
   pase = (await app.api('POST', `/subastas/${auctionId}/pases`, { label: 'espectador', hours: 2 }, A)).data.pass.token;
@@ -42,7 +42,11 @@ describe('Sala en vivo (Socket.io)', () => {
 
     st = await user.waitFor('auction:state');
     expect(st.lot?.id).toBe(lot1.id);
-    expect(st.lot.minNextBid).toBe(st.lot.currentPrice + st.lot.bidIncrement);
+    // Sin ofertas: el público no ve el precio ("sin base") y la primera
+    // oferta mínima es la base
+    expect(st.lot.currentPrice).toBeNull();
+    expect(st.lot).not.toHaveProperty('startingPrice');
+    expect(st.lot.minNextBid).toBe(Number(lot1.startingPrice));
     expect(typeof st.auction.martillero).toBe('string');
 
     await spectator.waitFor('auction:state');

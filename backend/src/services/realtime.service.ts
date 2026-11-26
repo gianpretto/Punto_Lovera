@@ -1,4 +1,4 @@
-import { and, eq, gte } from 'drizzle-orm';
+import { and, asc, eq, gte, isNotNull, isNull, or } from 'drizzle-orm';
 import { db } from '../config/db';
 import { auctions, chatMessages, lots, users } from '../db/schema';
 import { Errors } from '../utils/AppError';
@@ -52,13 +52,54 @@ export async function placeBidAndBroadcast(lotId: string, userId: string, amount
       time: chatMessage.createdAt,
       isOffer: true,
       bidId: result.bid.id,
+      staff: false,
+      privateUserId: null,
     });
   }
 
   return result;
 }
 
-export async function sendChatMessage(auctionId: string, userId: string, text: string) {
+// ---------- Chat (público y privado con el martillero) ----------
+
+const ES_STAFF = (role: string) => role === 'MARTILLERO' || role === 'ADMIN';
+
+/** Salas de socket.io para mandar los privados: martilleros/admins y cada usuario */
+export const salaStaff = (auctionId: string) => `auction:${auctionId}:staff`;
+export const salaUsuario = (auctionId: string, userId: string) => `auction:${auctionId}:u:${userId}`;
+
+type FilaChat = typeof chatMessages.$inferSelect & {
+  user: { firstName: string; lastName: string; role: string };
+};
+
+function chatPayload(m: FilaChat) {
+  return {
+    id: m.id,
+    userId: m.userId,
+    user: `${m.user.firstName} ${m.user.lastName}`,
+    text: m.text,
+    time: m.createdAt,
+    isOffer: m.isOffer,
+    bidId: m.bidId,
+    // Martillero/admin: el chat lo destaca
+    staff: ES_STAFF(m.user.role),
+    // Privado entre ese usuario y el martillero (null = público)
+    privateUserId: m.privateUserId,
+  };
+}
+
+/**
+ * Mensaje del chat de la sala.
+ * - privado: el usuario le escribe solo al martillero (lo ven él y los
+ *   martilleros/admins).
+ * - paraUserId: el martillero/admin le contesta en privado a ese usuario.
+ */
+export async function sendChatMessage(
+  auctionId: string,
+  userId: string,
+  text: string,
+  opciones: { privado?: boolean; paraUserId?: string } = {}
+) {
   const trimmed = text.trim().slice(0, 500);
   if (!trimmed) return null;
 
@@ -71,26 +112,51 @@ export async function sendChatMessage(auctionId: string, userId: string, text: s
   }
 
   const [user] = await db
-    .select({ firstName: users.firstName, lastName: users.lastName })
+    .select({ firstName: users.firstName, lastName: users.lastName, role: users.role })
     .from(users)
     .where(eq(users.id, userId));
+  if (!user) throw Errors.unauthorized();
+  const staff = ES_STAFF(user.role);
+
+  let privateUserId: string | null = null;
+  if (opciones.paraUserId) {
+    if (!staff) throw Errors.forbidden('Solo el martillero puede contestar en privado');
+    const [destino] = await db.select({ role: users.role }).from(users).where(eq(users.id, opciones.paraUserId));
+    if (!destino || ES_STAFF(destino.role)) throw Errors.badRequest('Ese usuario no existe');
+    privateUserId = opciones.paraUserId;
+  } else if (opciones.privado) {
+    if (staff) throw Errors.badRequest('Elegí a qué usuario contestarle');
+    privateUserId = userId;
+  }
 
   const [message] = await db
     .insert(chatMessages)
-    .values({ auctionId, userId, text: trimmed, isOffer: false })
+    .values({ auctionId, userId, text: trimmed, isOffer: false, privateUserId })
     .returning();
 
-  const payload = {
-    id: message.id,
-    userId,
-    user: user ? `${user.firstName} ${user.lastName}` : 'Usuario',
-    text: message.text,
-    time: message.createdAt,
-    isOffer: false,
-  };
-
-  getIo()?.to(`auction:${auctionId}`).emit('chat:message', payload);
+  const payload = chatPayload({ ...message, user });
+  const io = getIo();
+  if (privateUserId) {
+    // Solo ese usuario (todas sus pestañas) y los martilleros/admins de la sala
+    io?.to([salaStaff(auctionId), salaUsuario(auctionId, privateUserId)]).emit('chat:message', payload);
+  } else {
+    io?.to(`auction:${auctionId}`).emit('chat:message', payload);
+  }
   return payload;
+}
+
+/**
+ * Todos los mensajes privados de una subasta (panel del martillero), sin
+ * límite de tiempo: las conversaciones con cada usuario.
+ */
+export async function getPrivateMessages(auctionId: string) {
+  const messages = await db.query.chatMessages.findMany({
+    where: and(eq(chatMessages.auctionId, auctionId), isNotNull(chatMessages.privateUserId)),
+    orderBy: asc(chatMessages.createdAt),
+    limit: 500,
+    with: { user: { columns: { firstName: true, lastName: true, role: true } } },
+  });
+  return messages.map(chatPayload);
 }
 
 /** Subasta a la que pertenece un lote (para validar la sala en las pujas). */
@@ -106,40 +172,43 @@ export async function getLotAuctionId(lotId: string) {
 const CHAT_HISTORIAL_MAX = 40;
 const CHAT_HISTORIAL_MINUTOS = 30;
 
-export async function getChatHistory(auctionId: string) {
+/**
+ * Historial al entrar a la sala. Los privados: el martillero/admin los ve
+ * todos; un usuario, solo los suyos; un invitado, ninguno.
+ */
+export async function getChatHistory(auctionId: string, viewer: { userId?: string; staff: boolean } = { staff: false }) {
   const desde = new Date(Date.now() - CHAT_HISTORIAL_MINUTOS * 60_000);
+  const privados = viewer.staff
+    ? undefined
+    : viewer.userId
+      ? or(isNull(chatMessages.privateUserId), eq(chatMessages.privateUserId, viewer.userId))
+      : isNull(chatMessages.privateUserId);
   const messages = await db.query.chatMessages.findMany({
-    where: and(eq(chatMessages.auctionId, auctionId), gte(chatMessages.createdAt, desde)),
+    where: and(eq(chatMessages.auctionId, auctionId), gte(chatMessages.createdAt, desde), privados),
     // Los más nuevos (desc + limit) y después en orden cronológico
     orderBy: (m, { desc }) => desc(m.createdAt),
     limit: CHAT_HISTORIAL_MAX,
-    with: { user: { columns: { firstName: true, lastName: true } } },
+    with: { user: { columns: { firstName: true, lastName: true, role: true } } },
   });
-  return messages.reverse().map((m) => ({
-    id: m.id,
-    userId: m.userId,
-    user: `${m.user.firstName} ${m.user.lastName}`,
-    text: m.text,
-    time: m.createdAt,
-    isOffer: m.isOffer,
-    bidId: m.bidId,
-  }));
+  return messages.reverse().map(chatPayload);
 }
 
 // ---------- Estado de la sala (qué lote se remata ahora) ----------
 
 type CurrentLot = NonNullable<Awaited<ReturnType<typeof auctionService.getCurrentLot>>>;
 
-function lotPayload(lot: CurrentLot) {
-  const currentPrice = Number(lot.currentPrice);
+// staff: el martillero/admin ve el precio base; el público, "sin base"
+// (sin precio actual hasta la primera oferta). Ver visibilidad.ts.
+function lotPayload(lot: CurrentLot, staff: boolean) {
   const bidIncrement = Number(lot.bidIncrement);
   return {
     id: lot.id,
     number: lot.number,
+    bis: lot.bis,
     title: lot.title,
     description: lot.description,
-    startingPrice: Number(lot.startingPrice),
-    currentPrice,
+    ...(staff ? { startingPrice: Number(lot.startingPrice) } : {}),
+    currentPrice: lot.leaderId || staff ? Number(lot.currentPrice) : null,
     bidIncrement,
     minNextBid: minNextBidOf(lot),
     // La mínima la fijó el martillero a mano (no es precio + incremento)
@@ -154,7 +223,7 @@ function lotPayload(lot: CurrentLot) {
  * de la subasta y el lote que se está rematando. lot = null cuando ya no
  * quedan lotes sin vender.
  */
-export async function getRoomState(auctionId: string) {
+export async function getRoomState(auctionId: string, staff = false) {
   const auction = await db.query.auctions.findFirst({
     where: eq(auctions.id, auctionId),
     with: { createdBy: { columns: { firstName: true, lastName: true } } },
@@ -168,19 +237,24 @@ export async function getRoomState(auctionId: string) {
       title: auction.title,
       location: auction.location,
       status: auction.status,
+      published: auction.published,
       // Nunca la clave (camera_id): solo si la transmisión está habilitada
       cameraOn: Boolean(auction.cameraId),
       martillero: auction.createdBy ? `${auction.createdBy.firstName} ${auction.createdBy.lastName}` : null,
     },
-    lot: lot ? lotPayload(lot) : null,
+    lot: lot ? lotPayload(lot, staff) : null,
   };
 }
 
-/** Reenvía el estado de la sala a todos (ej: se prendió/apagó la cámara). */
+/**
+ * Reenvía el estado de la sala a todos (ej: se prendió/apagó la cámara).
+ * Devuelve la versión del martillero/admin (con el precio base): la usan
+ * las respuestas HTTP de los controles del martillero.
+ */
 export async function broadcastRoomState(auctionId: string) {
   const state = await getRoomState(auctionId);
   getIo()?.to(`auction:${auctionId}`).emit('lot:change', state);
-  return state;
+  return getRoomState(auctionId, true);
 }
 
 /** El martillero pasa a otro lote: se avisa a toda la sala. */

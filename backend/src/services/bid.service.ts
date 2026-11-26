@@ -12,10 +12,17 @@ const pesos = (n: number) => `$${n.toLocaleString('es-AR')}`;
 
 /**
  * Próxima oferta mínima de un lote: la que fijó el martillero a mano (si
- * fijó una) o precio actual + incremento.
+ * fijó una); si nadie ofertó todavía, el precio base (que el público no ve:
+ * "sin base"); si no, precio actual + incremento.
  */
-export function minNextBidOf(lot: { currentPrice: string; bidIncrement: string; nextMinBid: string | null }) {
+export function minNextBidOf(lot: {
+  currentPrice: string;
+  bidIncrement: string;
+  nextMinBid: string | null;
+  leaderId: string | null;
+}) {
   if (lot.nextMinBid != null) return Number(lot.nextMinBid);
+  if (!lot.leaderId) return Number(lot.currentPrice);
   return Number(lot.currentPrice) + Number(lot.bidIncrement);
 }
 

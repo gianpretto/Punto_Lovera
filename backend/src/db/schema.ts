@@ -11,6 +11,7 @@ import {
   jsonb,
   pgEnum,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   unique,
@@ -100,6 +101,9 @@ export const auctions = pgTable('auctions', {
   coverImageUrl: text('cover_image_url'),
   startsAt: timestamp('starts_at').notNull(),
   status: auctionStatusEnum('status').notNull().default('PROXIMA'),
+  // Publicada: la ve el público. Se crea oculta para que el admin la vaya
+  // completando y la publique cuando esté lista (pedido del cliente, nov 2026).
+  published: boolean('published').notNull().default(false),
 
   // cameraId del stream en rtsp-manager (Francis), cuando la subasta tiene
   // cámara en vivo activa. Null = sin video, solo chat/pujas.
@@ -126,6 +130,9 @@ export const lots = pgTable(
       .references(() => auctions.id, { onDelete: 'cascade' }),
 
     number: integer('number').notNull(),
+    // "1 bis": lote agregado a último momento con el mismo número que otro
+    // (uno solo por número), para que coincida con la lista en papel
+    bis: boolean('bis').notNull().default(false),
     title: text('title').notNull(),
     description: text('description').notNull(),
     startingPrice: decimal('starting_price', { precision: 12, scale: 2 }).notNull(),
@@ -144,7 +151,7 @@ export const lots = pgTable(
     createdAt: timestamp('created_at').notNull().defaultNow(),
     updatedAt: timestamp('updated_at').notNull().defaultNow(),
   },
-  (table) => [unique('lots_auction_number_unique').on(table.auctionId, table.number)]
+  (table) => [unique('lots_auction_number_bis_unique').on(table.auctionId, table.number, table.bis)]
 );
 
 export const lotImages = pgTable('lot_images', {
@@ -206,6 +213,22 @@ export const bids = pgTable('bids', {
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
+// ---------- Lotes favoritos de cada usuario ----------
+
+export const lotFavorites = pgTable(
+  'lot_favorites',
+  {
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    lotId: uuid('lot_id')
+      .notNull()
+      .references(() => lots.id, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at').notNull().defaultNow(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.lotId] })]
+);
+
 // ---------- Moderación de la sala (por remate) ----------
 
 // SILENCIADO: no puede escribir en el chat. EXPULSADO: no puede entrar a la
@@ -241,6 +264,10 @@ export const chatMessages = pgTable('chat_messages', {
   isOffer: boolean('is_offer').notNull().default(false),
   // En los mensajes de oferta: qué puja es (para tacharla si el martillero la anula)
   bidId: uuid('bid_id'),
+  // Mensaje privado entre un usuario y el martillero: lo ven solo ese
+  // usuario (privateUserId) y el martillero/admins. Si lo escribe el
+  // usuario, userId = privateUserId; si contesta el martillero, userId es él.
+  privateUserId: uuid('private_user_id').references(() => users.id),
   createdAt: timestamp('created_at').notNull().defaultNow(),
 });
 
@@ -357,4 +384,9 @@ export const purchasesRelations = relations(purchases, ({ one }) => ({
 export const auctionSanctionsRelations = relations(auctionSanctions, ({ one }) => ({
   auction: one(auctions, { fields: [auctionSanctions.auctionId], references: [auctions.id] }),
   user: one(users, { fields: [auctionSanctions.userId], references: [users.id] }),
+}));
+
+export const lotFavoritesRelations = relations(lotFavorites, ({ one }) => ({
+  user: one(users, { fields: [lotFavorites.userId], references: [users.id] }),
+  lot: one(lots, { fields: [lotFavorites.lotId], references: [lots.id] }),
 }));

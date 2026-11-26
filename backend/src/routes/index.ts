@@ -6,6 +6,7 @@ import purchaseRoutes from './purchase.routes';
 import liveRoutes from './live.routes';
 import contactRoutes from './contact.routes';
 import { adminConfigRoutes, publicConfigRoutes } from './config.routes';
+import { adminUsuariosRoutes, favoritosRoutes } from './usuarios.routes';
 
 const router = Router();
 
@@ -17,6 +18,8 @@ router.use('/live', liveRoutes);
 router.use('/contacto', contactRoutes);
 router.use('/config', publicConfigRoutes);
 router.use('/admin/configuracion', adminConfigRoutes);
+router.use('/admin/usuarios', adminUsuariosRoutes);
+router.use('/favoritos', favoritosRoutes);
 
 router.get('/health', (_req, res) => res.json({ ok: true }));
 

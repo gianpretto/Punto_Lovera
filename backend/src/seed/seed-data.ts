@@ -54,6 +54,7 @@ export async function seedDatabase() {
         location: 'Castelar, Buenos Aires',
         startsAt: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000),
         status: 'PROXIMA',
+        published: true,
         createdById: admin.id,
       })
       .returning();

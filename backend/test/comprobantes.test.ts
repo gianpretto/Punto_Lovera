@@ -133,10 +133,11 @@ describe('Ofertas en curso', () => {
   it('una puja aparece en /compras/ofertas como "vas ganando"', async () => {
     const auctionId = (await app.api('GET', '/subastas')).data.auctions[0].id;
     await app.api('PATCH', `/subastas/${auctionId}`, { status: 'ACTIVA' }, A);
-    const lot = (await app.api('GET', `/subastas/${auctionId}`)).data.auction.lots.find((l: { sold: boolean }) => !l.sold);
+    const lot = (await app.api('GET', `/subastas/${auctionId}`, null, A)).data.auction.lots.find((l: { sold: boolean }) => !l.sold);
     await app.api('PATCH', `/subastas/${auctionId}/lote-actual`, { lotId: lot.id }, A);
 
-    const amount = Number(lot.currentPrice) + Number(lot.bidIncrement);
+    // Primera oferta: alcanza con la base (o más si ya había ofertas)
+    const amount = Number(lot.currentPrice) + (lot.leaderId ? Number(lot.bidIncrement) : 0);
     expect((await app.api('POST', `/subastas/${auctionId}/lotes/${lot.id}/pujas`, { amount }, U)).status).toBe(201);
 
     const offers = (await app.api('GET', '/compras/ofertas', null, U)).data.offers;
