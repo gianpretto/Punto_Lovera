@@ -1,0 +1,87 @@
+@use '../../styles/tokens' as t;
+
+// "Mis favoritos": misma línea que Mis datos (fondo claro con patrón,
+// título serif) y la grilla de tarjetas del catálogo.
+
+.pagina {
+  @include t.fondo-patron(t.$blanco);
+  padding: 120px 0 136px;
+  font-family: t.$font-texto;
+  color: t.$gris-oscuro;
+
+  @include t.tablet {
+    padding: 72px 0 96px;
+  }
+}
+
+.contenedor {
+  @include t.contenedor;
+}
+
+.titulo {
+  @include t.titulo-display(88px, 1.104);
+  margin: 32px 0 48px;
+  color: t.$gris-oscuro;
+
+  em {
+    color: t.$verde;
+  }
+
+  @include t.tablet {
+    margin: 20px 0 32px;
+  }
+}
+
+.vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 20px;
+  font-size: 18px;
+  line-height: 26px;
+
+  p {
+    margin: 0;
+  }
+}
+
+.remate + .remate {
+  margin-top: 64px;
+}
+
+.remateTitulo {
+  margin: 0;
+  font-family: t.$font-titulo;
+  font-weight: 400;
+  font-size: 36px;
+  line-height: 40px;
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  a:hover {
+    color: t.$verde;
+  }
+}
+
+.remateDatos {
+  margin: 6px 0 0;
+  color: t.$gris-texto;
+}
+
+.grilla {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+  margin-top: 24px;
+
+  @include t.tablet {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @include t.mobile {
+    grid-template-columns: 1fr;
+  }
+}

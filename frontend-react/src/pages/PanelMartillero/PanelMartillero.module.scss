@@ -416,3 +416,35 @@
   font-weight: 700;
   font-size: 13px !important;
 }
+
+// ---------- Mensajes privados de los usuarios
+
+.conversacion {
+  padding: 14px 0;
+  border-top: 1px solid t.$gris-claro;
+
+  h3 {
+    margin: 0 0 8px;
+    font-size: 15px;
+  }
+}
+
+.privados {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  font-size: 14px;
+  line-height: 20px;
+
+  li {
+    padding: 4px 0;
+  }
+
+  .hora {
+    margin-right: 8px;
+  }
+}
+
+.privadoStaff {
+  color: t.$verde;
+}

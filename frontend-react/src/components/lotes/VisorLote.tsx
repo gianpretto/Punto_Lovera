@@ -19,6 +19,8 @@ const ENFOCABLES = 'button:not([disabled]), [href], input, select, textarea, [ta
 
 export default function VisorLote({ lote, fotoInicial = 0, onCerrar }: Props) {
   const [foto, setFoto] = useState(fotoInicial);
+  // La foto sola a pantalla completa (al tocarla)
+  const [soloFoto, setSoloFoto] = useState(false);
   const dialogo = useRef<HTMLDivElement>(null);
   const cerrar = useRef<HTMLButtonElement>(null);
   const total = lote.imagenes.length;
@@ -43,7 +45,9 @@ export default function VisorLote({ lote, fotoInicial = 0, onCerrar }: Props) {
     const teclas = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.preventDefault();
-        onCerrar();
+        // Primero cierra la foto sola, después el visor
+        if (soloFoto) setSoloFoto(false);
+        else onCerrar();
       } else if (e.key === 'ArrowRight' && total > 1) {
         e.preventDefault();
         setFoto((i) => (i + 1) % total);
@@ -68,7 +72,7 @@ export default function VisorLote({ lote, fotoInicial = 0, onCerrar }: Props) {
     };
     document.addEventListener('keydown', teclas);
     return () => document.removeEventListener('keydown', teclas);
-  }, [onCerrar, total]);
+  }, [onCerrar, total, soloFoto]);
 
   const tituloId = `visor-lote-${lote.id}`;
 
@@ -92,11 +96,21 @@ export default function VisorLote({ lote, fotoInicial = 0, onCerrar }: Props) {
         <div className={styles.panel}>
           <div className={styles.media}>
             {total > 0 ? (
-              <img
-                className={styles.foto}
-                src={lote.imagenes[foto]}
-                alt={varias ? `${lote.titulo}, foto ${foto + 1} de ${total}` : lote.titulo}
-              />
+              <button
+                type="button"
+                className={styles.fotoBoton}
+                onClick={() => setSoloFoto(true)}
+                aria-label="Ver la foto sola, en grande"
+              >
+                <img
+                  className={styles.foto}
+                  src={lote.imagenes[foto]}
+                  alt={varias ? `${lote.titulo}, foto ${foto + 1} de ${total}` : lote.titulo}
+                />
+                <span className={styles.lupa} aria-hidden="true">
+                  Tocá para ampliar
+                </span>
+              </button>
             ) : (
               <span className={styles.sinFotos}>Este lote todavía no tiene fotos</span>
             )}
@@ -126,7 +140,7 @@ export default function VisorLote({ lote, fotoInicial = 0, onCerrar }: Props) {
 
           <div className={styles.detalle}>
             <p className={styles.etiquetas}>
-              <span>LOTE {lote.numero}</span>
+              <span className={styles.numero}>LOTE {lote.numeroTexto}</span>
               {lote.etiqueta && <span>{lote.etiqueta}</span>}
             </p>
             <h2 id={tituloId} className={styles.titulo}>
@@ -143,6 +157,51 @@ export default function VisorLote({ lote, fotoInicial = 0, onCerrar }: Props) {
           </div>
         </div>
       </div>
+
+      {soloFoto && total > 0 && (
+        <div
+          className={styles.soloFoto}
+          onClick={(e) => {
+            e.stopPropagation();
+            setSoloFoto(false);
+          }}
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Foto ${foto + 1} de ${total} de ${lote.titulo}`}
+        >
+          <img
+            src={lote.imagenes[foto]}
+            alt={varias ? `${lote.titulo}, foto ${foto + 1} de ${total}` : lote.titulo}
+            onClick={(e) => e.stopPropagation()}
+          />
+          <button type="button" className={styles.soloFotoCerrar} onClick={() => setSoloFoto(false)}>
+            CERRAR ✕
+          </button>
+          {varias && (
+            <>
+              <BotonFlecha
+                direccion="anterior"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  ir(-1);
+                }}
+                className={styles.flechaIzq}
+              />
+              <BotonFlecha
+                direccion="siguiente"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  ir(1);
+                }}
+                className={styles.flechaDer}
+              />
+              <p className={styles.soloFotoContador}>
+                {foto + 1} / {total}
+              </p>
+            </>
+          )}
+        </div>
+      )}
     </div>,
     document.body,
   );

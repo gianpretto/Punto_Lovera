@@ -18,7 +18,7 @@ export default function IrAlPanel() {
       return;
     }
     api
-      .get<AuctionsPage>('/subastas?status=ACTIVA,PROXIMA&page=1&pageSize=1')
+      .get<AuctionsPage>('/subastas?status=ACTIVA,PROXIMA&page=1&pageSize=1&ocultas=1')
       .then(({ auctions }) =>
         navigate(auctions[0] ? `/subastas/${auctions[0].id}/martillero` : '/admin/subastas', { replace: true }),
       )

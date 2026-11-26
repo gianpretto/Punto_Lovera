@@ -2,12 +2,14 @@
 export interface LoteCatalogo {
   id: string;
   numero: number;
+  /** "12" o "12 BIS" (lote agregado a último momento con el mismo número) */
+  numeroTexto: string;
   titulo: string;
   /** Primer párrafo de la descripción (en la tarjeta y en negrita en el visor) */
   resumen: string;
   /** Resto de los párrafos de la descripción (solo en el visor) */
   detalle: string[];
-  /** Texto chico de la derecha ("BASE $ 150.000" o "VENDIDO") */
+  /** Texto chico de la derecha ("SIN BASE" o "VENDIDO") */
   etiqueta: string;
   imagenes: string[];
 }
@@ -20,3 +22,6 @@ export function partirDescripcion(descripcion: string): { resumen: string; detal
     .filter(Boolean);
   return { resumen: parrafos[0] ?? '', detalle: parrafos.slice(1) };
 }
+
+/** "12" o "12 BIS" */
+export const textoNumeroLote = (numero: number, bis?: boolean) => `${numero}${bis ? ' BIS' : ''}`;

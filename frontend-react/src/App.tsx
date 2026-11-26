@@ -17,6 +17,8 @@ const AdminComprobantes = lazy(() => import('./pages/AdminComprobantes/AdminComp
 const AdminReintegros = lazy(() => import('./pages/AdminReintegros/AdminReintegros'));
 const AdminConsultas = lazy(() => import('./pages/AdminConsultas/AdminConsultas'));
 const AdminConfiguracion = lazy(() => import('./pages/AdminConfiguracion/AdminConfiguracion'));
+const AdminUsuarios = lazy(() => import('./pages/AdminUsuarios/AdminUsuarios'));
+const Favoritos = lazy(() => import('./pages/Favoritos/Favoritos'));
 const AdminSubastas = lazy(() => import('./pages/AdminSubastas/AdminSubastas'));
 const EditarSubasta = lazy(() => import('./pages/AdminSubastas/EditarSubasta'));
 const Login = lazy(() => import('./pages/Login/Login'));
@@ -49,6 +51,8 @@ function precargarPaginas() {
     () => import('./pages/AdminReintegros/AdminReintegros'),
     () => import('./pages/AdminConsultas/AdminConsultas'),
     () => import('./pages/AdminConfiguracion/AdminConfiguracion'),
+    () => import('./pages/AdminUsuarios/AdminUsuarios'),
+    () => import('./pages/Favoritos/Favoritos'),
     () => import('./pages/AdminSubastas/AdminSubastas'),
     () => import('./pages/AdminSubastas/EditarSubasta'),
     () => import('./pages/Login/Login'),
@@ -114,6 +118,8 @@ export default function App() {
           <Route path="/admin/reintegros" element={<AdminReintegros />} />
           <Route path="/admin/consultas" element={<AdminConsultas />} />
           <Route path="/admin/configuracion" element={<AdminConfiguracion />} />
+          <Route path="/admin/usuarios" element={<AdminUsuarios />} />
+          <Route path="/favoritos" element={<Favoritos />} />
 
           {/* Administración de subastas y lotes (martillero / admin) */}
           <Route path="/admin/subastas" element={<AdminSubastas />} />

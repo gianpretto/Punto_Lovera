@@ -17,15 +17,32 @@ export interface AuctionApi {
   status: AuctionStatus;
   /** Transmisión habilitada (la clave de OBS nunca llega al navegador) */
   cameraOn?: boolean;
+  /** Publicada (la ve el público). Las ocultas solo le llegan al admin. */
+  published?: boolean;
+}
+
+/**
+ * Estado a mostrar: cuando la cuenta regresiva llega a cero, una subasta
+ * PROXIMA ya se muestra ACTIVA (el backend la pasa a ACTIVA en unos segundos).
+ */
+export function estadoEfectivo(a: Pick<AuctionApi, 'status' | 'startsAt'>, now: number): AuctionStatus {
+  if (a.status === 'PROXIMA' && new Date(a.startsAt).getTime() <= now) return 'ACTIVA';
+  return a.status;
 }
 
 export interface LotApi {
   id: string;
   number: number;
+  /** "12 bis": lote agregado con el mismo número que otro */
+  bis?: boolean;
   title: string;
   description: string;
+  /** Precio base: solo le llega al martillero/admin (el público ve "SIN BASE") */
   startingPrice?: string;
-  currentPrice: string;
+  /** null para el público mientras nadie ofertó (sería la base) */
+  currentPrice: string | null;
+  leaderId?: string | null;
+  bidIncrement?: string;
   sold: boolean;
   images: { url: string; position: number }[];
 }
@@ -80,7 +97,7 @@ export function countdownTo(iso: string, now: number): Countdown {
 export function toSubasta(a: AuctionApi, now: number): Subasta {
   return {
     id: a.id,
-    estado: ESTADO[a.status],
+    estado: ESTADO[estadoEfectivo(a, now)],
     titulo: a.title,
     ubicacion: a.location,
     descripcion: a.description,
@@ -149,6 +166,8 @@ export function useAuction(id: string | undefined) {
   const [auction, setAuction] = useState<AuctionSummaryApi | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const [vuelta, setVuelta] = useState(0);
+
   useEffect(() => {
     if (!id) return;
     let cancel = false;
@@ -159,7 +178,27 @@ export function useAuction(id: string | undefined) {
     return () => {
       cancel = true;
     };
-  }, [id]);
+  }, [id, vuelta]);
+
+  // Cuando llega la hora, el backend la pasa a ACTIVA: se vuelve a pedir
+  // cada 5 s (hasta 2 minutos) para tener el estado real.
+  const proxima = auction?.status === 'PROXIMA' ? auction.startsAt : null;
+  useEffect(() => {
+    if (!proxima) return;
+    const falta = new Date(proxima).getTime() - Date.now();
+    if (falta > 24 * 60 * 60 * 1000) return; // muy lejos: no hace falta
+    let intervalo: ReturnType<typeof setInterval> | undefined;
+    let fin: ReturnType<typeof setTimeout> | undefined;
+    const arranque = setTimeout(() => {
+      intervalo = setInterval(() => setVuelta((v) => v + 1), 5000);
+      fin = setTimeout(() => clearInterval(intervalo), 120_000);
+    }, Math.max(0, falta) + 2000);
+    return () => {
+      clearTimeout(arranque);
+      clearInterval(intervalo);
+      clearTimeout(fin);
+    };
+  }, [proxima]);
 
   return { auction, error };
 }

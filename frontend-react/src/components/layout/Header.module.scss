@@ -129,15 +129,22 @@
   display: flex;
   flex: none;
 
+  // Más grande que el diseño original (pedido del cliente)
   img {
     display: block;
-    width: 217px;
+    width: 270px;
     height: auto;
+  }
+
+  @include t.tablet {
+    img {
+      width: 230px;
+    }
   }
 
   @include t.mobile {
     img {
-      width: 170px;
+      width: 190px;
     }
   }
 }

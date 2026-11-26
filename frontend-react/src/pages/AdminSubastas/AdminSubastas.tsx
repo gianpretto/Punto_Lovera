@@ -16,6 +16,7 @@ interface AuctionListItem {
   location: string;
   startsAt: string;
   status: AuctionStatus;
+  published: boolean;
   lots: { id: string }[];
 }
 
@@ -44,7 +45,8 @@ export default function AdminSubastas() {
   useEffect(() => {
     if (!esMartillero) return;
     api
-      .get<{ auctions: AuctionListItem[] }>('/subastas')
+      // ?ocultas=1: también las que todavía no se publicaron
+      .get<{ auctions: AuctionListItem[] }>('/subastas?ocultas=1')
       // Las más nuevas (o más lejanas en el tiempo) primero
       .then(({ auctions }) => setAuctions([...auctions].sort((a, b) => b.startsAt.localeCompare(a.startsAt))))
       .catch((err) => {
@@ -82,6 +84,7 @@ export default function AdminSubastas() {
                   <th>Subasta</th>
                   <th>Fecha y hora</th>
                   <th>Estado</th>
+                  <th>Publicación</th>
                   <th>Lotes</th>
                   <th></th>
                 </tr>
@@ -97,6 +100,11 @@ export default function AdminSubastas() {
                     <td>
                       <span className={`${styles.estado} ${styles[`estado${a.status}`] ?? ''}`}>
                         {ESTADOS_SUBASTA[a.status]}
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`${styles.estado} ${a.published ? styles.publicada : styles.oculta}`}>
+                        {a.published ? 'Publicada' : 'Oculta'}
                       </span>
                     </td>
                     <td>{a.lots.length}</td>

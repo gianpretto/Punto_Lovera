@@ -296,8 +296,10 @@
 .splitQuiero {
   margin: 0;
   font-weight: 700;
-  font-size: 12px;
-  line-height: 16px;
+  // Más grande (pedido del cliente): antes 12 px
+  font-size: clamp(24px, 2.6vw, 36px);
+  line-height: 1.2;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
 }
 

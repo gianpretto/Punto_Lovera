@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import {
   countdownTo,
+  estadoEfectivo,
   formatFecha,
   formatHora,
   lotImages,
@@ -19,7 +20,8 @@ import Etiqueta from '../../components/ui/Etiqueta';
 import Paginacion from '../../components/ui/Paginacion';
 import TarjetaLote from '../../components/lotes/TarjetaLote';
 import VisorLote from '../../components/lotes/VisorLote';
-import { partirDescripcion, type LoteCatalogo } from '../../components/lotes/lote';
+import { partirDescripcion, textoNumeroLote, type LoteCatalogo } from '../../components/lotes/lote';
+import { useFavoritos } from '../../services/favoritos';
 import styles from './DetalleSubasta.module.scss';
 
 // Catálogo de una subasta (Figma "catalogo"): cabecera con datos, foto y
@@ -43,32 +45,17 @@ const PASOS = [
   },
 ];
 
-const precio = (valor: string | undefined) =>
-  valor ? `$ ${Number(valor).toLocaleString('es-AR', { maximumFractionDigits: 0 })}` : '';
-
+// El precio base es interno (pedido del cliente): el público ve "SIN BASE"
 function aLoteCatalogo(lot: LotApi): LoteCatalogo {
   return {
     id: lot.id,
     numero: lot.number,
+    numeroTexto: textoNumeroLote(lot.number, lot.bis),
     titulo: lot.title,
     ...partirDescripcion(lot.description),
-    etiqueta: lot.sold ? 'VENDIDO' : lot.startingPrice ? `BASE ${precio(lot.startingPrice)}` : '',
+    etiqueta: lot.sold ? 'VENDIDO' : 'SIN BASE',
     imagenes: lotImages(lot),
   };
-}
-
-/** "En 18 días.", "En 5 horas.", etc. (columna CIERRE del diseño) */
-function textoCierre(auction: AuctionSummaryApi, now: number) {
-  if (auction.status === 'ACTIVA') return 'En curso.';
-  if (auction.status === 'FINALIZADA') return 'Finalizada.';
-  if (auction.status === 'CANCELADA') return 'Cancelada.';
-  const ms = new Date(auction.startsAt).getTime() - now;
-  const dias = Math.floor(ms / 86_400_000);
-  const horas = Math.floor(ms / 3_600_000);
-  if (dias >= 2) return `En ${dias} días.`;
-  if (dias === 1) return 'En 1 día.';
-  if (horas >= 1) return `En ${horas} ${horas === 1 ? 'hora' : 'horas'}.`;
-  return ms > 0 ? 'En minutos.' : 'Por empezar.';
 }
 
 interface Accion {
@@ -116,6 +103,7 @@ export default function DetalleSubasta() {
   const { auction, error } = useAuction(id);
   const { user, loading } = useAuth();
   const now = useNow();
+  const favoritos = useFavoritos();
   const configCreditos = useConfigCreditos();
   const [visor, setVisor] = useState<{ lote: LoteCatalogo; foto: number } | null>(null);
   const cerrarVisor = useCallback(() => setVisor(null), []);
@@ -146,13 +134,19 @@ export default function DetalleSubasta() {
     );
   }
 
-  const estado = auction.status;
+  // Cuando la cuenta regresiva llega a cero ya se muestra activa
+  const estado = estadoEfectivo(auction, now);
   const pastilla = estado === 'ACTIVA' ? 'ACTIVA' : estado === 'PROXIMA' ? 'PRÓXIMAMENTE' : estado;
   const cuenta = countdownTo(auction.startsAt, now);
   const accion =
     loading || !configCreditos
       ? null
-      : accionIngreso(auction, user, user ? null : searchParams.get('pase'), configCreditos.modo !== 'SIN_CREDITO');
+      : accionIngreso(
+          { ...auction, status: estado },
+          user,
+          user ? null : searchParams.get('pase'),
+          configCreditos.modo !== 'SIN_CREDITO'
+        );
   const ubicacion = auction.location.replace(/\.?\s*$/, '.');
   const tituloLargo = auction.title.length > 28;
 
@@ -190,13 +184,6 @@ export default function DetalleSubasta() {
                     <div>
                       <dt>FECHA</dt>
                       <dd>{`${formatFecha(auction.startsAt)}, ${formatHora(auction.startsAt)}.`}</dd>
-                    </div>
-                  </div>
-                  <div className={styles.metaItem}>
-                    <img src="/assets/figma/icono-reloj-verde.svg" alt="" width={16} height={16} />
-                    <div>
-                      <dt>CIERRE</dt>
-                      <dd>{textoCierre(auction, now)}</dd>
                     </div>
                   </div>
                 </dl>
@@ -260,7 +247,13 @@ export default function DetalleSubasta() {
             {lotes.length > 0 && (
               <div className={styles.grilla}>
                 {lotes.map((lote) => (
-                  <TarjetaLote key={lote.id} lote={lote} onVerFotos={(foto) => setVisor({ lote, foto })} />
+                  <TarjetaLote
+                    key={lote.id}
+                    lote={lote}
+                    onVerFotos={(foto) => setVisor({ lote, foto })}
+                    favorito={favoritos.esFavorito(lote.id)}
+                    onFavorito={favoritos.activo ? () => favoritos.alternar(lote.id) : undefined}
+                  />
                 ))}
               </div>
             )}

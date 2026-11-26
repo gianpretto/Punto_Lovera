@@ -16,6 +16,7 @@ type AuctionStatus = 'PROXIMA' | 'ACTIVA' | 'FINALIZADA' | 'CANCELADA';
 interface LotApi {
   id: string;
   number: number;
+  bis?: boolean;
   title: string;
   startingPrice: string;
   currentPrice: string;
@@ -66,6 +67,17 @@ interface BidApi {
 }
 
 // GET /api/subastas/:id/sanciones (moderación de la sala, solo este remate)
+/** Mensaje privado entre un usuario y el martillero (GET /subastas/:id/privados) */
+interface PrivadoApi {
+  id: string;
+  userId: string;
+  user: string;
+  text: string;
+  time: string;
+  staff: boolean;
+  privateUserId: string;
+}
+
 interface SanctionApi {
   id: string;
   userId: string;
@@ -93,6 +105,7 @@ const ESTADOS: Record<AuctionStatus, string> = {
 };
 
 const pesos = (n: number | string) => `$${Number(n).toLocaleString('es-AR')}`;
+const numeroLote = (l: { number: number; bis?: boolean }) => `${l.number}${l.bis ? ' bis' : ''}`;
 const hora = (iso: string) => new Date(iso).toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
 
 export default function PanelMartillero() {
@@ -120,6 +133,8 @@ export default function PanelMartillero() {
   const [paseHoras, setPaseHoras] = useState(24);
   const [copiado, setCopiado] = useState<string | null>(null);
   const [sanciones, setSanciones] = useState<SanctionApi[]>([]);
+  const [privados, setPrivados] = useState<PrivadoApi[]>([]);
+  const [respuestas, setRespuestas] = useState<Record<string, string>>({});
   // Correcciones en vivo del lote en remate (vacío = no cambiar)
   const [nuevoPrecio, setNuevoPrecio] = useState('');
   const [nuevoIncremento, setNuevoIncremento] = useState('');
@@ -222,6 +237,47 @@ export default function PanelMartillero() {
     return () => clearInterval(t);
   }, [esMartillero, cargarSanciones]);
 
+  // Mensajes privados de los usuarios al martillero: se refrescan cada 8 s
+  const cargarPrivados = useCallback(async () => {
+    if (!id) return;
+    try {
+      const { messages } = await api.get<{ messages: PrivadoApi[] }>(`/subastas/${id}/privados`);
+      setPrivados(messages);
+    } catch {
+      // se reintenta en la próxima vuelta
+    }
+  }, [id]);
+
+  useEffect(() => {
+    if (!esMartillero) return;
+    cargarPrivados();
+    const t = setInterval(cargarPrivados, 8000);
+    return () => clearInterval(t);
+  }, [esMartillero, cargarPrivados]);
+
+  // Una conversación por usuario (la última arriba)
+  const conversaciones = Object.values(
+    privados.reduce<Record<string, { userId: string; nombre: string; mensajes: PrivadoApi[] }>>((acc, m) => {
+      const c = (acc[m.privateUserId] ??= { userId: m.privateUserId, nombre: '', mensajes: [] });
+      if (!m.staff) c.nombre = m.user;
+      c.mensajes.push(m);
+      return acc;
+    }, {})
+  ).reverse();
+
+  const responderPrivado = async (e: FormEvent, userId: string) => {
+    e.preventDefault();
+    const text = (respuestas[userId] ?? '').trim();
+    if (!text || !id) return;
+    try {
+      await api.post(`/subastas/${id}/privados`, { userId, text });
+      setRespuestas((r) => ({ ...r, [userId]: '' }));
+      cargarPrivados();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'No se pudo enviar la respuesta.');
+    }
+  };
+
   const accion = async (fn: () => Promise<unknown>, ok?: string) => {
     setError('');
     setAviso('');
@@ -252,8 +308,10 @@ export default function PanelMartillero() {
   }, []);
   const nombreDe = (userId: string | null) =>
     userId ? (postores.find((p) => p.userId === userId)?.nombre ?? 'Otro usuario') : 'Nadie';
-  const minimaManual =
-    lotActual != null && lotActual.minNextBid !== lotActual.currentPrice + lotActual.bidIncrement;
+  const minimaManual = Boolean(lotActual?.minNextBidManual);
+  // La sala manda el precio sin base para el público: la base sale de la subasta (staff)
+  const baseActual = auction?.lots.find((l) => l.id === lotActual?.id)?.startingPrice;
+  const precioActual = lotActual?.currentPrice ?? (baseActual != null ? Number(baseActual) : null);
 
   // Gana quien va ganando el lote (ya contempla anulaciones y correcciones)
   const adjudicar = () => {
@@ -263,11 +321,12 @@ export default function PanelMartillero() {
       return;
     }
     const quien = nombreDe(lotActual.leaderId);
-    if (!window.confirm(`¿Adjudicar "${lotActual.title}" a ${quien} por ${pesos(lotActual.currentPrice)}?`)) return;
+    if (!window.confirm(`¿Adjudicar "${lotActual.title}" a ${quien} por ${pesos(precioActual ?? 0)}?`)) return;
     accion(() => api.post(`/compras/cerrar-lote/${lotActual.id}`), `Lote adjudicado a ${quien}.`);
   };
 
   const siguienteLote = () => accion(() => api.post(`/subastas/${id}/siguiente-lote`));
+  const loteAnterior = () => accion(() => api.post(`/subastas/${id}/lote-anterior`));
 
   /** PATCH en vivo del lote en remate (precio, incremento, mínima, líder) */
   const corregirLote = (cambios: Record<string, unknown>, ok: string, limpiar: () => void) => {
@@ -430,12 +489,12 @@ export default function PanelMartillero() {
           {lotActual ? (
             <>
               <p className={styles.lotTitle}>
-                Lote {lotActual.number} · {lotActual.title}
+                Lote {numeroLote(lotActual)} · {lotActual.title}
               </p>
               <div className={styles.precios}>
                 <div>
-                  <span className={styles.label}>Precio actual</span>
-                  <span className={styles.precio}>{pesos(lotActual.currentPrice)}</span>
+                  <span className={styles.label}>{lotActual.leaderId ? 'Precio actual' : 'Sin ofertas · base (interna)'}</span>
+                  <span className={styles.precio}>{precioActual != null ? pesos(precioActual) : '—'}</span>
                 </div>
                 <div>
                   <span className={styles.label}>Próxima puja mínima{minimaManual ? ' (a mano)' : ''}</span>
@@ -450,8 +509,11 @@ export default function PanelMartillero() {
                 <button className={styles.btnNegro} onClick={adjudicar} disabled={busy || !lotActual.leaderId}>
                   Adjudicar lote al mejor postor
                 </button>
+                <button className={styles.btnGris} onClick={loteAnterior} disabled={busy}>
+                  ← Lote anterior
+                </button>
                 <button className={styles.btnGris} onClick={siguienteLote} disabled={busy}>
-                  Siguiente lote
+                  Siguiente lote →
                 </button>
               </div>
 
@@ -463,7 +525,7 @@ export default function PanelMartillero() {
                   id="corr-precio"
                   className={styles.input}
                   inputMode="numeric"
-                  placeholder={pesos(lotActual.currentPrice)}
+                  placeholder={precioActual != null ? pesos(precioActual) : ''}
                   value={nuevoPrecio}
                   onChange={(e) => setNuevoPrecio(e.target.value)}
                   maxLength={15}
@@ -671,6 +733,43 @@ export default function PanelMartillero() {
         </section>
       </div>
 
+      {/* Mensajes privados de los usuarios (desde el chat de la sala) */}
+      <section className={styles.card}>
+        <h2>Mensajes privados</h2>
+        <p className={styles.nota}>
+          Lo que los usuarios te escriben en privado desde el chat. Tu respuesta la ve solo esa persona.
+        </p>
+        {conversaciones.length === 0 ? (
+          <p className={styles.vacio}>Nadie te escribió en privado todavía.</p>
+        ) : (
+          conversaciones.map((c) => (
+            <div key={c.userId} className={styles.conversacion}>
+              <h3>{c.nombre || 'Usuario'}</h3>
+              <ul className={styles.privados}>
+                {c.mensajes.map((m) => (
+                  <li key={m.id} className={m.staff ? styles.privadoStaff : ''}>
+                    <span className={styles.hora}>{hora(m.time)}</span>
+                    <strong>{m.staff ? 'Vos' : m.user}:</strong> {m.text}
+                  </li>
+                ))}
+              </ul>
+              <form className={styles.correccion} onSubmit={(e) => responderPrivado(e, c.userId)}>
+                <input
+                  className={styles.input}
+                  placeholder={`Responder en privado a ${c.nombre || 'este usuario'}`}
+                  value={respuestas[c.userId] ?? ''}
+                  onChange={(e) => setRespuestas((r) => ({ ...r, [c.userId]: e.target.value }))}
+                  maxLength={500}
+                />
+                <button className={styles.btnChico} type="submit" disabled={!(respuestas[c.userId] ?? '').trim()}>
+                  Enviar
+                </button>
+              </form>
+            </div>
+          ))
+        )}
+      </section>
+
       {/* Moderación: los que el martillero silenció o expulsó desde el chat */}
       <section className={styles.card}>
         <h2>Sancionados en este remate</h2>
@@ -779,7 +878,7 @@ export default function PanelMartillero() {
                 const enRemate = lotActual?.id === l.id;
                 return (
                   <tr key={l.id} className={enRemate ? styles.filaActual : ''}>
-                    <td>{l.number}</td>
+                    <td>{numeroLote(l)}</td>
                     <td>{l.title}</td>
                     <td>{pesos(l.startingPrice)}</td>
                     <td>{pesos(l.currentPrice)}</td>

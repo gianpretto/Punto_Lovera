@@ -261,3 +261,30 @@
   gap: 10px;
   flex-wrap: wrap;
 }
+
+// Casilla "Bis" junto al número de lote, y "Publicada" en la subasta
+.check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+
+  input {
+    width: 16px;
+    height: 16px;
+    accent-color: t.$verde;
+  }
+}
+
+.oculta {
+  background: #fbf5e3;
+  color: #8a6d1f;
+}
+
+.publicada {
+  background: t.$verde-claro;
+  color: t.$verde;
+}

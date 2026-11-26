@@ -9,12 +9,18 @@ import { API_URL } from './api';
 export interface RoomLot {
   id: string;
   number: number;
+  /** "12 bis" */
+  bis?: boolean;
   title: string;
   description: string;
-  startingPrice: number;
-  currentPrice: number;
+  /** Solo para el martillero/admin (el público ve "sin base") */
+  startingPrice?: number;
+  /** null mientras nadie ofertó (para el público: sería la base) */
+  currentPrice: number | null;
   bidIncrement: number;
   minNextBid: number;
+  /** La mínima la fijó el martillero a mano */
+  minNextBidManual?: boolean;
   /** Usuario que va ganando el lote (null = sin pujas) */
   leaderId: string | null;
   images: string[];
@@ -46,6 +52,10 @@ export interface ChatMessage {
   bidId?: string;
   /** Oferta anulada por el martillero */
   anulada?: boolean;
+  /** Lo escribió el martillero o un admin (se destaca) */
+  staff?: boolean;
+  /** Privado entre ese usuario y el martillero (null = público) */
+  privateUserId?: string | null;
 }
 
 interface ServerMessage {
@@ -56,6 +66,8 @@ interface ServerMessage {
   time: string;
   isOffer: boolean;
   bidId?: string;
+  staff?: boolean;
+  privateUserId?: string | null;
 }
 
 /** Sanciones del martillero sobre el usuario en este remate */
@@ -80,6 +92,8 @@ const toChat = (m: ServerMessage): ChatMessage => ({
   text: m.text,
   time: formatTime(m.time),
   isOffer: m.isOffer,
+  staff: m.staff ?? false,
+  privateUserId: m.privateUserId ?? null,
 });
 
 // El chat de la sala muestra solo los últimos mensajes: los viejos se van
@@ -212,10 +226,14 @@ export function useAuctionRoom(
     socketRef.current?.emit('bid:place', { lotId, amount });
   }, []);
 
+  /**
+   * privado: el usuario le escribe solo al martillero. paraUserId: el
+   * martillero/admin le contesta en privado a ese usuario.
+   */
   const sendMessage = useCallback(
-    (text: string) => {
+    (text: string, opciones: { privado?: boolean; paraUserId?: string } = {}) => {
       if (!auctionId) return;
-      socketRef.current?.emit('chat:message', { auctionId, text });
+      socketRef.current?.emit('chat:message', { auctionId, text, ...opciones });
     },
     [auctionId]
   );

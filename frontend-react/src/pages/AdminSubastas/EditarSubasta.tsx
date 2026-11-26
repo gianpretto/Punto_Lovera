@@ -20,6 +20,8 @@ export interface AuctionAdmin {
   coverImageUrl: string | null;
   startsAt: string;
   status: AuctionStatus;
+  /** Publicada: la ve el público. Se crea oculta. */
+  published: boolean;
   lots: LotAdmin[];
 }
 
@@ -169,6 +171,25 @@ export default function EditarSubasta() {
     }
   };
 
+  // Publicar (la ve el público) u ocultar la subasta
+  const alternarPublicada = async () => {
+    if (!auction) return;
+    const publicar = !auction.published;
+    if (!publicar && !window.confirm('¿Ocultar la subasta? El público deja de verla.')) return;
+    setError('');
+    setAviso('');
+    setBusy(true);
+    try {
+      await api.patch(`/subastas/${auction.id}`, { published: publicar });
+      await cargar();
+      setAviso(publicar ? 'Subasta publicada: ya la ve el público.' : 'Subasta oculta: el público ya no la ve.');
+    } catch (err) {
+      setError(mensaje(err, 'No se pudo cambiar la publicación'));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const subirArchivoPortada = (auctionId: string, file: File) => {
     const fd = new FormData();
     fd.append('image', file);
@@ -242,13 +263,25 @@ export default function EditarSubasta() {
         <div>
           <h1>{esNueva ? 'NUEVA SUBASTA' : 'EDITAR SUBASTA'}</h1>
           <p className={panel.subtitle}>
-            {esNueva ? 'Completá los datos del remate. Los lotes se cargan después de crearlo.' : auction?.title ?? 'Cargando...'}
+            {esNueva
+              ? 'Completá los datos del remate. Se crea oculta: el público la ve recién cuando la publiques.'
+              : auction?.title ?? 'Cargando...'}
           </p>
         </div>
         <div className={styles.links}>
           <Link to="/admin/subastas" className={panel.btnGris}>
             Volver a la lista
           </Link>
+          {!esNueva && auction && (
+            <button
+              type="button"
+              className={auction.published ? panel.btnGris : panel.btnNegro}
+              onClick={alternarPublicada}
+              disabled={busy}
+            >
+              {auction.published ? 'Ocultar subasta' : 'Publicar subasta'}
+            </button>
+          )}
           {!esNueva && (
             <>
               <Link to={`/subastas/${id}/martillero`} className={panel.btnGris}>
@@ -264,6 +297,11 @@ export default function EditarSubasta() {
 
       {error && <div className={panel.alertDanger}>{error}</div>}
       {aviso && <div className={panel.alertSuccess}>{aviso}</div>}
+      {!esNueva && auction && !auction.published && (
+        <div className={`${panel.alertDanger} ${styles.oculta}`}>
+          Esta subasta está <strong>oculta</strong>: el público no la ve. Completala y tocá "Publicar subasta" cuando esté lista.
+        </div>
+      )}
 
       {cargando ? (
         <section className={panel.card}>

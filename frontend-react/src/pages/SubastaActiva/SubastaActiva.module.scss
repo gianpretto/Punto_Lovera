@@ -558,10 +558,11 @@ $una-columna: 900px;
   }
 }
 
+// Misma fuente que el "SE VENDE EN $ ..." del video (pedido del cliente)
 .precios dd.precioActual {
-  font-family: t.$font-titulo;
-  font-weight: 400;
-  font-size: 40px;
+  font-family: t.$font-destacada;
+  font-weight: 800;
+  font-size: 36px;
   line-height: 40px;
   color: t.$verde;
 
@@ -1366,5 +1367,85 @@ $una-columna: 900px;
 
   .ofertar {
     box-shadow: none;
+  }
+}
+
+// ---------- Chat: martillero destacado y mensajes privados
+
+.mensajeStaff {
+  margin: 4px -10px;
+  padding: 9px 10px;
+  border-left: 4px solid t.$verde;
+  background: t.$verde-claro;
+
+  .mensajeUsuario {
+    color: t.$verde;
+  }
+}
+
+.insigniaStaff {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 6px;
+  background: t.$verde;
+  color: t.$blanco;
+  font-size: 10px;
+  line-height: 14px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  vertical-align: 1px;
+}
+
+.mensajePrivado {
+  margin: 4px -10px;
+  padding: 9px 10px;
+  border-left: 4px dashed #8a6d1f;
+  background: #fbf5e3;
+}
+
+.etiquetaPrivado {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 14px;
+  color: #8a6d1f;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.privadoSwitch {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: t.$gris-texto;
+  cursor: pointer;
+
+  input {
+    width: 16px;
+    height: 16px;
+    accent-color: t.$verde;
+  }
+}
+
+.respondiendo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 20px 0;
+  font-size: 13px;
+  color: #8a6d1f;
+
+  button {
+    margin-left: auto;
+    padding: 0 4px;
+    border: 0;
+    background: none;
+    color: inherit;
+    font-size: 14px;
+    cursor: pointer;
   }
 }

@@ -11,8 +11,8 @@
   display: flex;
   align-items: flex-start;
   justify-content: center;
-  // En el diseño (1440 x 1029) "CERRAR" queda a 92 px del borde superior
-  padding: clamp(24px, 9vh, 92px) 43px 24px;
+  // Más grande que el diseño original (pedido del cliente): ocupa casi toda la pantalla
+  padding: clamp(16px, 4vh, 40px) 24px 24px;
   background: rgba(0, 0, 0, 0.85);
   overflow-y: auto;
   box-sizing: border-box;
@@ -26,9 +26,9 @@
   display: flex;
   flex-direction: column;
   align-items: flex-end;
-  gap: 48px;
+  gap: 20px;
   width: 100%;
-  max-width: 1353px;
+  max-width: 1600px;
   font-family: t.$font-texto;
 
   @include t.tablet {
@@ -67,9 +67,9 @@
 
 .panel {
   display: grid;
-  grid-template-columns: 780fr 573fr;
+  grid-template-columns: 3fr 2fr;
   width: 100%;
-  height: 546px;
+  height: min(calc(100svh - 140px), 820px);
   background: t.$blanco;
 
   @include t.tablet {
@@ -81,7 +81,7 @@
 .media {
   position: relative;
   min-width: 0;
-  height: 546px;
+  height: 100%;
   background: t.$gris-medio;
 
   @include t.tablet {
@@ -95,6 +95,78 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+// La foto se puede tocar para verla sola, grande
+.fotoBoton {
+  display: block;
+  width: 100%;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+
+  &:focus-visible {
+    outline: 3px solid t.$blanco;
+    outline-offset: -6px;
+  }
+}
+
+.lupa {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  padding: 6px 10px;
+  background: rgba(0, 0, 0, 0.55);
+  color: t.$blanco;
+  font-size: 13px;
+  font-weight: 700;
+  pointer-events: none;
+}
+
+// Foto sola a pantalla completa, con sus flechas
+.soloFoto {
+  position: fixed;
+  inset: 0;
+  z-index: 1001;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.95);
+  cursor: zoom-out;
+
+  img {
+    max-width: calc(100vw - 32px);
+    max-height: calc(100svh - 32px);
+    object-fit: contain;
+    cursor: default;
+  }
+}
+
+.soloFotoCerrar {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  padding: 8px;
+  border: 0;
+  background: none;
+  color: t.$blanco;
+  font-family: t.$font-texto;
+  font-weight: 700;
+  font-size: 18px;
+  cursor: pointer;
+}
+
+.soloFotoContador {
+  position: absolute;
+  bottom: 16px;
+  left: 0;
+  right: 0;
+  margin: 0;
+  color: t.$blanco;
+  text-align: center;
+  font-weight: 700;
 }
 
 .sinFotos {
@@ -170,7 +242,7 @@
 
 .detalle {
   min-width: 0;
-  padding: 29px 28px 29px 29px;
+  padding: 36px 36px 36px 40px;
   overflow-y: auto;
   box-sizing: border-box;
 
@@ -182,36 +254,43 @@
 .etiquetas {
   display: flex;
   justify-content: space-between;
+  align-items: baseline;
   gap: 12px;
   margin: 0;
   font-weight: 700;
-  font-size: 12px;
-  line-height: 13px;
+  font-size: 16px;
+  line-height: 18px;
   color: t.$verde;
   text-transform: uppercase;
 }
 
+.numero {
+  font-size: 28px;
+  line-height: 30px;
+  font-weight: 800;
+}
+
 .titulo {
-  margin: 18px 0 0;
+  margin: 20px 0 0;
   font-family: t.$font-titulo;
   font-weight: 400;
-  font-size: 32px;
-  line-height: 36px;
+  font-size: 44px;
+  line-height: 48px;
   color: t.$gris-oscuro;
 }
 
 .resumen {
-  margin: 17px 0 0;
+  margin: 20px 0 0;
   font-weight: 700;
-  font-size: 16px;
-  line-height: 22px;
+  font-size: 19px;
+  line-height: 27px;
   color: t.$gris-texto;
 }
 
 .texto {
-  margin-top: 43px;
-  font-size: 16px;
-  line-height: 22px;
+  margin-top: 32px;
+  font-size: 18px;
+  line-height: 26px;
   color: t.$gris-texto;
 
   p {

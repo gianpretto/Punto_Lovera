@@ -19,6 +19,7 @@ import Aviso from "../../components/ui/Aviso";
 import VisorLote from "../../components/lotes/VisorLote";
 import {
   partirDescripcion,
+  textoNumeroLote,
   type LoteCatalogo,
 } from "../../components/lotes/lote";
 import { useAuth } from "../../services/AuthContext";
@@ -115,11 +116,15 @@ export default function SubastaActiva() {
   const userCredits = user?.availableCredit ?? 0;
   const vaGanando = Boolean(user && lot?.leaderId === user.id);
   const reservadoEnEsteLote =
-    vaGanando && lot ? creditoNecesario(lot.currentPrice) : 0;
+    vaGanando && lot ? creditoNecesario(lot.currentPrice ?? 0) : 0;
   const creditoParaEsteLote = userCredits + reservadoEnEsteLote;
   const [visorAbierto, setVisorAbierto] = useState(false);
   const cerrarVisor = useCallback(() => setVisorAbierto(false), []);
   const [newMessage, setNewMessage] = useState("");
+  // Usuario: el próximo mensaje va solo al martillero
+  const [privado, setPrivado] = useState(false);
+  // Martillero/admin: a quién le está contestando en privado
+  const [respondiendoA, setRespondiendoA] = useState<{ userId: string; user: string } | null>(null);
   const [reenvio, setReenvio] = useState<"idle" | "enviando" | "enviado">(
     "idle",
   );
@@ -200,6 +205,14 @@ export default function SubastaActiva() {
 
   const puedeModerar = (m: ChatMessage) =>
     Boolean(m.id && m.userId && m.userId !== user?.id);
+
+  /** "Privado", "Privado de Juan" o "Privado para Juan" según quién lo mire */
+  const etiquetaPrivado = (m: ChatMessage) => {
+    if (!esMartillero) return "Privado con el martillero";
+    if (!m.staff) return `Privado de ${m.user}`;
+    const destino = messages.find((x) => x.userId === m.privateUserId && !x.staff);
+    return destino ? `Privado para ${destino.user}` : "Privado";
+  };
 
   const sancionar = (m: ChatMessage, tipo: "SILENCIADO" | "EXPULSADO") => {
     if (!id || !m.userId) return;
@@ -387,8 +400,13 @@ export default function SubastaActiva() {
     }
     if (silenciado || expulsado) return;
     setAviso((a) => (a?.donde === "chat" ? null : a));
-    // El mensaje vuelve por el socket a toda la sala (incluido uno mismo)
-    emitMessage(newMessage);
+    // El mensaje vuelve por el socket a toda la sala (incluido uno mismo);
+    // los privados, solo a ese usuario y al martillero
+    if (esMartillero && respondiendoA) {
+      emitMessage(newMessage, { paraUserId: respondiendoA.userId });
+    } else {
+      emitMessage(newMessage, { privado: !esMartillero && privado });
+    }
     setNewMessage("");
   };
 
@@ -406,9 +424,10 @@ export default function SubastaActiva() {
     ? {
         id: lot.id,
         numero: lot.number,
+        numeroTexto: textoNumeroLote(lot.number, lot.bis),
         titulo: lot.title,
         ...partirDescripcion(lot.description),
-        etiqueta: `PRECIO ACTUAL ${pesos(lot.currentPrice)}`,
+        etiqueta: lot.currentPrice != null ? `PRECIO ACTUAL ${pesos(lot.currentPrice)}` : "SIN BASE",
         imagenes,
       }
     : null;
@@ -683,9 +702,15 @@ export default function SubastaActiva() {
 
               {lot && (
                 <p className={styles.seVende}>
-                  <span className={styles.seVendeLote}>Lote {lot.number}</span>
+                  <span className={styles.seVendeLote}>Lote {textoNumeroLote(lot.number, lot.bis)}</span>
                   <span>
-                    Se vende en <strong>{pesos(lot.currentPrice)}</strong>
+                    {lot.currentPrice != null ? (
+                      <>
+                        Se vende en <strong>{pesos(lot.currentPrice)}</strong>
+                      </>
+                    ) : (
+                      <strong>Sin base</strong>
+                    )}
                   </span>
                 </p>
               )}
@@ -699,7 +724,7 @@ export default function SubastaActiva() {
               <div className={styles.ofertarInfo}>
                 <div className={styles.ofertarCabecera}>
                   <h2 id="titulo-ofertar" className={styles.ofertarTitulo}>
-                    {lot ? `Lote ${lot.number} · ${lot.title}` : "Lote en remate"}
+                    {lot ? `Lote ${textoNumeroLote(lot.number, lot.bis)} · ${lot.title}` : "Lote en remate"}
                   </h2>
                   {vaGanando && (
                     <span
@@ -724,7 +749,7 @@ export default function SubastaActiva() {
                     <div>
                       <dt>Precio actual</dt>
                       <dd className={styles.precioActual}>
-                        {pesos(lot.currentPrice)}
+                        {lot.currentPrice != null ? pesos(lot.currentPrice) : "Sin base"}
                       </dd>
                     </div>
                     <div>
@@ -846,17 +871,34 @@ export default function SubastaActiva() {
                 )}
                 {messages.map((msg, i) => (
                   <p
-                    className={`${styles.mensaje} ${msg.isOffer ? styles.mensajeOferta : ""} ${!msg.id ? styles.mensajeSistema : ""} ${msg.anulada ? styles.mensajeAnulado : ""}`}
+                    className={`${styles.mensaje} ${msg.isOffer ? styles.mensajeOferta : ""} ${!msg.id ? styles.mensajeSistema : ""} ${msg.anulada ? styles.mensajeAnulado : ""} ${msg.staff ? styles.mensajeStaff : ""} ${msg.privateUserId ? styles.mensajePrivado : ""}`}
                     key={msg.id ?? `local-${i}`}
                   >
-                    <span className={styles.mensajeUsuario}>{msg.user}</span>
+                    {msg.privateUserId && (
+                      <span className={styles.etiquetaPrivado}>
+                        {etiquetaPrivado(msg)}
+                      </span>
+                    )}
+                    <span className={styles.mensajeUsuario}>
+                      {msg.user}
+                      {msg.staff && <span className={styles.insigniaStaff}>Martillero</span>}
+                    </span>
                     <span className={styles.mensajeTexto}>
                       {msg.text}
                       {msg.anulada && " (anulada)"}
                     </span>
                     <span className={styles.mensajeHora}>{msg.time}</span>
-                    {esMartillero && puedeModerar(msg) && (
+                    {esMartillero && puedeModerar(msg) && !msg.staff && (
                       <span className={styles.moderar}>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setRespondiendoA({ userId: msg.userId!, user: msg.user });
+                            document.getElementById("mensaje-chat")?.focus();
+                          }}
+                        >
+                          Responder en privado
+                        </button>
                         {sancionados[msg.userId!]?.includes("EXPULSADO") ? (
                           <span>Expulsado</span>
                         ) : (
@@ -889,6 +931,20 @@ export default function SubastaActiva() {
                   {aviso.texto}
                 </Aviso>
               )}
+              {esMartillero && respondiendoA && (
+                <p className={styles.respondiendo}>
+                  Respondiendo en privado a <strong>{respondiendoA.user}</strong>
+                  <button type="button" onClick={() => setRespondiendoA(null)} aria-label="Dejar de responder en privado">
+                    ✕
+                  </button>
+                </p>
+              )}
+              {user && !esMartillero && !silenciado && !expulsado && (
+                <label className={styles.privadoSwitch}>
+                  <input type="checkbox" checked={privado} onChange={(e) => setPrivado(e.target.checked)} />
+                  Mensaje privado al martillero
+                </label>
+              )}
               <div className={styles.chatEntrada}>
                 <label htmlFor="mensaje-chat" className={styles.oculto}>
                   Tu mensaje
@@ -902,7 +958,11 @@ export default function SubastaActiva() {
                       : silenciado
                         ? "El martillero te silenció en este remate"
                         : user
-                          ? "Tu mensaje…"
+                          ? respondiendoA
+                            ? `Mensaje privado para ${respondiendoA.user}…`
+                            : privado
+                              ? "Mensaje privado al martillero…"
+                              : "Tu mensaje…"
                           : "Solo lectura como invitado"
                   }
                   value={newMessage}
@@ -961,8 +1021,11 @@ export default function SubastaActiva() {
               </div>
               <div className={styles.loteCuerpo}>
                 <p className={styles.loteEtiquetas}>
-                  <span>Lote {lot.number}</span>
-                  <span>Base {pesos(lot.startingPrice)}</span>
+                  <span>Lote {textoNumeroLote(lot.number, lot.bis)}</span>
+                  {/* La base solo la ve el martillero/admin; el público, "sin base" */}
+                  <span>
+                    {lot.startingPrice != null ? `Base ${pesos(lot.startingPrice)}` : "Sin base"}
+                  </span>
                 </p>
                 <h2 id="titulo-lote" className={styles.loteTitulo}>
                   {lot.title}

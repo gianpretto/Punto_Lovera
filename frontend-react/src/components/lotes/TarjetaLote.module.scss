@@ -1,3 +1,4 @@
+@use 'sass:color';
 @use '../../styles/tokens' as t;
 
 // Medidas del diseño: tarjeta 413 x 576 blanca con sombra (0 4 4 25 %),
@@ -107,29 +108,70 @@
   overflow: hidden;
 }
 
-.verFotos {
+.etiquetas .numero {
+  font-size: 22px;
+  line-height: 24px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+// "Ver lote": botón verde a lo ancho (antes era un link gris chico)
+.verLote {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin: 0 29px 20px 24px;
-  padding: 17px 0 0;
+  margin: 0 24px 24px;
+  padding: 14px 20px;
   border: 0;
-  border-top: 1px solid t.$gris-claro;
-  background: none;
+  background: t.$verde;
+  color: t.$blanco;
   font-family: t.$font-texto;
-  font-weight: 500;
-  font-size: 12.6px;
-  line-height: 17px;
-  color: t.$gris-texto;
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
   text-align: left;
   cursor: pointer;
+  transition: background 0.15s;
 
   &:hover {
-    color: t.$verde;
+    background: color.adjust(t.$verde, $lightness: -8%);
   }
 
   &:focus-visible {
     outline: 2px solid t.$verde;
     outline-offset: 2px;
   }
+}
+
+// Corazón de favoritos, arriba a la derecha de la foto
+.favorito {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
+  color: t.$gris-texto;
+  cursor: pointer;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+
+  &:hover {
+    color: #c0392b;
+  }
+
+  &:focus-visible {
+    outline: 2px solid t.$verde;
+    outline-offset: 2px;
+  }
+}
+
+.favoritoActivo {
+  color: #c0392b;
 }

@@ -30,6 +30,7 @@ export default function Header() {
     { to: '/datos', label: 'Mis datos' },
     { to: '/creditos', label: 'Crédito disponible' },
     { to: '/perfil#compras', label: 'Mis compras / ofertas' },
+    { to: '/favoritos', label: 'Mis favoritos' },
     ...(user?.role === 'ADMIN'
       ? [
           { to: '/admin/comprobantes', label: 'Comprobantes a revisar' },
@@ -43,6 +44,7 @@ export default function Header() {
           // Va directo al panel de la subasta en vivo (o la próxima)
           { to: '/martillero', label: 'Panel del martillero' },
           { to: '/admin/subastas', label: 'Administrar subastas' },
+          { to: '/admin/usuarios', label: 'Personas' },
         ]
       : []),
   ];

@@ -245,6 +245,39 @@ y `http://localhost:5173`.
 - Sin "¿Tenés bienes para vender?" en login/registro; cada vista arranca
   arriba (`ScrollArriba`).
 
+## Segunda reunión con el cliente (nov 2026, implementado)
+
+- **Subastas ocultas**: `auctions.published` (se crean ocultas; las que
+  existían quedaron publicadas en la migración 0013). El público no las ve
+  (404, ni en listas ni en la sala); el admin las lista con
+  `GET /subastas?ocultas=1` y las publica/oculta desde Editar subasta.
+  Reglas en `services/visibilidad.ts`.
+- **Precio base interno**: el público ve "SIN BASE": la API pública no manda
+  `startingPrice` y `currentPrice` es null hasta la primera oferta (también
+  en la sala). La **primera oferta mínima es la base** (`minNextBidOf`:
+  sin líder → precio actual = base; con líder → + incremento).
+- **Lotes "bis"**: `lots.bis` (único `auction+number+bis`); el bis exige que
+  exista su número y va después de él (`ORDEN_LOTES`). Front: "12 BIS".
+- **Lote anterior**: `POST /subastas/:id/lote-anterior` (y siguiente) en el
+  orden del catálogo.
+- **Apertura al llegar la hora**: `apertura.service.ts` cada 15 s pasa a
+  ACTIVA las publicadas PROXIMA cuyo horario pasó hace menos de 12 h (además
+  de abrirse con OBS). El front ya la muestra activa al llegar a cero.
+- **Chat**: privados usuario ↔ martillero (`chat_messages.private_user_id`;
+  socket `chat:message` con `privado: true` o `paraUserId`; salas
+  `auction:<id>:staff` y `auction:<id>:u:<userId>`); el panel los ve en
+  `GET/POST /subastas/:id/privados`. Los mensajes traen `staff` (martillero
+  /admin destacado).
+- **Personas** (`/admin/usuarios`, martillero/admin): lista con filtros,
+  ficha con datos editables, compras y ofertas. El rol solo lo cambia un
+  admin (no a sí mismo); un martillero no edita admins.
+- **Favoritos** (`lot_favorites`, `/api/favoritos`, página `/favoritos`,
+  corazón en las tarjetas).
+- Catálogo: sin "Cierre", número de lote más grande, botón "Ver lote", visor
+  más grande y foto sola a pantalla completa. Header: logo más grande. Home:
+  "Quiero" más grande. Sala: precio actual con la fuente de "SE VENDE EN".
+  Lote nuevo: se le pueden subir fotos al crearlo.
+
 ## Pendiente de seguridad antes de producción
 
 La contraseña de Neon (`neondb_owner`, ramas dev y production), el
@@ -399,7 +432,7 @@ Reglas de ingreso (diagrama + pedido del cliente): a la sala (socket y
 video) se entra con sesión **o** con un pase de invitado de esa subasta
 (`auction_passes`, `pass.service.ts`; el front lo lee de `?pase=`). Pujar
 pide sesión + datos completos (`isProfileComplete`: nombre, apellido,
-teléfono, DNI, dirección, ciudad, provincia, CP) + crédito disponible. El
+DNI/CUIL y celular verificado) + crédito según el modo de créditos. El
 seed deja a `usuario@test.com` con datos completos.
 
 Las pujas y mensajes propios **no** se agregan localmente: vuelven por el
